@@ -12,6 +12,7 @@ import (
 	auth "github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	authbcrypt "github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt"
 	authjwt "github.com/toothdy/cool-admin-go-next/cool-next/auth/jwt"
+	dto "github.com/toothdy/cool-admin-go-next/cool-next/codegen"
 	app "github.com/toothdy/cool-admin-go-next/cool-next/core/app"
 	apphttp "github.com/toothdy/cool-admin-go-next/cool-next/core/app/http"
 	configuration "github.com/toothdy/cool-admin-go-next/cool-next/core/configuration"
@@ -31,7 +32,7 @@ import (
 	admin "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin"
 	sys "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys"
 	app2 "github.com/toothdy/cool-admin-go-next/modules/base/controller/app"
-	dto "github.com/toothdy/cool-admin-go-next/modules/base/dto"
+	dto2 "github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	entity "github.com/toothdy/cool-admin-go-next/modules/base/entity"
 	global "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global"
 	schedule "github.com/toothdy/cool-admin-go-next/modules/base/schedule"
@@ -1150,23 +1151,15 @@ func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller
 	return app2.CommController(dependency0)
 }
 
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewAuthorizationBoundary(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.User, uint64], dependency2 *coreservice.Base[entity.Role, uint64], dependency3 *coreservice.Base[entity.Menu, uint64], dependency4 *coreservice.Base[entity.Department, uint64], dependency5 auth.SessionStore) (*service.AuthorizationBoundary, error) {
-	return service.NewAuthorizationBoundary(dependency0, dependency1, dependency2, dependency3, dependency4, dependency5)
-}
-
 func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha(dependency0 base.Config) (*service.CaptchaService, error) {
 	return service.NewCaptcha(dependency0)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCoding(dependency0 base.Config) (*service.CodingService, error) {
-	return service.NewCoding(dependency0)
 }
 
 func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf(dependency0 *coreservice.Base[entity.Conf, uint64]) (*service.ConfService, error) {
 	return service.NewConf(dependency0)
 }
 
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.Department, uint64], dependency2 *coreservice.Base[entity.User, uint64], dependency3 *coreservice.Base[entity.Role, uint64], dependency4 *coreservice.Base[entity.UserRole, uint64], dependency5 *coreservice.Base[entity.RoleDepartment, uint64], dependency6 *service.AuthorizationBoundary) (*service.DepartmentService, error) {
+func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.Department, uint64], dependency2 *coreservice.Base[entity.User, uint64], dependency3 *coreservice.Base[entity.Role, uint64], dependency4 *coreservice.Base[entity.UserRole, uint64], dependency5 *coreservice.Base[entity.RoleDepartment, uint64], dependency6 auth.SessionStore) (*service.DepartmentService, error) {
 	return service.NewDepartment(dependency0, dependency1, dependency2, dependency3, dependency4, dependency5, dependency6)
 }
 
@@ -1194,12 +1187,8 @@ func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJ
 	return schedule.NewLogJob(dependency0, dependency1)
 }
 
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.Menu, uint64], dependency2 *coreservice.Base[entity.Role, uint64], dependency3 *coreservice.Base[entity.RoleMenu, uint64], dependency4 *coreservice.Base[entity.UserRole, uint64], dependency5 *service.AuthorizationBoundary) (*service.MenuService, error) {
+func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.Menu, uint64], dependency2 *coreservice.Base[entity.Role, uint64], dependency3 *coreservice.Base[entity.RoleMenu, uint64], dependency4 *coreservice.Base[entity.UserRole, uint64], dependency5 auth.SessionStore) (*service.MenuService, error) {
 	return service.NewMenu(dependency0, dependency1, dependency2, dependency3, dependency4, dependency5)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenuTool(dependency0 *coreservice.Base[entity.Menu, uint64], dependency1 base.Config) (*service.MenuToolService, error) {
-	return service.NewMenuTool(dependency0, dependency1)
 }
 
 func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam(dependency0 *coreservice.Base[entity.Param, uint64], dependency1 base.Config) (*service.ParamService, error) {
@@ -1214,7 +1203,7 @@ func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermi
 	return service.NewPermission(dependency0, dependency1, dependency2, dependency3)
 }
 
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler(dependency0 *service.CodingService, dependency1 *service.MenuToolService, dependency2 *service.PermissionService) (*admin.ToolHandler, error) {
+func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler(dependency0 base.Config, dependency1 *coreservice.Base[entity.Menu, uint64], dependency2 *service.PermissionService) (*admin.ToolHandler, error) {
 	return admin.NewToolHandler(dependency0, dependency1, dependency2)
 }
 
@@ -1226,7 +1215,7 @@ func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admi
 	return admin.NewOpenHandler(dependency0, dependency1, dependency2)
 }
 
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.Role, uint64], dependency2 *coreservice.Base[entity.UserRole, uint64], dependency3 *coreservice.Base[entity.RoleMenu, uint64], dependency4 *coreservice.Base[entity.RoleDepartment, uint64], dependency5 *service.AuthorizationBoundary) (*service.RoleService, error) {
+func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.Role, uint64], dependency2 *coreservice.Base[entity.UserRole, uint64], dependency3 *coreservice.Base[entity.RoleMenu, uint64], dependency4 *coreservice.Base[entity.RoleDepartment, uint64], dependency5 auth.SessionStore) (*service.RoleService, error) {
 	return service.NewRole(dependency0, dependency1, dependency2, dependency3, dependency4, dependency5)
 }
 
@@ -1250,7 +1239,7 @@ func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appN
 	return app2.NewCommHandler(dependency0, dependency1)
 }
 
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.User, uint64], dependency2 *coreservice.Base[entity.UserRole, uint64], dependency3 *coreservice.Base[entity.Role, uint64], dependency4 *coreservice.Base[entity.Department, uint64], dependency5 *authbcrypt.Verifier, dependency6 *service.AuthorizationBoundary) (*service.UserService, error) {
+func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.User, uint64], dependency2 *coreservice.Base[entity.UserRole, uint64], dependency3 *coreservice.Base[entity.Role, uint64], dependency4 *coreservice.Base[entity.Department, uint64], dependency5 *authbcrypt.Verifier, dependency6 auth.SessionStore) (*service.UserService, error) {
 	return service.NewUser(dependency0, dependency1, dependency2, dependency3, dependency4, dependency5, dependency6)
 }
 
@@ -1301,7 +1290,7 @@ func generatedGraph() module.Graph {
 			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.CommController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/comm/logout", Summary: "退出", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "LoginService", Method: "Logout", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.LoginService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}, Transaction: coreroute.NonTransactional()},
 			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.CommController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/comm/program", Summary: "编程", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "Program", Method: "Program", Type: "func(context.Context) (string, error)", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
 			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.MenuToolController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/parse", Summary: "解析", Description: "", DevelopmentOnly: true, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "ToolHandler", Method: "ParseMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "MenuParseReq", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.MenuToolController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/create", Summary: "创建代码", Description: "", DevelopmentOnly: true, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "ToolHandler", Method: "CreateMenuCode", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", RequestType: "MenuCreateInput", ReturnsValue: false}, Transaction: coreroute.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.MenuToolController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/create", Summary: "创建代码", Description: "", DevelopmentOnly: true, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "ToolHandler", Method: "CreateMenuCode", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/codegen", RequestType: "MenuCreateInput", ReturnsValue: false}, Transaction: coreroute.NonTransactional()},
 			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.MenuToolController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/export", Summary: "导出", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "ToolHandler", Method: "ExportMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "MenuExportReq", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
 			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.MenuToolController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/import", Summary: "导入", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "ToolHandler", Method: "ImportMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", RequestType: "MenuImportRequest", ReturnsValue: false}},
 			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.OpenController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/open/eps", Summary: "实体信息与路径", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "AdminEPS", Method: "AdminEPS", Type: "func(context.Context) (github.com/toothdy/cool-admin-go-next/cool-next/eps.Document, error)", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
@@ -1387,16 +1376,13 @@ func generatedGraph() module.Graph {
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewLogHandler", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/middleware/global.LogHandler"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewTranslateHandler", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/middleware/global.TranslateHandler"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/schedule", Name: "NewLogJob", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/schedule.LogJob"},
-			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.AuthorizationBoundary"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCaptcha", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.CaptchaService"},
-			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCoding", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.CodingService"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewConf", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ConfService"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.DepartmentService"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewInitializer", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.Initializer"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLog", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.LogService"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLogin", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.LoginService"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService"},
-			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenuTool", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuToolService"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewParam", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewPermission", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.PermissionService"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewRole", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService"},
@@ -1407,9 +1393,7 @@ func generatedGraph() module.Graph {
 			{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/grpc.Transport"},
 		},
 		Components: []module.ComponentDefinition{
-			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCaptcha"},
-			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCoding"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewConf"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewDepartmentHandler"},
@@ -1419,7 +1403,6 @@ func generatedGraph() module.Graph {
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewLogHandler"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/schedule", Name: "NewLogJob"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenu"},
-			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenuTool"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewParam"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewParamHTMLHandler"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewPermission"},
@@ -1443,9 +1426,7 @@ func generatedGraph() module.Graph {
 			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New"},
 		},
 		Lifecycles: []module.LifecycleDefinition{
-			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCaptcha"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
-			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCoding"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewConf"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewDepartmentHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
@@ -1455,7 +1436,6 @@ func generatedGraph() module.Graph {
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewLogHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/schedule", Name: "NewLogJob"}, Initializer: false, Starter: true, Stopper: true, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenu"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
-			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenuTool"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewParam"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewParamHTMLHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewPermission"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
@@ -1483,14 +1463,7 @@ func generatedGraph() module.Graph {
 			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New"},
 		},
 		Dependencies: []module.DependencyDefinition{
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/db", Name: "Runtime", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/db.Runtime"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser", Type: "*service.Base[entity.User, uint64]"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary"}, ParameterIndex: 2, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole", Type: "*service.Base[entity.Role, uint64]"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary"}, ParameterIndex: 3, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu", Type: "*service.Base[entity.Menu, uint64]"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary"}, ParameterIndex: 4, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment", Type: "*service.Base[entity.Department, uint64]"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary"}, ParameterIndex: 5, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/auth", Name: "SessionStore", Type: "github.com/toothdy/cool-admin-go-next/cool-next/auth.SessionStore"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCaptcha"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindConfig, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base", Name: "Config", Type: "github.com/toothdy/cool-admin-go-next/modules/base.Config"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCoding"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindConfig, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base", Name: "Config", Type: "github.com/toothdy/cool-admin-go-next/modules/base.Config"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewConf"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf", Type: "*service.Base[entity.Conf, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/db", Name: "Runtime", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/db.Runtime"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment", Type: "*service.Base[entity.Department, uint64]"}},
@@ -1498,7 +1471,7 @@ func generatedGraph() module.Graph {
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment"}, ParameterIndex: 3, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole", Type: "*service.Base[entity.Role, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment"}, ParameterIndex: 4, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole", Type: "*service.Base[entity.UserRole, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment"}, ParameterIndex: 5, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment", Type: "*service.Base[entity.RoleDepartment, uint64]"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment"}, ParameterIndex: 6, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.AuthorizationBoundary"}},
+			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment"}, ParameterIndex: 6, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/auth", Name: "SessionStore", Type: "github.com/toothdy/cool-admin-go-next/cool-next/auth.SessionStore"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewDepartmentHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.DepartmentService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewInitializer"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/db", Name: "Runtime", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/db.Runtime"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewInitializer"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindDescriptor, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf", Type: "entity.Descriptor[entity.Conf, uint64]"}},
@@ -1520,9 +1493,7 @@ func generatedGraph() module.Graph {
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenu"}, ParameterIndex: 2, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole", Type: "*service.Base[entity.Role, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenu"}, ParameterIndex: 3, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu", Type: "*service.Base[entity.RoleMenu, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenu"}, ParameterIndex: 4, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole", Type: "*service.Base[entity.UserRole, uint64]"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenu"}, ParameterIndex: 5, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.AuthorizationBoundary"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenuTool"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu", Type: "*service.Base[entity.Menu, uint64]"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenuTool"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindConfig, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base", Name: "Config", Type: "github.com/toothdy/cool-admin-go-next/modules/base.Config"}},
+			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenu"}, ParameterIndex: 5, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/auth", Name: "SessionStore", Type: "github.com/toothdy/cool-admin-go-next/cool-next/auth.SessionStore"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewParam"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam", Type: "*service.Base[entity.Param, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewParam"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindConfig, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base", Name: "Config", Type: "github.com/toothdy/cool-admin-go-next/modules/base.Config"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewParamHTMLHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewParam", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService"}},
@@ -1530,8 +1501,8 @@ func generatedGraph() module.Graph {
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewPermission"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole", Type: "*service.Base[entity.Role, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewPermission"}, ParameterIndex: 2, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu", Type: "*service.Base[entity.RoleMenu, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewPermission"}, ParameterIndex: 3, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu", Type: "*service.Base[entity.Menu, uint64]"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewToolHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCoding", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.CodingService"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewToolHandler"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenuTool", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuToolService"}},
+			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewToolHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindConfig, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base", Name: "Config", Type: "github.com/toothdy/cool-admin-go-next/modules/base.Config"}},
+			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewToolHandler"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu", Type: "*service.Base[entity.Menu, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewToolHandler"}, ParameterIndex: 2, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewPermission", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.PermissionService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLogin"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/db", Name: "Runtime", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/db.Runtime"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLogin"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser", Type: "*service.Base[entity.User, uint64]"}},
@@ -1549,7 +1520,7 @@ func generatedGraph() module.Graph {
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewRole"}, ParameterIndex: 2, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole", Type: "*service.Base[entity.UserRole, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewRole"}, ParameterIndex: 3, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu", Type: "*service.Base[entity.RoleMenu, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewRole"}, ParameterIndex: 4, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment", Type: "*service.Base[entity.RoleDepartment, uint64]"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewRole"}, ParameterIndex: 5, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.AuthorizationBoundary"}},
+			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewRole"}, ParameterIndex: 5, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/auth", Name: "SessionStore", Type: "github.com/toothdy/cool-admin-go-next/cool-next/auth.SessionStore"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewTranslateHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewTranslate", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.TranslateService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUpload"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindConfig, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base", Name: "Config", Type: "github.com/toothdy/cool-admin-go-next/modules/base.Config"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewUploadHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUpload", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UploadService"}},
@@ -1561,7 +1532,7 @@ func generatedGraph() module.Graph {
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUser"}, ParameterIndex: 3, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole", Type: "*service.Base[entity.Role, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUser"}, ParameterIndex: 4, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment", Type: "*service.Base[entity.Department, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUser"}, ParameterIndex: 5, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt", Name: "Verifier", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt.Verifier"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUser"}, ParameterIndex: 6, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.AuthorizationBoundary"}},
+			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUser"}, ParameterIndex: 6, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/auth", Name: "SessionStore", Type: "github.com/toothdy/cool-admin-go-next/cool-next/auth.SessionStore"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewCommHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUser", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewCommHandler"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewPermission", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.PermissionService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewCommHandler"}, ParameterIndex: 2, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService"}},
@@ -1672,13 +1643,6 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 bcrypt 验证器失败")
 	}
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewAuthorizationBoundary, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewAuthorizationBoundary(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, sessionAdapter)
-	if err != nil {
-		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewAuthorizationBoundary 失败")
-	}
-	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewAuthorizationBoundary := app.Hooks{}
-	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewAuthorizationBoundary := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewAuthorizationBoundary"}
-	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewAuthorizationBoundary, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewAuthorizationBoundary)
 	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha(config0.Config())
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewCaptcha 失败")
@@ -1686,13 +1650,6 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCaptcha"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCoding, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCoding(config0.Config())
-	if err != nil {
-		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewCoding 失败")
-	}
-	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCoding := app.Hooks{}
-	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCoding := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCoding"}
-	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCoding, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCoding)
 	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf(base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewConf 失败")
@@ -1700,7 +1657,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewConf"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewAuthorizationBoundary)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment, sessionAdapter)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewDepartment 失败")
 	}
@@ -1743,20 +1700,13 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob.Stopper = component_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/schedule", Name: "NewLogJob"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewAuthorizationBoundary)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, sessionAdapter)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewMenu 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenu"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenuTool, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenuTool(base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, config0.Config())
-	if err != nil {
-		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewMenuTool 失败")
-	}
-	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenuTool := app.Hooks{}
-	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenuTool := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenuTool"}
-	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenuTool, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenuTool)
 	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam(base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, config0.Config())
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewParam 失败")
@@ -1768,7 +1718,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewParamHTMLHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCoding, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenuTool, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermission)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler(config0.Config(), base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermission)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.NewToolHandler 失败")
 	}
@@ -1789,7 +1739,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewOpenHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewAuthorizationBoundary)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment, sessionAdapter)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewRole 失败")
 	}
@@ -1825,7 +1775,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Name: "NewCommHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, bcryptVerifier, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewAuthorizationBoundary)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, bcryptVerifier, sessionAdapter)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewUser 失败")
 	}
@@ -1945,7 +1895,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 		}
 		server.BindMiddleware("POST:/admin/base/comm/personUpdate", contextMiddleware_basePOST_admin_base_comm_personUpdate)
 		server.BindHandler("POST:/admin/base/comm/personUpdate", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto.PersonUpdateReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *dto.PersonUpdateReq) (any, error) {
+			return corecontroller.HandleDTO[dto2.PersonUpdateReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *dto2.PersonUpdateReq) (any, error) {
 				err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler.PersonUpdate(scopeCtx, input)
 				return nil, err
 			})
@@ -2008,7 +1958,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 			}
 			server.BindMiddleware("POST:/admin/base/sys/menu/parse", contextMiddleware_basePOST_admin_base_sys_menu_parse)
 			server.BindHandler("POST:/admin/base/sys/menu/parse", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-				return corecontroller.HandleDTO[dto.MenuParseReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto.MenuParseReq) (any, error) {
+				return corecontroller.HandleDTO[dto2.MenuParseReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto2.MenuParseReq) (any, error) {
 					return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler.ParseMenu(scopeCtx, input)
 				})
 			})
@@ -2020,7 +1970,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 			}
 			server.BindMiddleware("POST:/admin/base/sys/menu/create", contextMiddleware_basePOST_admin_base_sys_menu_create)
 			server.BindHandler("POST:/admin/base/sys/menu/create", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-				return corecontroller.HandleDTO[service.MenuCreateInput](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *service.MenuCreateInput) (any, error) {
+				return corecontroller.HandleDTO[dto.MenuCreateInput](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto.MenuCreateInput) (any, error) {
 					err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler.CreateMenuCode(scopeCtx, input)
 					return nil, err
 				})
@@ -2032,7 +1982,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 		}
 		server.BindMiddleware("POST:/admin/base/sys/menu/export", contextMiddleware_basePOST_admin_base_sys_menu_export)
 		server.BindHandler("POST:/admin/base/sys/menu/export", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto.MenuExportReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto.MenuExportReq) (any, error) {
+			return corecontroller.HandleDTO[dto2.MenuExportReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto2.MenuExportReq) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler.ExportMenu(scopeCtx, input)
 			})
 		})
@@ -2073,7 +2023,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 		}
 		server.BindMiddleware("POST:/admin/base/open/login", contextMiddleware_basePOST_admin_base_open_login)
 		server.BindHandler("POST:/admin/base/open/login", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto.LoginReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto.LoginReq) (any, error) {
+			return corecontroller.HandleDTO[dto2.LoginReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto2.LoginReq) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler.Login(scopeCtx, input)
 			})
 		})
@@ -2083,7 +2033,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 		}
 		server.BindMiddleware("GET:/admin/base/open/captcha", contextMiddleware_baseGET_admin_base_open_captcha)
 		server.BindHandler("GET:/admin/base/open/captcha", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto.CaptchaQuery](ctx, binder, coreroute.BindQuery, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto.CaptchaQuery) (any, error) {
+			return corecontroller.HandleDTO[dto2.CaptchaQuery](ctx, binder, coreroute.BindQuery, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto2.CaptchaQuery) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler.Captcha(scopeCtx, input)
 			})
 		})
@@ -2093,7 +2043,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 		}
 		server.BindMiddleware("POST:/admin/base/open/refreshToken", contextMiddleware_basePOST_admin_base_open_refreshToken)
 		server.BindHandler("POST:/admin/base/open/refreshToken", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto.RefreshReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto.RefreshReq) (any, error) {
+			return corecontroller.HandleDTO[dto2.RefreshReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto2.RefreshReq) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler.Refresh(scopeCtx, input)
 			})
 		})
@@ -2139,7 +2089,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 		}
 		server.BindMiddleware("POST:/admin/base/sys/department/delete", contextMiddleware_basePOST_admin_base_sys_department_delete)
 		server.BindHandler("POST:/admin/base/sys/department/delete", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto.DepartmentDeleteReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *dto.DepartmentDeleteReq) (any, error) {
+			return corecontroller.HandleDTO[dto2.DepartmentDeleteReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *dto2.DepartmentDeleteReq) (any, error) {
 				err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewDepartmentHandler.Delete(scopeCtx, input)
 				return nil, err
 			})
@@ -2424,7 +2374,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 		}
 		server.BindMiddleware("POST:/admin/base/sys/user/move", contextMiddleware_basePOST_admin_base_sys_user_move)
 		server.BindHandler("POST:/admin/base/sys/user/move", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto.UserMoveReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *dto.UserMoveReq) (any, error) {
+			return corecontroller.HandleDTO[dto2.UserMoveReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *dto2.UserMoveReq) (any, error) {
 				err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler.Move(scopeCtx, input)
 				return nil, err
 			})

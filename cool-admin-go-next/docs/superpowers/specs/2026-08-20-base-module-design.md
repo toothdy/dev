@@ -76,7 +76,7 @@ Node 把下面两项放在 **`@cool-midway/core`**，不是 base：
 
 ### 2.1 已对齐
 
-实体、Service、Controller 三层与 Node 基本一一对应，字段命名约定（`orm` lowerCamelCase、`json`、`description`、`cool` 标签、`PasswordV`↔`passwordV`）完全达标。Go 侧另有 Node 没有的收敛：`AuthorizationBoundary` 统一了授权变更的加锁与 Session 撤销顺序，避免 Node 里分散的竞态。
+实体、Service、Controller 三层与 Node 基本一一对应，字段命名约定（`orm` lowerCamelCase、`json`、`description`、`cool` 标签、`PasswordV`↔`passwordV`）完全达标。Go 侧另有 Node 没有的收敛：`cool-next/auth.Boundary`（原 base 私有的 `AuthorizationBoundary`，见 §5.3）统一了授权变更的加锁与 Session 撤销顺序，避免 Node 里分散的竞态。
 
 ### 2.2 缺口
 
@@ -113,7 +113,7 @@ Node 把下面两项放在 **`@cool-midway/core`**，不是 base：
 |---|---|---|
 | 自建 `data/` 目录 + `go:embed` + 549 行 `initializer.go` | 框架无种子导入能力 | **框架** |
 | `service/log_job.go` 直连 `gcron` | 框架 `schedule` 能力未落地 | **框架** |
-| `auth_boundary.go` 自造行锁并用 `Unscoped()` 规避 `updateTime` | 框架无行锁原语 | **框架**（已修，见 §5.1） |
+| `auth_boundary.go` 自造行锁并用 `Unscoped()` 规避 `updateTime` | 框架无行锁原语 | **框架**（已修，见 §5.1；组件整体迁至 `cool-next/auth`，见 §5.3） |
 | 全局中间件放在 `middleware/` 而非 `middleware/global/` | 纯目录违规 | 业务 |
 
 ### 3.2 种子数据导入下沉（重点）
@@ -142,7 +142,7 @@ Node 把下面两项放在 **`@cool-midway/core`**，不是 base：
    - 事务：整个模块的导入在单个框架事务内完成，失败整体回滚
    - 配置开关：对应 Node 的 `cool.initDB` / `cool.initMenu`（`initJudge` 不引入，见上）
 
-3. **业务保留部分**——base 只保留无法通用化的逻辑：管理员初始口令的 bcrypt 哈希、菜单树写入（复用已有 `MenuToolService.Import`）。预计 `initializer.go` 可从 549 行降到百行以内。
+3. **业务保留部分**——base 只保留无法通用化的逻辑：管理员初始口令的 bcrypt 哈希、菜单树写入（复用 `cool-next/codegen.InsertTree`，见 §5.3）。预计 `initializer.go` 可从 549 行降到百行以内。
 
 **待定**：幂等守卫所用的表由框架自建（如 `cool_seed_lock`）还是复用 base 的 `base_sys_conf`。前者更干净且不让框架依赖业务表，倾向前者；需评审确认。
 
@@ -202,7 +202,20 @@ Node 把下面两项放在 **`@cool-midway/core`**，不是 base：
 
 **顺带修复**：`modules/base/db.json` 的 `base_sys_user` 种子中残留一条 Node 版遗留的 `password` 字段（值为 MD5 哈希 `e10adc3949ba59abbe56e057f20f883e`），但 `insertUsers` 每次都会用 bcrypt 重新生成并覆盖它，是死数据且容易被误读为硬编码凭据哈希，已删除该字段（验证：`record.Values` 对缺失字段直接跳过，不影响任何逻辑）。
 
-### 5.3 验收
+### 5.3 已执行（第二轮：`auth_boundary.go`/`coding.go`/`menu_tool.go` 迁出业务层）
+
+用户明确要求这三个文件不再出现在 `modules/base` 下（判定法同 §3.1：换一个业务模块还需要吗？三者都需要）：
+
+- **`auth_boundary.go` → `cool-next/auth/boundary.go`**：原类型改名 `Boundary`，去掉对 `entity.User/Role/Menu/Department` 的具体类型依赖，`LockRoles`/`LockMenus`/`LockDepartments`/`LockUsersAndRevoke` 四个专用方法收敛为两个通用方法 `LockTable(ctx, table, ids, message)` / `LockUsersAndRevoke(ctx, table, userIDs, kind, message)`，外加独立的 `RevokeUsers`（不重复加锁的撤销单点）和包级 `ValidateSnapshot`/`NormalizeIDs`。`department.go`/`menu.go`/`role.go`/`user.go` 四个 Service 的构造函数不再接收预先注入的 `*AuthorizationBoundary`，改为接收 `sessions auth.SessionStore`，在构造函数体内自行 `auth.NewBoundary(runtime, sessions)`——因为 `cool generate` 只扫描 `modules/*` 目录发现构造器，`cool-next/*` 下的类型不会被发现为可注入组件，让四个 Service 各自持有互不共享的 `*auth.Boundary` 实例是唯一不改动 codegen 编译器的路径（`Boundary` 本身无状态，多实例无副作用）。顺带清理了 `department.go` 里第二处独立手搓的 SQLite 行锁实现（`lockDepartments`，未调用 `Unscoped()` 因此不触发 CG099，但和已修的那处是同一份重复代码），以及两处直接越权访问 `boundary.sessions` 私有字段的调用点。个别 Service 拿不到目标表对应的 `*coreservice.Base[E,uint64]` 引用（比如 `MenuService` 要锁用户表，但不持有 `user` 依赖），按本仓库已有惯例（`NativeSQL` 里早已散落硬编码表名）在 `permission.go` 新增 `userTable`/`menuTable`/`departmentTable` 三个包级常量，与已有的 `adminRoleLabel` 同一风格。
+- **`coding.go` → `cool-next/codegen/scaffold_write.go`**：`CodingService` 改名 `Scaffold`，逻辑不变（受控工作区写入、临时文件+硬链接原子发布、路径穿越/符号链接校验）。不注册为 DI 组件，`modules/base/controller/admin/coding.go` 的 `NewToolHandler` 在构造函数体内直接 `codegen.NewScaffold(config.Coding.Workspace)`，与 `bcrypt.New()` 等既有的纯库依赖用法一致。
+- **`menu_tool.go` 拆三份**：
+  - AST 解析（`Parse`/`parseMenuEntity`/`parseAdminControllerPath` 等，约 300 行，无 base 依赖）→ `cool-next/codegen/scaffold.go`，方法挂到 `*Scaffold` 上（`ParseMenu`/`CreateMenuCode`）。
+  - 树形导出/导入的**父子嵌套机制**（原 `buildMenuTree`/`importMenuTree`，硬编码了菜单的 11 个字段名）→ `cool-next/codegen/scaffold_tree.go`，改写成两个泛型函数：`BuildTree[T, R any](rows, idOf, parentOf, build)` 从扁平行组装嵌套树、`InsertTree[T any](ctx, model, descriptor, nodes, parentID, values, children)` 按父子顺序递归插入并用真实新 ID 重建父子关系。两者都不知道"菜单"是什么，字段名/取值方式由调用方通过闭包传入，因此没有把 base 的产品概念（`router`/`perms`/`keepAlive`）泄漏进框架层。评估过复用 `cool-next/seed.SyncTree`：语义不同——`SyncTree` 是按 `seedKey` 幂等 upsert（启动期种子数据场景），这里的导入是"每次都新建"（管理端一次性动作），伪造一个 `seedKey` 去复用会曲解两者语义，因此保留独立实现，在 `InsertTree` 的注释里写明与 `SyncTree` 的边界，不强行合并成一套。
+  - `MenuTree`（连同 `MenuColumn`/`MenuParseResult`/`MenuCreateInput` 里唯一真正业务相关的 `MenuTree`）留在 `modules/base/dto/menu.go`，字段和 JSON 结构原样不动（前端 `cool-admin-vue` 已依赖这个协议，不能改）。`ExportMenu`/`ImportMenu` 两个 handler 方法直接写进 `controller/admin/coding.go`（`ToolHandler` 持有 `*coreservice.Base[entity.Menu, uint64]`），用闭包把 `dto.MenuTree` 接进 `codegen.BuildTree`/`codegen.InsertTree`。
+
+结果：`go build ./...`、`go vet ./...`、`gofmt -l .`、`cool generate`（幂等，二次运行无新增 diff）、`cool check` 全部通过；`modules/modules_gen.go` 已按新构造函数签名重新生成并提交。
+
+### 5.4 验收
 
 每步均须 `make check` 全绿（含 `cool check` 的生成新鲜度与静态契约校验）。注意仓库当前 `.gitignore` 排除了 `*_test.go` 与 `/test/`，本地无单测可依赖，因此静态门禁是唯一自动化保障——不得以「改动简单」为由跳过。
 

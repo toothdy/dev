@@ -37,7 +37,7 @@ type MenuService struct {
 	role     *coreservice.Base[entity.Role, uint64]
 	roleMenu *coreservice.Base[entity.RoleMenu, uint64]
 	userRole *coreservice.Base[entity.UserRole, uint64]
-	boundary *AuthorizationBoundary
+	boundary *auth.Boundary
 }
 
 // NewMenu 创建菜单业务服务。
@@ -47,11 +47,15 @@ func NewMenu(
 	role *coreservice.Base[entity.Role, uint64],
 	roleMenu *coreservice.Base[entity.RoleMenu, uint64],
 	userRole *coreservice.Base[entity.UserRole, uint64],
-	boundary *AuthorizationBoundary,
+	sessions auth.SessionStore,
 ) (*MenuService, error) {
 	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(menu) || !validPermissionBase(role) ||
-		!validPermissionBase(roleMenu) || !validPermissionBase(userRole) || boundary == nil {
+		!validPermissionBase(roleMenu) || !validPermissionBase(userRole) {
 		return nil, exception.Core("菜单服务依赖无效")
+	}
+	boundary, err := auth.NewBoundary(runtime, sessions)
+	if err != nil {
+		return nil, err
 	}
 
 	return &MenuService{Base: menu, runtime: runtime, role: role, roleMenu: roleMenu, userRole: userRole, boundary: boundary}, nil
@@ -126,7 +130,7 @@ func (service *MenuService) Update(ctx context.Context, input coreservice.Update
 		if err != nil {
 			return err
 		}
-		if err = service.boundary.LockUsersAndRevoke(txCtx, users); err != nil {
+		if err = service.boundary.LockUsersAndRevoke(txCtx, userTable, users, auth.AdminKind, "锁定授权用户失败"); err != nil {
 			return err
 		}
 		return service.Base.Update(txCtx, input)
@@ -147,7 +151,7 @@ func (service *MenuService) Delete(ctx context.Context, input coreservice.Delete
 		if err != nil {
 			return err
 		}
-		if err = service.boundary.LockUsersAndRevoke(txCtx, users); err != nil {
+		if err = service.boundary.LockUsersAndRevoke(txCtx, userTable, users, auth.AdminKind, "锁定授权用户失败"); err != nil {
 			return err
 		}
 		model, err := service.roleMenu.Model(txCtx)
@@ -220,7 +224,7 @@ func (service *MenuService) lockMenus(ctx context.Context, ids []uint64) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	if err := service.boundary.LockMenus(ctx, ids); err != nil {
+	if err := service.boundary.LockTable(ctx, service.Descriptor().Table(), ids, "锁定授权菜单失败"); err != nil {
 		return err
 	}
 	model, err := service.Base.Model(ctx)

@@ -32,3 +32,17 @@ type MenuListItem struct {
 	ParentName *string        `json:"parentName"`
 	ChildMenus []MenuListItem `json:"childMenus"`
 }
+
+// MenuTree 是菜单导入导出的稳定字段白名单，不含维护字段。
+type MenuTree struct {
+	Name       string     `json:"name"`
+	Router     *string    `json:"router"`
+	Perms      *string    `json:"perms"`
+	Type       int32      `json:"type"`
+	Icon       *string    `json:"icon"`
+	OrderNum   int32      `json:"orderNum"`
+	ViewPath   *string    `json:"viewPath"`
+	KeepAlive  bool       `json:"keepAlive"`
+	IsShow     bool       `json:"isShow"`
+	ChildMenus []MenuTree `json:"childMenus"`
+}

@@ -5,13 +5,11 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
 	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
-	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
@@ -24,10 +22,6 @@ type departmentRow struct {
 	UserID     *uint64     `orm:"userId"`
 	ParentID   *uint64     `orm:"parentId"`
 	OrderNum   int32       `orm:"orderNum"`
-}
-
-type departmentWriteLock struct {
-	ID any `orm:"id"`
 }
 
 type departmentDeleteTree struct {
@@ -44,7 +38,7 @@ type DepartmentService struct {
 	role           *coreservice.Base[entity.Role, uint64]
 	userRole       *coreservice.Base[entity.UserRole, uint64]
 	roleDepartment *coreservice.Base[entity.RoleDepartment, uint64]
-	boundary       *AuthorizationBoundary
+	boundary       *auth.Boundary
 }
 
 // NewDepartment 创建部门业务服务。
@@ -55,12 +49,16 @@ func NewDepartment(
 	role *coreservice.Base[entity.Role, uint64],
 	userRole *coreservice.Base[entity.UserRole, uint64],
 	roleDepartment *coreservice.Base[entity.RoleDepartment, uint64],
-	boundary *AuthorizationBoundary,
+	sessions auth.SessionStore,
 ) (*DepartmentService, error) {
 	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(department) ||
 		!validPermissionBase(user) || !validPermissionBase(role) || !validPermissionBase(userRole) ||
-		!validPermissionBase(roleDepartment) || boundary == nil {
+		!validPermissionBase(roleDepartment) {
 		return nil, exception.Core("部门服务依赖无效")
+	}
+	boundary, err := auth.NewBoundary(runtime, sessions)
+	if err != nil {
+		return nil, err
 	}
 
 	return &DepartmentService{
@@ -230,8 +228,8 @@ func (service *DepartmentService) Delete(ctx context.Context, request dto.Depart
 					return err
 				}
 			}
-			if err = service.boundary.sessions.RevokeUsers(txCtx, auth.AdminKind, userIDs); err != nil {
-				return exception.WrapCore(err, "撤销部门用户 Session 失败")
+			if err = service.boundary.RevokeUsers(txCtx, auth.AdminKind, userIDs); err != nil {
+				return err
 			}
 		}
 		if request.DeleteUser && len(userIDs) > 0 {
@@ -280,37 +278,7 @@ func (service *DepartmentService) Delete(ctx context.Context, request dto.Depart
 }
 
 func (service *DepartmentService) lockDepartments(ctx context.Context, ids []uint64) error {
-	ids = businessUniqueIDs(ids)
-	if len(ids) == 0 {
-		return nil
-	}
-	model, err := service.Base.Model(ctx)
-	if err != nil {
-		return err
-	}
-	if service.runtime.Dialect().Kind() == driver.SQLite {
-		if _, err = model.Data(departmentWriteLock{ID: gdb.Raw("id")}).WhereIn("id", ids).Update(); err != nil {
-			return exception.WrapCore(err, "锁定部门失败")
-		}
-		model, err = service.Base.Model(ctx)
-		if err != nil {
-			return err
-		}
-	}
-	model = model.Fields("id").WhereIn("id", ids).OrderAsc("id")
-	if service.runtime.Dialect().Kind() != driver.SQLite {
-		model = model.LockUpdate()
-	}
-	var rows []struct {
-		ID uint64 `orm:"id"`
-	}
-	if err = model.Scan(&rows); err != nil {
-		return exception.WrapCore(err, "锁定部门失败")
-	}
-	if len(rows) != len(ids) {
-		return exception.Validate("部门不存在")
-	}
-	return nil
+	return service.boundary.LockTable(ctx, service.Descriptor().Table(), ids, "锁定部门失败")
 }
 
 func (service *DepartmentService) lockedDeleteTrees(ctx context.Context, roots []uint64) ([]departmentDeleteTree, error) {
@@ -447,17 +415,11 @@ func (service *DepartmentService) lockAdminRole(ctx context.Context) error {
 	for index, row := range rows {
 		ids[index] = row.ID
 	}
-	return service.boundary.LockRoles(ctx, ids)
+	return service.boundary.LockTable(ctx, service.role.Descriptor().Table(), ids, "锁定授权角色失败")
 }
 
 func (service *DepartmentService) lockDepartmentUsers(ctx context.Context, userIDs []uint64) error {
-	return lockAuthorizationTable(
-		ctx,
-		service.runtime,
-		service.user.Descriptor().Table(),
-		userIDs,
-		"锁定部门用户失败",
-	)
+	return service.boundary.LockTable(ctx, service.user.Descriptor().Table(), userIDs, "锁定部门用户失败")
 }
 
 func (service *DepartmentService) ensureNotLastAdmin(ctx context.Context, userIDs []uint64) error {

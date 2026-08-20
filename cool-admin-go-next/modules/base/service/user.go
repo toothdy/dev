@@ -63,7 +63,7 @@ type UserService struct {
 	role       *coreservice.Base[entity.Role, uint64]
 	department *coreservice.Base[entity.Department, uint64]
 	password   *bcrypt.Verifier
-	boundary   *AuthorizationBoundary
+	boundary   *auth.Boundary
 }
 
 // NewUser 创建用户业务服务。
@@ -74,11 +74,15 @@ func NewUser(
 	role *coreservice.Base[entity.Role, uint64],
 	department *coreservice.Base[entity.Department, uint64],
 	password *bcrypt.Verifier,
-	boundary *AuthorizationBoundary,
+	sessions auth.SessionStore,
 ) (*UserService, error) {
 	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(user) || !validPermissionBase(userRole) ||
-		!validPermissionBase(role) || !validPermissionBase(department) || password == nil || boundary == nil {
+		!validPermissionBase(role) || !validPermissionBase(department) || password == nil {
 		return nil, exception.Core("用户服务依赖无效")
+	}
+	boundary, err := auth.NewBoundary(runtime, sessions)
+	if err != nil {
+		return nil, err
 	}
 	return &UserService{Base: user, runtime: runtime, userRole: userRole, role: role, department: department, password: password, boundary: boundary}, nil
 }
@@ -101,10 +105,10 @@ func (service *UserService) AddWithRoles(ctx context.Context, input coreservice.
 		if err := service.hashPassword(value, false); err != nil {
 			return err
 		}
-		if err = service.boundary.LockDepartments(txCtx, departmentIDs); err != nil {
+		if err = service.boundary.LockTable(txCtx, service.department.Descriptor().Table(), departmentIDs, "锁定授权部门失败"); err != nil {
 			return err
 		}
-		if err = service.boundary.LockRoles(txCtx, roleIDs); err != nil {
+		if err = service.boundary.LockTable(txCtx, service.role.Descriptor().Table(), roleIDs, "锁定授权角色失败"); err != nil {
 			return err
 		}
 		result, err = service.Base.Add(txCtx, input)
@@ -131,7 +135,7 @@ func (service *UserService) UpdateWithRoles(ctx context.Context, input coreservi
 		if err != nil {
 			return err
 		}
-		if err = service.boundary.LockDepartments(txCtx, departmentIDs); err != nil {
+		if err = service.boundary.LockTable(txCtx, service.department.Descriptor().Table(), departmentIDs, "锁定授权部门失败"); err != nil {
 			return err
 		}
 		isAuthorizationChange := item.Mutable().Has("status") || roleIDs != nil
@@ -255,10 +259,10 @@ func (service *UserService) Move(ctx context.Context, request dto.UserMoveReq) e
 		return exception.Validate("移动用户参数无效")
 	}
 	return service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		if err := service.boundary.LockDepartments(txCtx, []uint64{request.DepartmentID}); err != nil {
+		if err := service.boundary.LockTable(txCtx, service.department.Descriptor().Table(), []uint64{request.DepartmentID}, "锁定授权部门失败"); err != nil {
 			return err
 		}
-		if err := service.boundary.LockUsersAndRevoke(txCtx, request.UserIDs); err != nil {
+		if err := service.boundary.LockUsersAndRevoke(txCtx, service.Descriptor().Table(), request.UserIDs, auth.AdminKind, "锁定授权用户失败"); err != nil {
 			return err
 		}
 		data, err := businessDO(service.Descriptor(), businessField{name: "departmentId", value: request.DepartmentID})
@@ -459,7 +463,7 @@ func (service *UserService) lockUserAuthorizationChanges(ctx context.Context, us
 	if err != nil {
 		return err
 	}
-	if err = service.boundary.LockRoles(ctx, adminRoleIDs); err != nil {
+	if err = service.boundary.LockTable(ctx, service.role.Descriptor().Table(), adminRoleIDs, "锁定授权角色失败"); err != nil {
 		return err
 	}
 	currentRoleIDs, err := service.roleIDsForUsers(ctx, userIDs)
@@ -472,7 +476,7 @@ func (service *UserService) lockUserAuthorizationChanges(ctx context.Context, us
 			involvedRoleIDs = append(involvedRoleIDs, roleID)
 		}
 	}
-	if err = service.boundary.LockRoles(ctx, involvedRoleIDs); err != nil {
+	if err = service.boundary.LockTable(ctx, service.role.Descriptor().Table(), involvedRoleIDs, "锁定授权角色失败"); err != nil {
 		return err
 	}
 	if err = service.lockUsers(ctx, userIDs); err != nil {
@@ -482,29 +486,15 @@ func (service *UserService) lockUserAuthorizationChanges(ctx context.Context, us
 	if err != nil {
 		return err
 	}
-	return validateAuthorizationSnapshot(currentRoleIDs, lockedRoleIDs, "用户角色已变更，请重试")
+	return auth.ValidateSnapshot(currentRoleIDs, lockedRoleIDs, "用户角色已变更，请重试")
 }
 
 func (service *UserService) lockUsers(ctx context.Context, userIDs []uint64) error {
-	return lockAuthorizationTable(
-		ctx,
-		service.runtime,
-		service.Descriptor().Table(),
-		userIDs,
-		"锁定授权用户失败",
-	)
+	return service.boundary.LockTable(ctx, service.Descriptor().Table(), userIDs, "锁定授权用户失败")
 }
 
 func (service *UserService) revokeUsers(ctx context.Context, userIDs []uint64) error {
-	ids := businessUniqueIDs(userIDs)
-	if len(ids) == 0 {
-		return nil
-	}
-	if err := service.boundary.sessions.RevokeUsers(ctx, auth.AdminKind, ids); err != nil {
-		return exception.WrapCore(err, "撤销用户 Session 失败")
-	}
-
-	return nil
+	return service.boundary.RevokeUsers(ctx, auth.AdminKind, userIDs)
 }
 
 func (service *UserService) replaceRoles(ctx context.Context, userID uint64, roleIDs []uint64) error {

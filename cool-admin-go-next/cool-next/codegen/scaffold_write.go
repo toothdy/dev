@@ -1,4 +1,4 @@
-package service
+package codegen
 
 import (
 	"crypto/rand"
@@ -14,7 +14,6 @@ import (
 	"sync"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	base "github.com/toothdy/cool-admin-go-next/modules/base"
 )
 
 // CodeFile 是待写入工作区的 Go 文件。
@@ -28,15 +27,18 @@ type preparedCodeFile struct {
 	content []byte
 }
 
-// CodingService 提供受工作区边界约束的开发代码读写能力。
-type CodingService struct {
+// Scaffold 提供受工作区边界约束的开发代码读写能力：受控写入 modules/ 下的新
+// 生成文件、列出可生成代码的模块目录。业务模块不直接注册它为 DI 组件——它只
+// 服务于开发期的一个管理端点，模块的 Controller 直接在构造函数里创建实例，
+// 用法与 bcrypt.New() 等纯库依赖一致。
+type Scaffold struct {
 	workspace string
 	mu        sync.Mutex
 }
 
-// NewCoding 创建代码工具服务。
-func NewCoding(config base.Config) (*CodingService, error) {
-	workspace := strings.TrimSpace(config.Coding.Workspace)
+// NewScaffold 创建代码脚手架工具，workspace 是模块代码生成的写入根目录。
+func NewScaffold(workspace string) (*Scaffold, error) {
+	workspace = strings.TrimSpace(workspace)
 	if workspace == "" {
 		return nil, exception.Validate("代码工作区不能为空")
 	}
@@ -56,12 +58,12 @@ func NewCoding(config base.Config) (*CodingService, error) {
 		return nil, exception.Validate("代码工作区必须是目录")
 	}
 
-	return &CodingService{workspace: resolved}, nil
+	return &Scaffold{workspace: resolved}, nil
 }
 
 // GetModuleTree 返回含合法 config.go 的模块名称。
-func (service *CodingService) GetModuleTree() ([]string, error) {
-	root, err := service.openRoot()
+func (scaffold *Scaffold) GetModuleTree() ([]string, error) {
+	root, err := scaffold.openRoot()
 	if err != nil {
 		return nil, err
 	}
@@ -101,18 +103,18 @@ func (service *CodingService) GetModuleTree() ([]string, error) {
 }
 
 // CreateCode 全量校验后创建一批不允许覆盖的 Go 文件。
-func (service *CodingService) CreateCode(codes []CodeFile) error {
-	if service == nil {
-		return exception.Core("代码工具服务未初始化")
+func (scaffold *Scaffold) CreateCode(codes []CodeFile) error {
+	if scaffold == nil {
+		return exception.Core("代码脚手架未初始化")
 	}
-	service.mu.Lock()
-	defer service.mu.Unlock()
+	scaffold.mu.Lock()
+	defer scaffold.mu.Unlock()
 
-	return service.createGoFiles(codes)
+	return scaffold.createGoFiles(codes)
 }
 
-func (service *CodingService) createGoFiles(codes []CodeFile) error {
-	root, err := service.openRoot()
+func (scaffold *Scaffold) createGoFiles(codes []CodeFile) error {
+	root, err := scaffold.openRoot()
 	if err != nil {
 		return err
 	}
@@ -142,11 +144,11 @@ func (service *CodingService) createGoFiles(codes []CodeFile) error {
 	return nil
 }
 
-func (service *CodingService) openRoot() (*os.Root, error) {
-	if service == nil || service.workspace == "" {
-		return nil, exception.Core("代码工具服务未初始化")
+func (scaffold *Scaffold) openRoot() (*os.Root, error) {
+	if scaffold == nil || scaffold.workspace == "" {
+		return nil, exception.Core("代码脚手架未初始化")
 	}
-	root, err := os.OpenRoot(service.workspace)
+	root, err := os.OpenRoot(scaffold.workspace)
 	if err != nil {
 		return nil, exception.WrapCore(err, "打开代码工作区失败")
 	}

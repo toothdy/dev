@@ -43,7 +43,7 @@ type RoleService struct {
 	userRole       *coreservice.Base[entity.UserRole, uint64]
 	roleMenu       *coreservice.Base[entity.RoleMenu, uint64]
 	roleDepartment *coreservice.Base[entity.RoleDepartment, uint64]
-	boundary       *AuthorizationBoundary
+	boundary       *auth.Boundary
 }
 
 // NewRole 创建角色业务服务。
@@ -53,18 +53,31 @@ func NewRole(
 	userRole *coreservice.Base[entity.UserRole, uint64],
 	roleMenu *coreservice.Base[entity.RoleMenu, uint64],
 	roleDepartment *coreservice.Base[entity.RoleDepartment, uint64],
-	boundary *AuthorizationBoundary,
+	sessions auth.SessionStore,
 ) (*RoleService, error) {
 	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(role) ||
 		!validPermissionBase(userRole) || !validPermissionBase(roleMenu) ||
-		!validPermissionBase(roleDepartment) || boundary == nil {
+		!validPermissionBase(roleDepartment) {
 		return nil, exception.Core("角色服务依赖无效")
+	}
+	boundary, err := auth.NewBoundary(runtime, sessions)
+	if err != nil {
+		return nil, err
 	}
 
 	return &RoleService{
 		Base: role, runtime: runtime, userRole: userRole, roleMenu: roleMenu,
 		roleDepartment: roleDepartment, boundary: boundary,
 	}, nil
+}
+
+// lockRolePermissions 按菜单、部门顺序锁定并校验角色权限资源存在。
+func (service *RoleService) lockRolePermissions(ctx context.Context, menuIDs, departmentIDs []uint64) error {
+	if err := service.boundary.LockTable(ctx, menuTable, menuIDs, "锁定授权菜单失败"); err != nil {
+		return err
+	}
+
+	return service.boundary.LockTable(ctx, departmentTable, departmentIDs, "锁定授权部门失败")
 }
 
 // Add 新建角色并同步菜单、部门权限关系。
@@ -119,7 +132,7 @@ func (service *RoleService) AddWithPermissions(
 		if err := setRoleCompatibilityFields(value, permissions); err != nil {
 			return err
 		}
-		if err := service.boundary.LockRolePermissions(txCtx, permissions.MenuIDList, permissions.DepartmentIDList); err != nil {
+		if err := service.lockRolePermissions(txCtx, permissions.MenuIDList, permissions.DepartmentIDList); err != nil {
 			return err
 		}
 		var addErr error
@@ -175,11 +188,11 @@ func (service *RoleService) UpdateWithPermissions(
 			if err = setRoleCompatibilityFields(item.Mutable(), resolved); err != nil {
 				return err
 			}
-			if err = service.boundary.LockRolePermissions(txCtx, resolved.MenuIDList, resolved.DepartmentIDList); err != nil {
+			if err = service.lockRolePermissions(txCtx, resolved.MenuIDList, resolved.DepartmentIDList); err != nil {
 				return err
 			}
 		}
-		if err := service.boundary.LockRoles(txCtx, []uint64{item.ID()}); err != nil {
+		if err := service.boundary.LockTable(txCtx, service.Descriptor().Table(), []uint64{item.ID()}, "锁定授权角色失败"); err != nil {
 			return err
 		}
 		row, err := service.roleByID(txCtx, item.ID())
@@ -192,7 +205,7 @@ func (service *RoleService) UpdateWithPermissions(
 				if relationErr != nil {
 					return relationErr
 				}
-				if relationErr = validateAuthorizationSnapshot(permissions.MenuIDList, current, "角色菜单权限已变更，请重试"); relationErr != nil {
+				if relationErr = auth.ValidateSnapshot(permissions.MenuIDList, current, "角色菜单权限已变更，请重试"); relationErr != nil {
 					return relationErr
 				}
 			}
@@ -201,7 +214,7 @@ func (service *RoleService) UpdateWithPermissions(
 				if relationErr != nil {
 					return relationErr
 				}
-				if relationErr = validateAuthorizationSnapshot(permissions.DepartmentIDList, current, "角色部门权限已变更，请重试"); relationErr != nil {
+				if relationErr = auth.ValidateSnapshot(permissions.DepartmentIDList, current, "角色部门权限已变更，请重试"); relationErr != nil {
 					return relationErr
 				}
 			}
@@ -213,7 +226,7 @@ func (service *RoleService) UpdateWithPermissions(
 		if err != nil {
 			return err
 		}
-		if err = service.boundary.LockUsersAndRevoke(txCtx, userIDs); err != nil {
+		if err = service.boundary.LockUsersAndRevoke(txCtx, userTable, userIDs, auth.AdminKind, "锁定授权用户失败"); err != nil {
 			return err
 		}
 		if err = service.Base.Update(txCtx, input); err != nil {
@@ -239,20 +252,20 @@ func (service *RoleService) Delete(ctx context.Context, input coreservice.Delete
 		if err != nil {
 			return err
 		}
-		if err = service.boundary.LockRolePermissions(txCtx, menuIDs, departmentIDs); err != nil {
+		if err = service.lockRolePermissions(txCtx, menuIDs, departmentIDs); err != nil {
 			return err
 		}
-		if err := service.boundary.LockRoles(txCtx, roleIDs); err != nil {
+		if err := service.boundary.LockTable(txCtx, service.Descriptor().Table(), roleIDs, "锁定授权角色失败"); err != nil {
 			return err
 		}
 		lockedMenuIDs, lockedDepartmentIDs, err := service.permissionResourceIDs(txCtx, roleIDs)
 		if err != nil {
 			return err
 		}
-		if err = validateAuthorizationSnapshot(menuIDs, lockedMenuIDs, "角色权限已变更，请重试"); err != nil {
+		if err = auth.ValidateSnapshot(menuIDs, lockedMenuIDs, "角色权限已变更，请重试"); err != nil {
 			return err
 		}
-		if err = validateAuthorizationSnapshot(departmentIDs, lockedDepartmentIDs, "角色权限已变更，请重试"); err != nil {
+		if err = auth.ValidateSnapshot(departmentIDs, lockedDepartmentIDs, "角色权限已变更，请重试"); err != nil {
 			return err
 		}
 		if err := service.ensureNoAdminRole(txCtx, roleIDs); err != nil {
@@ -262,7 +275,7 @@ func (service *RoleService) Delete(ctx context.Context, input coreservice.Delete
 		if err != nil {
 			return err
 		}
-		if err = service.boundary.LockUsersAndRevoke(txCtx, userIDs); err != nil {
+		if err = service.boundary.LockUsersAndRevoke(txCtx, userTable, userIDs, auth.AdminKind, "锁定授权用户失败"); err != nil {
 			return err
 		}
 		for _, relation := range []interface {

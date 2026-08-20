@@ -1,7 +1,6 @@
-package service
+package codegen
 
 import (
-	"context"
 	"errors"
 	"go/ast"
 	"go/parser"
@@ -10,17 +9,10 @@ import (
 	"path"
 	"reflect"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/gogf/gf/v2/database/gdb"
-	"github.com/gogf/gf/v2/os/gtime"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
-	base "github.com/toothdy/cool-admin-go-next/modules/base"
-	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
 
 var codeNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
@@ -31,7 +23,7 @@ const (
 	controllerImportPath = "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 )
 
-// MenuColumn 是菜单代码生成页面使用的实体字段元数据。
+// MenuColumn 是开发端"生成代码"向导使用的实体字段元数据。
 type MenuColumn struct {
 	PropertyName string `json:"propertyName"`
 	Type         string `json:"type"`
@@ -40,7 +32,7 @@ type MenuColumn struct {
 	Nullable     bool   `json:"nullable"`
 }
 
-// MenuParseResult 是静态解析实体与 Controller 的结果。
+// MenuParseResult 是静态解析实体与 Controller 源码的结果。
 type MenuParseResult struct {
 	Columns   []MenuColumn `json:"columns"`
 	ClassName string       `json:"className,omitempty"`
@@ -49,7 +41,8 @@ type MenuParseResult struct {
 	Path      string       `json:"path"`
 }
 
-// MenuCreateInput 是菜单代码创建请求。
+// MenuCreateInput 是新模块代码创建请求：Parse 解析出的元数据回填后，连同
+// entity/controller/service 三段源码一起提交，由 Scaffold 写入工作区。
 type MenuCreateInput struct {
 	Module     string `json:"module"`
 	Entity     string `json:"entity"`
@@ -58,64 +51,14 @@ type MenuCreateInput struct {
 	FileName   string `json:"fileName"`
 }
 
-// MenuTree 是菜单导入导出的稳定字段白名单。
-type MenuTree struct {
-	Name       string     `json:"name"`
-	Router     *string    `json:"router"`
-	Perms      *string    `json:"perms"`
-	Type       int32      `json:"type"`
-	Icon       *string    `json:"icon"`
-	OrderNum   int32      `json:"orderNum"`
-	ViewPath   *string    `json:"viewPath"`
-	KeepAlive  bool       `json:"keepAlive"`
-	IsShow     bool       `json:"isShow"`
-	ChildMenus []MenuTree `json:"childMenus"`
-}
-
-type menuExportRow struct {
-	ID        uint64  `orm:"id"`
-	ParentID  *uint64 `orm:"parentId"`
-	Name      string  `orm:"name"`
-	Router    *string `orm:"router"`
-	Perms     *string `orm:"perms"`
-	Type      int32   `orm:"type"`
-	Icon      *string `orm:"icon"`
-	OrderNum  int32   `orm:"orderNum"`
-	ViewPath  *string `orm:"viewPath"`
-	KeepAlive bool    `orm:"keepAlive"`
-	IsShow    bool    `orm:"isShow"`
-}
-
 type parsedEntity struct {
 	className string
 	tableName string
 	columns   []MenuColumn
 }
 
-// MenuToolService 提供菜单代码工具及菜单树导入导出。
-type MenuToolService struct {
-	menu   *coreservice.Base[entity.Menu, uint64]
-	coding *CodingService
-}
-
-// NewMenuTool 创建菜单工具服务。
-func NewMenuTool(
-	menuBase *coreservice.Base[entity.Menu, uint64],
-	config base.Config,
-) (*MenuToolService, error) {
-	if menuBase == nil || menuBase.Descriptor() == nil {
-		return nil, exception.Core("菜单基础 Service 无效")
-	}
-	coding, err := NewCoding(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return &MenuToolService{menu: menuBase, coding: coding}, nil
-}
-
-// Parse 静态提取实体列与 Controller 路径，不编译或执行输入源码。
-func (service *MenuToolService) Parse(entitySource, controllerSource, moduleName string) (MenuParseResult, error) {
+// ParseMenu 静态提取实体列与 Controller 路径，不编译或执行输入源码。
+func (scaffold *Scaffold) ParseMenu(entitySource, controllerSource, moduleName string) (MenuParseResult, error) {
 	if !validCodeName(moduleName) {
 		return MenuParseResult{}, exception.Validate("模块名称无效")
 	}
@@ -145,10 +88,10 @@ func (service *MenuToolService) Parse(entitySource, controllerSource, moduleName
 	return result, nil
 }
 
-// Create 校验并创建实体、Controller、Service 和缺失的模块配置。
-func (service *MenuToolService) Create(input MenuCreateInput) error {
-	if service == nil || service.coding == nil {
-		return exception.Core("菜单工具服务未初始化")
+// CreateMenuCode 校验并创建实体、Controller、Service 和缺失的模块配置。
+func (scaffold *Scaffold) CreateMenuCode(input MenuCreateInput) error {
+	if scaffold == nil {
+		return exception.Core("代码脚手架未初始化")
 	}
 	if !validCodeName(input.Module) || !validCodeName(input.FileName) {
 		return exception.Validate("模块名称或文件名称无效")
@@ -163,15 +106,15 @@ func (service *MenuToolService) Create(input MenuCreateInput) error {
 		return err
 	}
 
-	service.coding.mu.Lock()
-	defer service.coding.mu.Unlock()
+	scaffold.mu.Lock()
+	defer scaffold.mu.Unlock()
 	codes := []CodeFile{
 		{Path: path.Join("modules", input.Module, "entity", input.FileName+".go"), Content: input.Entity},
 		{Path: path.Join("modules", input.Module, "controller", "admin", input.FileName+".go"), Content: input.Controller},
 		{Path: path.Join("modules", input.Module, "service", input.FileName+".go"), Content: input.Service},
 	}
 	configPath := path.Join("modules", input.Module, "config.go")
-	exists, err := service.validExistingConfig(configPath, input.Module)
+	exists, err := scaffold.validExistingConfig(configPath, input.Module)
 	if err != nil {
 		return err
 	}
@@ -179,72 +122,34 @@ func (service *MenuToolService) Create(input MenuCreateInput) error {
 		codes = append(codes, CodeFile{Path: configPath, Content: moduleConfigSource(input.Module)})
 	}
 
-	return service.coding.createGoFiles(codes)
+	return scaffold.createGoFiles(codes)
 }
 
-// Export 将选中菜单稳定导出为不含维护字段的树。
-func (service *MenuToolService) Export(ctx context.Context, ids []uint64) ([]MenuTree, error) {
-	if service == nil || service.menu == nil {
-		return nil, exception.Core("菜单工具服务未初始化")
-	}
-	if len(ids) == 0 {
-		return []MenuTree{}, nil
-	}
-	model, err := service.menu.Model(ctx)
+func (scaffold *Scaffold) validExistingConfig(target, packageName string) (bool, error) {
+	root, err := scaffold.openRoot()
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	rows := make([]menuExportRow, 0, len(ids))
-	err = model.
-		Fields("id", "parentId", "name", "router", "perms", "type", "icon", "orderNum", "viewPath", "keepAlive", "isShow").
-		WhereIn("id", ids).
-		Scan(&rows)
+	defer root.Close()
+	info, err := root.Lstat(target)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
 	if err != nil {
-		return nil, exception.WrapCore(err, "查询导出菜单失败")
+		return false, exception.WrapValidate(err, "检查模块配置失败")
 	}
-	sort.Slice(rows, func(left, right int) bool {
-		if rows[left].OrderNum != rows[right].OrderNum {
-			return rows[left].OrderNum < rows[right].OrderNum
-		}
-
-		return rows[left].ID < rows[right].ID
-	})
-	children := make(map[uint64][]menuExportRow)
-	roots := make([]menuExportRow, 0, len(rows))
-	for _, row := range rows {
-		if row.ParentID == nil {
-			roots = append(roots, row)
-			continue
-		}
-		children[*row.ParentID] = append(children[*row.ParentID], row)
+	if info.Mode()&fs.ModeSymlink != 0 || !info.Mode().IsRegular() {
+		return false, exception.Validate("模块配置必须是普通文件")
 	}
-	result := make([]MenuTree, 0, len(roots))
-	for _, root := range roots {
-		result = append(result, buildMenuTree(root, children, make(map[uint64]bool)))
-	}
-
-	return result, nil
-}
-
-// Import 在调用方事务中插入菜单树，并用实际新 ID 重建父子关系。
-func (service *MenuToolService) Import(ctx context.Context, menus []MenuTree) error {
-	if service == nil || service.menu == nil {
-		return exception.Core("菜单工具服务未初始化")
-	}
-	if _, err := service.menu.Tx(ctx); err != nil {
-		return err
-	}
-	model, err := service.menu.Model(ctx)
+	content, err := root.ReadFile(target)
 	if err != nil {
-		return err
+		return false, exception.WrapCore(err, "读取模块配置失败")
 	}
-	for index := range menus {
-		if err = importMenuTree(model, service.menu.Descriptor(), &menus[index], nil); err != nil {
-			return err
-		}
+	if err = validateSourcePackage(string(content), packageName, "模块配置"); err != nil {
+		return false, err
 	}
 
-	return nil
+	return true, nil
 }
 
 func parseMenuEntity(source string) (parsedEntity, error) {
@@ -460,33 +365,6 @@ func validateSourcePackage(source, expected, label string) error {
 	return nil
 }
 
-func (service *MenuToolService) validExistingConfig(target, packageName string) (bool, error) {
-	root, err := service.coding.openRoot()
-	if err != nil {
-		return false, err
-	}
-	defer root.Close()
-	info, err := root.Lstat(target)
-	if errors.Is(err, fs.ErrNotExist) {
-		return false, nil
-	}
-	if err != nil {
-		return false, exception.WrapValidate(err, "检查模块配置失败")
-	}
-	if info.Mode()&fs.ModeSymlink != 0 || !info.Mode().IsRegular() {
-		return false, exception.Validate("模块配置必须是普通文件")
-	}
-	content, err := root.ReadFile(target)
-	if err != nil {
-		return false, exception.WrapCore(err, "读取模块配置失败")
-	}
-	if err = validateSourcePackage(string(content), packageName, "模块配置"); err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
 func moduleConfigSource(moduleName string) string {
 	return `package ` + moduleName + `
 
@@ -552,97 +430,4 @@ func sourceImports(file *ast.File) map[string]string {
 
 func validCodeName(value string) bool {
 	return codeNamePattern.MatchString(value)
-}
-
-func buildMenuTree(row menuExportRow, children map[uint64][]menuExportRow, ancestors map[uint64]bool) MenuTree {
-	result := MenuTree{
-		Name:      row.Name,
-		Router:    row.Router,
-		Perms:     row.Perms,
-		Type:      row.Type,
-		Icon:      row.Icon,
-		OrderNum:  row.OrderNum,
-		ViewPath:  row.ViewPath,
-		KeepAlive: row.KeepAlive,
-		IsShow:    row.IsShow,
-	}
-	if ancestors[row.ID] {
-		return result
-	}
-	ancestors[row.ID] = true
-	result.ChildMenus = make([]MenuTree, 0, len(children[row.ID]))
-	for _, child := range children[row.ID] {
-		result.ChildMenus = append(result.ChildMenus, buildMenuTree(child, children, ancestors))
-	}
-	delete(ancestors, row.ID)
-
-	return result
-}
-
-func importMenuTree(
-	model *gdb.Model,
-	descriptor coreentity.Descriptor[entity.Menu, uint64],
-	menu *MenuTree,
-	parentID *uint64,
-) error {
-	if menu == nil {
-		return exception.Validate("导入菜单不能为空")
-	}
-	do := descriptor.NewDO()
-	now := gtime.Now()
-	values := []struct {
-		field string
-		value any
-	}{
-		{"createTime", *now},
-		{"updateTime", *now},
-		{"name", menu.Name},
-		{"router", stringValue(menu.Router)},
-		{"perms", stringValue(menu.Perms)},
-		{"type", menu.Type},
-		{"icon", stringValue(menu.Icon)},
-		{"orderNum", menu.OrderNum},
-		{"viewPath", stringValue(menu.ViewPath)},
-		{"keepAlive", menu.KeepAlive},
-		{"isShow", menu.IsShow},
-	}
-	if parentID == nil {
-		values = append(values, struct {
-			field string
-			value any
-		}{"parentId", nil})
-	} else {
-		values = append(values, struct {
-			field string
-			value any
-		}{"parentId", *parentID})
-	}
-	for _, value := range values {
-		if err := do.SetColumn(value.field, value.value); err != nil {
-			return exception.WrapCore(err, "构造导入菜单失败")
-		}
-	}
-	insertedID, err := model.Data(do.DBData()).InsertAndGetId()
-	if err != nil {
-		return exception.WrapCore(err, "导入菜单失败")
-	}
-	if insertedID <= 0 {
-		return exception.Core("导入菜单未返回有效 ID")
-	}
-	id := uint64(insertedID)
-	for index := range menu.ChildMenus {
-		if err = importMenuTree(model, descriptor, &menu.ChildMenus[index], &id); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func stringValue(value *string) any {
-	if value == nil {
-		return nil
-	}
-
-	return *value
 }
