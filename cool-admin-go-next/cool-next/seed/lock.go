@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/gtime"
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
@@ -13,9 +12,6 @@ import (
 
 // TableName 是种子导入幂等标记的内部表名。
 const TableName = "cool_seed_lock"
-
-// UniqueKeyIndex 是 seedKey 唯一索引名。
-const UniqueKeyIndex = "uk_cool_seed_lock_key"
 
 // lockRecord 是 cool_seed_lock 表结构，用 entity.Compile 按标准 Descriptor 机制编译，
 // 与 cool-next/db/recycle 的内部表模式一致，非业务实体，不经 cool generate 发现。
@@ -37,7 +33,7 @@ func NewStore(runtime *coredb.Runtime) (*Store, error) {
 		return nil, exception.Core("种子导入守卫依赖的框架数据库 Runtime 无效")
 	}
 	descriptor, err := coreentity.Compile[lockRecord, uint64](coreentity.Schema{
-		Indexes: []coreentity.Index{coreentity.UniqueIndexOf(UniqueKeyIndex, "seedKey")},
+		Indexes: []coreentity.Index{coreentity.UniqueIndexOf("uk_cool_seed_lock_key", "seedKey")},
 	})
 	if err != nil {
 		return nil, exception.WrapCore(err, "构建种子导入标记 Descriptor 失败")
@@ -91,15 +87,8 @@ func (store *Store) Guard(ctx context.Context, key string, fn func(context.Conte
 	if err = fn(ctx); err != nil {
 		return err
 	}
-	do := store.descriptor.NewDO()
-	now := gtime.Now()
-	if err = do.SetColumn("createTime", *now); err != nil {
-		return exception.WrapCore(err, "设置种子导入标记失败")
-	}
-	if err = do.SetColumn("updateTime", *now); err != nil {
-		return exception.WrapCore(err, "设置种子导入标记失败")
-	}
-	if err = do.SetColumn("seedKey", key); err != nil {
+	do, err := NewDO(store.descriptor, map[string]any{"seedKey": key}, true)
+	if err != nil {
 		return exception.WrapCore(err, "设置种子导入标记失败")
 	}
 	if _, err = transaction.Model(TableName).Ctx(ctx).Data(do.DBData()).Insert(); err != nil {
