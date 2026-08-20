@@ -13,7 +13,7 @@ import (
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
-	"github.com/toothdy/cool-admin-go-next/modules/base/data"
+	base "github.com/toothdy/cool-admin-go-next/modules/base"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
 
@@ -63,7 +63,7 @@ func (initializer *Initializer) OnInit(ctx context.Context) error {
 	if initializer == nil || initializer.runtime == nil {
 		return exception.Core("Base 初始化器未初始化")
 	}
-	seeds, err := parseInitialSeeds(data.DBSeed(), data.MenuSeed())
+	seeds, err := parseInitialSeeds(base.DBSeed(), base.MenuSeed())
 	if err != nil {
 		return err
 	}

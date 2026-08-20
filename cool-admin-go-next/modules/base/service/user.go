@@ -14,7 +14,6 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
 	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
-	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
@@ -487,11 +486,11 @@ func (service *UserService) lockUserAuthorizationChanges(ctx context.Context, us
 }
 
 func (service *UserService) lockUsers(ctx context.Context, userIDs []uint64) error {
-	return lockAuthorizationRows(
+	return lockAuthorizationTable(
 		ctx,
-		service.Base,
+		service.runtime,
+		service.Descriptor().Table(),
 		userIDs,
-		service.runtime.Dialect().Kind() != driver.SQLite,
 		"锁定授权用户失败",
 	)
 }

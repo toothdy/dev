@@ -451,11 +451,11 @@ func (service *DepartmentService) lockAdminRole(ctx context.Context) error {
 }
 
 func (service *DepartmentService) lockDepartmentUsers(ctx context.Context, userIDs []uint64) error {
-	return lockAuthorizationRows(
+	return lockAuthorizationTable(
 		ctx,
-		service.user,
+		service.runtime,
+		service.user.Descriptor().Table(),
 		userIDs,
-		service.runtime.Dialect().Kind() != driver.SQLite,
 		"锁定部门用户失败",
 	)
 }
