@@ -49,6 +49,10 @@ func analyzeWithOverlay(ctx context.Context, options Options, overlay map[string
 	if len(roots) == 0 {
 		return &Model{}, nil
 	}
+	if diagnostics = validateModuleDirectories(dir, roots); len(diagnostics) > 0 {
+		sortDiagnostics(diagnostics)
+		return nil, &DiagnosticError{diagnostics: diagnostics}
+	}
 	eligible := discoverEligibleFiles(roots)
 	packages, diagnostics := loadPackages(ctx, dir, modulesRoot, overlay)
 	if len(diagnostics) > 0 {
@@ -202,12 +206,17 @@ func discoverEligibleFiles(roots []string) map[string]bool {
 	return files
 }
 
+// 模块目录协议 (v2) 允许的顶级子目录，见 README「模块目录协议」
+var allowedModuleDirectories = []string{
+	"contract", "entity", "service", "controller", "middleware", "event", "schedule", "queue", "consumer", "dto", "grpc",
+}
+
 func isAllowedDirectory(directory string) bool {
 	if directory == "." {
 		return false
 	}
 	first := strings.Split(filepath.ToSlash(directory), "/")[0]
-	for _, allowed := range []string{"contract", "entity", "service", "controller", "middleware", "event", "schedule", "queue", "consumer", "dto", "grpc"} {
+	for _, allowed := range allowedModuleDirectories {
 		if first == allowed {
 			return true
 		}
@@ -216,6 +225,46 @@ func isAllowedDirectory(directory string) bool {
 }
 
 func isIgnoredDirectory(name string) bool { return name == "testdata" || strings.HasPrefix(name, ".") }
+
+// 校验模块根目录只包含协议允许的子目录和 config.go；
+// 未列入白名单的目录或散落文件此前会被 discoverEligibleFiles 静默跳过，
+// 逃逸所有基于 eligible 集合的 AST 校验（CG098/CG099 等），此处将其转为显式诊断。
+func validateModuleDirectories(dir string, roots []string) []Diagnostic {
+	var diagnostics []Diagnostic
+	for _, root := range roots {
+		entries, err := os.ReadDir(root)
+		if err != nil {
+			continue
+		}
+		for _, entry := range entries {
+			name := entry.Name()
+			if isIgnoredDirectory(name) {
+				continue
+			}
+			if entry.IsDir() {
+				if !isAllowedDirectory(name) {
+					diagnostics = append(diagnostics, Diagnostic{
+						Code:     "CG111",
+						Message:  fmt.Sprintf("模块目录 %q 不在允许列表内，见 README 模块目录协议", name),
+						Position: positionFromPath(dir, filepath.Join(root, name)),
+					})
+				}
+				continue
+			}
+			if filepath.Ext(name) != ".go" || strings.HasSuffix(name, "_test.go") {
+				continue
+			}
+			if name != "config.go" {
+				diagnostics = append(diagnostics, Diagnostic{
+					Code:     "CG111",
+					Message:  fmt.Sprintf("模块根目录只能包含 config.go，%q 必须放入协议子目录", name),
+					Position: positionFromPath(dir, filepath.Join(root, name)),
+				})
+			}
+		}
+	}
+	return diagnostics
+}
 
 func isGeneratedFile(path string) bool {
 	name := filepath.Base(path)

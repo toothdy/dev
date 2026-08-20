@@ -178,22 +178,35 @@ Node 把下面两项放在 **`@cool-midway/core`**，不是 base：
 
 结果：`cool check` 首次全绿（此前被 CG099 阻塞，导致 `cool generate` 无法执行）。
 
-### 5.2 待执行（按依赖顺序）
+### 5.2 已执行
 
-| # | 事项 | 依赖 |
+| # | 事项 | 结果 |
 |---|---|---|
-| 1 | `ModuleDefinition` 增加种子字段，`cool generate` 发现并嵌入模块根 JSON | — |
-| 2 | 新增 `cool-next/seed`：表驱动导入 + 幂等守卫 + 事务 | 1 |
-| 3 | `initializer.go` 瘦身，删除 `data/` 相关残留 | 2 |
-| 4 | `isAllowedDirectory` 硬化为报错（CG111） | 3（否则自身会先报错） |
-| 5 | 全局中间件迁 `middleware/global/` | — |
-| 6 | 定时任务迁 `schedule/` | — |
-| 7 | README 修正两处矛盾 | — |
-| 8 | 补 §2.2 功能缺口 | 评审确认范围后 |
+| 5 | 全局中间件迁 `middleware/global/` | 完成，`ModuleConfig` 引用改点号路径 |
+| 6 | 定时任务迁 `schedule/` | 完成，纯目录搬迁，未改造为框架调度组件（见 §3.3） |
+| 4 | `isAllowedDirectory` 硬化为报错（CG111） | 完成，模块根未知目录/散落文件均报错；已用临时目录和临时文件验证两条路径都能触发 |
+| 2（部分） | 新增 `cool-next/seed`：通用执行原语 + 幂等守卫 + 事务 | 完成，见下 |
+| 3 | `initializer.go` 瘦身 | 完成，549 行降至约 300 行，仅保留业务编排 |
+| 7 | README 修正两处矛盾 | 完成，另补充 CG111 说明与 `grpc` 目录条目 |
+
+**`cool-next/seed` 实际交付范围**（对照 §3.2 原方案）：
+
+- `record.go`：`Record`/`TreeNode`/`DecodeValue`/`NewDO`/`InsertMissing`/`SyncTree`/`FindID` —— 原 `initializer.go` 里与业务无关的解析、树同步、幂等插入逻辑原样迁出，重命名去除 `seed` 前缀（避免污染）。**行为不变，除一处修复**：`SyncTree` 补上了原实现缺失的“无法收敛的父子依赖”终止检查（原代码在这种情况下会死循环）。
+- `lock.go`：`Store`/`Guard`——参照 `cool-next/db/recycle` 已验证的模式（`entity.Compile` 手工编译内部表 Descriptor + `schema.Manager.Apply` 同步表结构），自建 `cool_seed_lock` 表，按 `Guard(ctx, key, fn)` 提供幂等执行，整体在调用方事务内。
+
+**未交付、明确推迟的部分（原方案 §5.2 第 1 项）**：`ModuleDefinition` 增加种子字段、`cool generate` 发现并嵌入模块根 JSON。原因：
+
+1. 重新核对 README「模块目录协议」发现 `db.json`/`menu.json` **本就允许放在模块根**，该协议本身并不要求由框架嵌入——业务模块用 `go:embed` 读取模块根文件是协议合规的，只是不如框架自动嵌入省事。也就是说，此前诊断出的“协议违规”（`data/` 目录不在白名单）已经在 §5.1/task #2 完成时解决；这一项属于**锦上添花的工程量，不是修复违规的必要条件**。
+2. 若要做，正确路径是给 codegen 新增一个 Provider 类别（仿照现有 `ProviderKindConfig` 让每个模块的 `Config` 类型独立注入），涉及 `graph.go` 的类型匹配、`provider.go`、`render.go` 至少 5 处生成逻辑——这是一次独立的、有一定分量的 codegen 特性开发，而不是顺带能做完的小改动。本仓库没有单元测试（`.gitignore` 排除 `*_test.go`），这类改动的正确性只能靠“`cool generate` 成功 + `go build` 成功 + 人工推理”兜底，贸然合并风险与工作量不成正比。
+3. 保留为独立待办，见 §7。
+
+**顺带修复**：`modules/base/db.json` 的 `base_sys_user` 种子中残留一条 Node 版遗留的 `password` 字段（值为 MD5 哈希 `e10adc3949ba59abbe56e057f20f883e`），但 `insertUsers` 每次都会用 bcrypt 重新生成并覆盖它，是死数据且容易被误读为硬编码凭据哈希，已删除该字段（验证：`record.Values` 对缺失字段直接跳过，不影响任何逻辑）。
 
 ### 5.3 验收
 
 每步均须 `make check` 全绿（含 `cool check` 的生成新鲜度与静态契约校验）。注意仓库当前 `.gitignore` 排除了 `*_test.go` 与 `/test/`，本地无单测可依赖，因此静态门禁是唯一自动化保障——不得以「改动简单」为由跳过。
+
+**实测结果**：`make check` 整体在本检出环境跑不完，但两处失败都与本次改动无关、且在改动前的干净树上同样复现：`check-mod`（`go mod tidy` 与签入的 `go.mod` 存在方向性差异，Go 1.26 工具链对间接依赖分类判定不同）、`check-architecture`（依赖 `test/architecture`，而整个 `/test/` 被 `.gitignore` 排除，代码从未入库）。能跑的子目标——`check-format`、`check-vet`、`check-build`（内部先跑 `cool check` 再 `go build`）——均通过；`cool check` 单独执行也是「检查通过」。
 
 ---
 
@@ -201,9 +214,12 @@ Node 把下面两项放在 **`@cool-midway/core`**，不是 base：
 
 | 事项 | 决定 | 日期 |
 |---|---|---|
-| 种子幂等守卫存放位置 | 框架自建 `cool_seed_lock`，不复用 `base_sys_conf` | 2026-08-20 |
+| 种子幂等守卫存放位置 | 框架自建 `cool_seed_lock`，不复用 `base_sys_conf`；已按 `cool-next/db/recycle` 的既有模式实现并验证（`cool check`/`go build` 通过） | 2026-08-20 |
 | Node 的 `initJudge=file` lock 模式 | 不对齐，只做数据库守卫 | 2026-08-20 |
 | 设计文档是否入库 | 放开 `.gitignore` 的 `/docs/` 规则，文档随代码版本化 | 2026-08-20 |
+| 种子字段的 codegen 注入（原 §3.2 方案 1） | 推迟，不纳入本轮；`go:embed` 现状已协议合规，见 §5.2 | 2026-08-20 |
+
+补充核对：Node 端 `checkDbExist`/`lockImportData`（`cool-admin-midway-packages/core/src/module/import.ts:97-209`）实际复用的是 `base_sys_conf` 表而非独立锁表——与本文档最初的判断依据（“Node 用 lock 文件或 `base_sys_conf`”）一致，但 v2 仍决定不跟随，因为这是内部实现细节而非对外协议，`cool-next/*` 不得反向依赖 `modules/*` 的方向约束优先。
 
 ## 7. 未决事项
 
@@ -211,3 +227,4 @@ Node 把下面两项放在 **`@cool-midway/core`**，不是 base：
 2. `jwt.sso` 单点登录是否纳入 v2
 3. 数据权限范围（`departmentIds`）的实现形态——Node 依赖缓存，Go 侧需确定是否引入等价机制
 4. `event/` 目录与框架 Event 能力的落地时机（§4）
+5. **种子字段的 codegen 注入**（§5.2 推迟项）：给 `cool-next/core/module` 新增 `ProviderKindSeed`（或等价机制），让 `cool generate` 发现模块根 `db.json`/`menu.json` 并作为可注入依赖挂到该模块的构造器上，业务模块从此不必手写 `go:embed`。需要动 `codegen/graph.go`（Provider 类型匹配）、`provider.go`、`render.go`（至少 5 处生成点）。建议作为独立子任务排期，并配一次专门的人工验证（本仓库无单测，`cool generate` 成功不足以证明生成代码运行时正确）。

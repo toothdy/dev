@@ -1,4 +1,4 @@
-package service
+package schedule
 
 import (
 	"context"
@@ -9,13 +9,14 @@ import (
 	"github.com/gogf/gf/v2/os/gcron"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	base "github.com/toothdy/cool-admin-go-next/modules/base"
+	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
 const logCleanupJobName = "base-operation-log-cleanup"
 
 // LogJob 管理操作日志每日清理任务。
 type LogJob struct {
-	service *LogService
+	service *service.LogService
 	cleanup func(context.Context, bool) (int64, error)
 	cron    *gcron.Cron
 	pattern string
@@ -25,14 +26,14 @@ type LogJob struct {
 }
 
 // NewLogJob 创建操作日志清理生命周期组件。
-func NewLogJob(service *LogService, config base.Config) (*LogJob, error) {
-	if service == nil || config.Log.CleanupPattern == "" || config.Log.CleanupTimeout <= 0 {
+func NewLogJob(logService *service.LogService, config base.Config) (*LogJob, error) {
+	if logService == nil || config.Log.CleanupPattern == "" || config.Log.CleanupTimeout <= 0 {
 		return nil, exception.Core("操作日志清理配置无效")
 	}
 
 	return &LogJob{
-		service: service,
-		cleanup: service.Clear,
+		service: logService,
+		cleanup: logService.Clear,
 		cron:    gcron.New(),
 		pattern: config.Log.CleanupPattern,
 		timeout: config.Log.CleanupTimeout,
