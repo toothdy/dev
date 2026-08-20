@@ -1,0 +1,74 @@
+{
+  "/add": {
+    "status": 200,
+    "body": {
+      "code": 1000,
+      "message": "success",
+      "data": {
+        "id": 0
+      }
+    }
+  },
+  "/empty": {
+    "status": 200,
+    "body": {
+      "code": 1000,
+      "message": "success",
+      "data": []
+    }
+  },
+  "/false": {
+    "status": 200,
+    "body": {
+      "code": 1000,
+      "message": "success",
+      "data": false
+    }
+  },
+  "/list": {
+    "status": 200,
+    "body": {
+      "code": 1000,
+      "message": "success",
+      "data": []
+    }
+  },
+  "/none": {
+    "status": 200,
+    "body": {
+      "code": 1000,
+      "message": "success"
+    }
+  },
+  "/page": {
+    "status": 200,
+    "body": {
+      "code": 1000,
+      "message": "success",
+      "data": {
+        "list": [],
+        "pagination": {
+          "page": 1,
+          "size": 15,
+          "total": 0
+        }
+      }
+    }
+  },
+  "/record": {
+    "status": 200,
+    "body": {
+      "code": 1000,
+      "message": "success",
+      "data": {}
+    }
+  },
+  "/zero": {
+    "status": 200,
+    "body": {
+      "code": 1000,
+      "message": "success",
+      "data": 0
+    }
+  }
+}

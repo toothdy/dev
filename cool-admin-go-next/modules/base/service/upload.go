@@ -1,0 +1,294 @@
+package service
+
+import (
+	cryptorand "crypto/rand"
+	"encoding/hex"
+	"errors"
+	"io"
+	"io/fs"
+	"math"
+	"net/http"
+	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	base "github.com/toothdy/cool-admin-go-next/modules/base"
+)
+
+const (
+	defaultUploadMaxBytes = int64(10 << 20)
+	uploadRandomBytes     = 16
+	uploadTemporaryPrefix = ".upload-"
+	uploadDateLayout      = "20060102"
+)
+
+var trustedUploadMedia = map[string]map[string]bool{
+	"image/jpeg": {".jpg": true, ".jpeg": true},
+	"image/png":  {".png": true},
+	"image/gif":  {".gif": true},
+	"image/webp": {".webp": true},
+	"audio/mpeg": {".mp3": true},
+	"audio/wave": {".wav": true},
+	"video/mp4":  {".mp4": true},
+	"video/webm": {".webm": true},
+}
+
+// UploadService 提供 Base 模块的本地上传和受控读取。
+type UploadService struct {
+	root          string
+	publicBaseURL string
+	maxBytes      int64
+	now           func() time.Time
+	random        io.Reader
+}
+
+// NewUpload 按 Base 配置创建本地上传服务。
+func NewUpload(config base.Config) (*UploadService, error) {
+	upload := config.Upload
+	if upload.Root == "" {
+		return nil, exception.Core("上传根目录配置无效")
+	}
+	root, err := filepath.Abs(upload.Root)
+	if err != nil {
+		return nil, exception.Core("上传根目录配置无效")
+	}
+	publicBaseURL := strings.TrimRight(strings.TrimSpace(upload.PublicBaseURL), "/")
+	parsedURL, err := url.Parse(publicBaseURL)
+	if err != nil || parsedURL.Host == "" ||
+		(parsedURL.Scheme != "http" && parsedURL.Scheme != "https") ||
+		parsedURL.User != nil || parsedURL.RawQuery != "" || parsedURL.Fragment != "" {
+		return nil, exception.Core("上传公开地址配置无效")
+	}
+	maxBytes := upload.MaxBytes
+	if maxBytes == 0 {
+		maxBytes = defaultUploadMaxBytes
+	}
+	if maxBytes < 0 {
+		return nil, exception.Core("上传大小配置无效")
+	}
+
+	return &UploadService{
+		root:          root,
+		publicBaseURL: publicBaseURL,
+		maxBytes:      maxBytes,
+		now:           time.Now,
+		random:        cryptorand.Reader,
+	}, nil
+}
+
+// Save 保存 multipart 文件并返回公开 URL。
+func (service *UploadService) Save(file *ghttp.UploadFile, key string) (string, error) {
+	if service == nil || file == nil || file.FileHeader == nil {
+		return "", exception.Validate("上传文件无效")
+	}
+	name := key
+	if name == "" {
+		var err error
+		name, err = service.randomName(file.Filename)
+		if err != nil {
+			return "", exception.Core("生成上传文件名失败")
+		}
+	}
+	if !validUploadBasename(name) {
+		return "", exception.Validate("上传文件名无效")
+	}
+	if file.Size > service.maxBytes {
+		return "", exception.Validate("上传文件超过大小限制")
+	}
+
+	date := service.now().Format(uploadDateLayout)
+	root, err := service.openRoot(true)
+	if err != nil {
+		return "", exception.Core("保存上传文件失败")
+	}
+	defer root.Close()
+	if err = root.MkdirAll(date, 0o750); err != nil {
+		return "", exception.Core("保存上传文件失败")
+	}
+	directory, err := root.Lstat(date)
+	if err != nil || !directory.IsDir() {
+		return "", exception.Core("保存上传文件失败")
+	}
+
+	source, err := file.Open()
+	if err != nil {
+		return "", exception.Validate("上传文件无效")
+	}
+	defer source.Close()
+
+	temporaryName, err := service.randomHex(uploadRandomBytes)
+	if err != nil {
+		return "", exception.Core("生成上传临时文件名失败")
+	}
+	temporary := filepath.Join(date, uploadTemporaryPrefix+temporaryName)
+	target := filepath.Join(date, name)
+	destination, err := root.OpenFile(temporary, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return "", exception.Core("保存上传文件失败")
+	}
+	temporaryExists := true
+	defer func() {
+		_ = destination.Close()
+		if temporaryExists {
+			_ = root.Remove(temporary)
+		}
+	}()
+
+	limit := service.maxBytes + 1
+	if service.maxBytes == math.MaxInt64 {
+		limit = service.maxBytes
+	}
+	written, copyErr := io.Copy(destination, io.LimitReader(source, limit))
+	if copyErr != nil {
+		return "", exception.Core("保存上传文件失败")
+	}
+	if written > service.maxBytes {
+		return "", exception.Validate("上传文件超过大小限制")
+	}
+	if err = destination.Sync(); err != nil {
+		return "", exception.Core("保存上传文件失败")
+	}
+	if err = destination.Close(); err != nil {
+		return "", exception.Core("保存上传文件失败")
+	}
+	if err = root.Link(temporary, target); err != nil {
+		if errors.Is(err, fs.ErrExist) {
+			return "", exception.Validate("上传文件已存在")
+		}
+		return "", exception.Core("保存上传文件失败")
+	}
+	if err = root.Remove(temporary); err != nil {
+		_ = root.Remove(target)
+		return "", exception.Core("保存上传文件失败")
+	}
+	temporaryExists = false
+
+	return service.publicBaseURL + "/upload/" + date + "/" + url.PathEscape(name), nil
+}
+
+// Read 校验公开文件路径并构造受控文件响应。
+func (service *UploadService) Read(date, name string) (controller.FileResponse, error) {
+	if service == nil || !validUploadDate(date) || !validUploadBasename(name) {
+		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+	}
+	root, err := service.openRoot(false)
+	if err != nil {
+		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+	}
+	defer root.Close()
+
+	relative := filepath.Join(date, name)
+	directory, err := root.Lstat(date)
+	if err != nil || !directory.IsDir() {
+		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+	}
+	entry, err := root.Lstat(relative)
+	if err != nil || !entry.Mode().IsRegular() {
+		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+	}
+	file, err := root.Open(relative)
+	if err != nil {
+		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+	}
+	info, err := file.Stat()
+	if err != nil || !info.Mode().IsRegular() {
+		_ = file.Close()
+		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+	}
+
+	sniff := make([]byte, 512)
+	count, err := file.Read(sniff)
+	if err != nil && !errors.Is(err, io.EOF) {
+		_ = file.Close()
+		return controller.FileResponse{}, exception.Core("读取上传文件失败")
+	}
+	contentType := http.DetectContentType(sniff[:count])
+	disposition := controller.FileDispositionAttachment
+	extension := strings.ToLower(filepath.Ext(name))
+	if extensions := trustedUploadMedia[contentType]; extensions[extension] {
+		disposition = controller.FileDispositionInline
+	} else {
+		contentType = "application/octet-stream"
+	}
+
+	return controller.FileResponse{
+		Content:     file,
+		Name:        name,
+		ContentType: contentType,
+		Disposition: disposition,
+		Headers: http.Header{
+			"X-Content-Type-Options": []string{"nosniff"},
+		},
+	}, nil
+}
+
+func (service *UploadService) openRoot(create bool) (*os.Root, error) {
+	if create {
+		if err := os.MkdirAll(service.root, 0o750); err != nil {
+			return nil, err
+		}
+	}
+
+	return os.OpenRoot(service.root)
+}
+
+func (service *UploadService) randomName(filename string) (string, error) {
+	name, err := service.randomHex(uploadRandomBytes)
+	if err != nil {
+		return "", err
+	}
+
+	return name + safeUploadExtension(filename), nil
+}
+
+func (service *UploadService) randomHex(size int) (string, error) {
+	random := make([]byte, size)
+	if _, err := io.ReadFull(service.random, random); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(random), nil
+}
+
+func safeUploadExtension(filename string) string {
+	filename = strings.ReplaceAll(filename, `\`, "/")
+	extension := path.Ext(path.Base(filename))
+	if len(extension) < 2 || len(extension) > 11 {
+		return ""
+	}
+	for _, character := range extension[1:] {
+		isLetter := character >= 'A' && character <= 'Z' || character >= 'a' && character <= 'z'
+		isNumber := character >= '0' && character <= '9'
+		if !isLetter && !isNumber {
+			return ""
+		}
+	}
+
+	return strings.ToLower(extension)
+}
+
+func validUploadBasename(name string) bool {
+	return name != "" && name != "." && name != ".." &&
+		!strings.ContainsRune(name, 0) && !strings.ContainsAny(name, `/\`) &&
+		!filepath.IsAbs(name) && filepath.VolumeName(name) == "" && filepath.Base(name) == name
+}
+
+func validUploadDate(value string) bool {
+	if len(value) != len(uploadDateLayout) {
+		return false
+	}
+	for _, character := range value {
+		if character < '0' || character > '9' {
+			return false
+		}
+	}
+	parsed, err := time.Parse(uploadDateLayout, value)
+
+	return err == nil && parsed.Format(uploadDateLayout) == value
+}

@@ -1,0 +1,44 @@
+{
+  "code": 1000,
+  "message": "success",
+  "data": {
+    "perms": [
+      "base:sys:user:page",
+      "base:sys:user:add",
+      "base:sys:user:update",
+      "base:sys:user:delete"
+    ],
+    "menus": [
+      {
+        "id": 1,
+        "parentId": null,
+        "name": "系统管理",
+        "router": "/system",
+        "perms": null,
+        "type": 0,
+        "icon": "setting",
+        "orderNum": 1,
+        "viewPath": null,
+        "keepAlive": 0,
+        "isShow": true,
+        "status": 1,
+        "meta": {}
+      },
+      {
+        "id": 2,
+        "parentId": 1,
+        "name": "用户管理",
+        "router": "/system/user",
+        "perms": "base:sys:user:page",
+        "type": 1,
+        "icon": "user",
+        "orderNum": 1,
+        "viewPath": "modules/base/views/user/index.vue",
+        "keepAlive": 1,
+        "isShow": true,
+        "status": 1,
+        "meta": {}
+      }
+    ]
+  }
+}

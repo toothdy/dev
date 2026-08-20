@@ -1,0 +1,23 @@
+{
+  "code": 1000,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "username": "admin",
+        "name": "管理员",
+        "nickName": "管理员",
+        "status": 1,
+        "departmentId": 1,
+        "createTime": "2026-07-14 00:00:00",
+        "updateTime": "2026-07-14 00:00:00"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "size": 15,
+      "total": 1
+    }
+  }
+}

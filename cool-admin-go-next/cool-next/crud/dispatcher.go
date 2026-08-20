@@ -1,0 +1,140 @@
+package crud
+
+import (
+	"context"
+
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	dbtx "github.com/toothdy/cool-admin-go-next/cool-next/db/tx"
+
+	"fmt"
+)
+
+// CRUD 动作执行模式
+type ActionMode string
+
+const (
+	ActionModeBase     ActionMode = "base"
+	ActionModeOverride ActionMode = "override"
+	ActionModeDelegate ActionMode = "delegate"
+)
+
+// 生成期选定的 CRUD 调用入口
+type Adapter func(context.Context) error
+
+// 协议无关的 CRUD 事务调度器
+type Dispatcher struct {
+	runner dbtx.Runner
+}
+
+// 单次 CRUD 调度状态
+type DispatchScope struct {
+	action Action
+	mode   ActionMode
+}
+
+type dispatchContextKey struct{}
+
+// 创建 CRUD Dispatcher
+func NewDispatcher(runner dbtx.Runner) (*Dispatcher, error) {
+	if isNilPlanValue(runner) {
+		return nil, exception.Core("CRUD Dispatcher 的事务 Runner 不能为空")
+	}
+
+	return &Dispatcher{runner: runner}, nil
+}
+
+// 在框架事务中调用生成期选定的 Adapter
+func (dispatcher *Dispatcher) Dispatch(
+	ctx context.Context,
+	action Action,
+	mode ActionMode,
+	plan *ActionPlan,
+	adapter Adapter,
+) error {
+	if dispatcher == nil || isNilPlanValue(dispatcher.runner) {
+		return exception.Core("CRUD Dispatcher 未初始化")
+	}
+	if ctx == nil {
+		return exception.Core("CRUD Dispatcher 上下文不能为空")
+	}
+	if !isAction(action) {
+		return exception.Core("CRUD 动作无效")
+	}
+	if adapter == nil {
+		return exception.Core("CRUD Adapter 不能为空")
+	}
+	if err := validateDispatchPlan(action, mode, plan); err != nil {
+		return err
+	}
+
+	return dispatcher.runner.Within(ctx, func(scopeCtx context.Context) error {
+		scopeCtx = context.WithValue(scopeCtx, dispatchContextKey{}, &DispatchScope{action: action, mode: mode})
+		if mode != ActionModeOverride {
+			scopeCtx = WithOperation(scopeCtx, plan)
+		} else {
+			scopeCtx = withoutOperation(scopeCtx)
+		}
+
+		return adapter(scopeCtx)
+	})
+}
+
+// 查询当前 CRUD 调度状态
+func CurrentDispatch(ctx context.Context) (*DispatchScope, bool) {
+	if ctx == nil {
+		return nil, false
+	}
+	scope, exists := ctx.Value(dispatchContextKey{}).(*DispatchScope)
+	if !exists || scope == nil || !isAction(scope.action) || !isActionMode(scope.mode) {
+		return nil, false
+	}
+
+	return scope, true
+}
+
+// 返回当前调度动作
+func (scope *DispatchScope) Action() Action {
+	if scope == nil {
+		return ""
+	}
+
+	return scope.action
+}
+
+// 返回当前调度模式
+func (scope *DispatchScope) Mode() ActionMode {
+	if scope == nil {
+		return ""
+	}
+
+	return scope.mode
+}
+
+func validateDispatchPlan(action Action, mode ActionMode, plan *ActionPlan) error {
+	switch mode {
+	case ActionModeBase, ActionModeDelegate:
+		if plan == nil {
+			return exception.Core(fmt.Sprintf("%s 模式必须提供 CRUD 动作计划", mode))
+		}
+		if plan.Action() != action {
+			return exception.Core(fmt.Sprintf("CRUD 动作计划不匹配: 当前 %s，请求 %s", plan.Action(), action))
+		}
+	case ActionModeOverride:
+		if plan != nil {
+			return exception.Core("纯 override 不允许携带 CRUD 动作计划")
+		}
+	default:
+		return exception.Core("CRUD 动作模式无效")
+	}
+
+	return nil
+}
+
+func isActionMode(mode ActionMode) bool {
+	switch mode {
+	case ActionModeBase, ActionModeOverride, ActionModeDelegate:
+		return true
+	default:
+		return false
+	}
+}

@@ -1,0 +1,90 @@
+server:
+  address: ":8001"
+  clientMaxBodySize: "12mb"
+  openapiPath: "/api.json"
+  swaggerPath: "/swagger"
+logger:
+  level: "all"
+  stdout: true
+# GoFrame 统一 Redis 连接，Task、Session 和缓存等模块可共用该配置。
+redis:
+  default:
+    # Redis 服务地址，对应 Node 配置的 host 和 port。
+    address: "127.0.0.1:6379"
+    # Redis 逻辑库；使用 Cluster 模式时必须为 0。
+    db: 0
+    # Redis 6+ ACL 用户名；未启用 ACL 时留空。
+    user: ""
+    # Redis 密码，对应 Node 配置的 password；未设置密码时留空。
+    pass: ""
+# 第一阶段只支持 MySQL；Plan1 不连接数据库，只保留配置结构。
+database:
+  default:
+    link: "mysql:root:123456@tcp(127.0.0.1:3306)/cool-go?loc=Local&parseTime=true&charset=utf8mb4"
+    debug: false
+    # 与 cool-admin 表字段一致，由 GoFrame 自动维护创建和更新时间。
+    createdAt: createTime
+    updatedAt: updateTime
+cool:
+  initDB: true
+  initMenu: true
+  initJudge: "db"
+  crud:
+    # 与 Node 配置语义一致：删除前记录完整快照，原数据仍物理删除。
+    softDelete: true
+  schema:
+    autoSync: true
+    safeMode: true
+    logDiff: true
+  eps:
+    enable: true
+  tenant:
+    enable: true
+    requireEnabled: true
+  auth:
+    jwtSecret: "f712c8b7-ea82-4ba0-a721-f19d6317eeba"
+    tokenExpire: 7200
+    refreshExpire: 1296000
+    sso: false
+  i18n:
+    enable: false
+    languages: ["zh-cn", "zh-tw", "en"]
+module:
+  task:
+    # 调度模式：auto 启动时优先 Redis 并可降级本地；local 强制本地；redis 强制 Redis。
+    mode: auto
+    # Cron 表达式和 nextRunTime 使用的 IANA 时区。
+    timezone: Asia/Shanghai
+    log:
+      # 成功和失败任务日志的保留天数；后台每日清理更早记录。
+      keepDays: 20
+    execution:
+      # 单次处理器尝试的默认超时；处理器可在注册时覆盖并必须响应 Context 取消。
+      timeout: 5m
+      # MySQL 防重租约有效期；应大于 timeout，进程崩溃后由其自动释放。
+      lockTTL: 6m
+    queue:
+      # 每个应用实例可并行处理的最大任务数，本地 Worker 池和 Redis Worker 均使用该值。
+      concurrency: 10
+      # 首次执行失败后的最大额外重试次数；3 表示一次初始尝试加三次重试。
+      maxRetry: 3
+      # 第一次重试前的基础等待时间，后续重试按退避策略延长。
+      retryDelay: 5s
+      # 应用关闭时等待正在执行任务结束的最长时间。
+      shutdownTimeout: 30s
+  base:
+    allowKeys: []
+    middleware:
+      authority:
+        enable: true
+      log:
+        enable: true
+        queueSize: 1024
+        shutdownTimeout: 5s
+  recycle:
+    # 回收站过期数据检查间隔。
+    cleanupInterval: 24h
+    # 单批物理清理的最大记录数。
+    cleanupBatch: 500
+    # 多实例清理使用的 MySQL 命名锁。
+    lockName: "cool-admin:recycle:cleanup"

@@ -1,0 +1,10 @@
+.superpowers/
+.worktrees/
+/bin/
+/tmp/
+*.test
+*.out
+.DS_Store
+.env
+
+.claude/worktrees/

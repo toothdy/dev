@@ -1,0 +1,10 @@
+{
+  "code": 1000,
+  "message": "success",
+  "data": {
+    "expire": 7200,
+    "token": "new.access.jwt.token",
+    "refreshExpire": 1296000,
+    "refreshToken": "new.refresh.jwt.token"
+  }
+}

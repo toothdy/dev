@@ -1,0 +1,309 @@
+package service
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"net/http"
+	"time"
+
+	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
+	"github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
+	base "github.com/toothdy/cool-admin-go-next/modules/base"
+	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
+	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
+)
+
+type loginUserRow struct {
+	ID        uint64 `orm:"id"`
+	Username  string `orm:"username"`
+	Password  string `orm:"password"`
+	PasswordV int32  `orm:"passwordV"`
+	Status    int32  `orm:"status"`
+}
+
+type loginUserWriteLock struct {
+	ID uint64 `orm:"id"`
+}
+
+type loginPasswordUpdate struct {
+	Password string `orm:"password"`
+}
+
+var errLoginRolesMissing = errors.New("登录用户未配置角色")
+
+// LoginService 提供后台登录、刷新和退出能力。
+type LoginService struct {
+	runtime    *coredb.Runtime
+	user       *coreservice.Base[entity.User, uint64]
+	captcha    *CaptchaService
+	password   *bcrypt.Verifier
+	auth       *auth.Service
+	permission *PermissionService
+	sessions   auth.SessionStore
+	accessTTL  time.Duration
+	refreshTTL time.Duration
+}
+
+// NewLogin 创建后台登录服务。
+func NewLogin(
+	runtime *coredb.Runtime,
+	user *coreservice.Base[entity.User, uint64],
+	captcha *CaptchaService,
+	password *bcrypt.Verifier,
+	authService *auth.Service,
+	permission *PermissionService,
+	sessions auth.SessionStore,
+	config base.Config,
+) (*LoginService, error) {
+	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(user) || captcha == nil || password == nil ||
+		authService == nil || permission == nil || sessions == nil || !validTokenTTL(config.JWT.AccessTTL, config.JWT.RefreshTTL) {
+		return nil, exception.Core("登录服务依赖或配置无效")
+	}
+
+	return &LoginService{
+		runtime: runtime, user: user, captcha: captcha, password: password, auth: authService,
+		permission: permission, sessions: sessions,
+		accessTTL: config.JWT.AccessTTL, refreshTTL: config.JWT.RefreshTTL,
+	}, nil
+}
+
+// Login 校验验证码和账号后创建后台 Session。
+func (service *LoginService) Login(ctx context.Context, request dto.LoginReq) (dto.TokenResult, error) {
+	if err := service.validateReady(); err != nil {
+		return dto.TokenResult{}, err
+	}
+	verified, err := service.captcha.Verify(ctx, request.CaptchaID, request.VerifyCode)
+	if err != nil {
+		return dto.TokenResult{}, err
+	}
+	if !verified {
+		return dto.TokenResult{}, exception.Comm("验证码不正确")
+	}
+	candidate, err := service.userByUsername(ctx, request.Username)
+	if err != nil {
+		return dto.TokenResult{}, err
+	}
+	if candidate == nil {
+		return dto.TokenResult{}, loginCredentialError()
+	}
+
+	var pair auth.TokenPair
+	err = service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
+		current, lockErr := service.lockedUser(txCtx, candidate.ID)
+		if lockErr != nil {
+			return lockErr
+		}
+		if current == nil || current.Username != request.Username || current.Status != 1 {
+			return loginCredentialError()
+		}
+		result, verifyErr := service.password.Verify(request.Password, current.Password)
+		if verifyErr != nil {
+			return verifyErr
+		}
+		if !result.Valid {
+			return loginCredentialError()
+		}
+		principal, principalErr := service.adminPrincipal(txCtx, current)
+		if errors.Is(principalErr, errLoginRolesMissing) {
+			return exception.Comm("该用户未设置任何角色，无法登录~")
+		}
+		if principalErr != nil {
+			return principalErr
+		}
+		if result.NeedsRehash {
+			if rehashErr := service.rehashPassword(txCtx, current.ID, request.Password); rehashErr != nil {
+				return rehashErr
+			}
+		}
+		pair, principalErr = service.auth.Create(txCtx, principal)
+
+		return principalErr
+	})
+	if err != nil {
+		return dto.TokenResult{}, err
+	}
+
+	return service.tokenResult(pair), nil
+}
+
+// Refresh 锁定用户并按权威状态重建身份后轮换 Token。
+func (service *LoginService) Refresh(ctx context.Context, request dto.RefreshReq) (dto.TokenResult, error) {
+	if err := service.validateReady(); err != nil {
+		return dto.TokenResult{}, err
+	}
+	var pair auth.TokenPair
+	err := service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
+		var refreshErr error
+		pair, refreshErr = service.auth.RefreshWith(
+			txCtx,
+			request.RefreshToken,
+			func(resolveCtx context.Context, current auth.Principal) (auth.Principal, error) {
+				if current.Subject != auth.AdminKind || current.UserID == 0 {
+					return auth.Principal{}, loginExpiredError()
+				}
+				user, lockErr := service.lockedUser(resolveCtx, current.UserID)
+				if lockErr != nil {
+					return auth.Principal{}, lockErr
+				}
+				if user == nil || user.Status != 1 {
+					return auth.Principal{}, loginExpiredError()
+				}
+				principal, principalErr := service.adminPrincipal(resolveCtx, user)
+				if errors.Is(principalErr, errLoginRolesMissing) {
+					return auth.Principal{}, loginExpiredError()
+				}
+				if principalErr != nil {
+					return auth.Principal{}, principalErr
+				}
+
+				return principal, nil
+			},
+		)
+
+		return refreshErr
+	})
+	if err != nil {
+		return dto.TokenResult{}, err
+	}
+
+	return service.tokenResult(pair), nil
+}
+
+// Logout 撤销当前已认证的后台 Session。
+func (service *LoginService) Logout(ctx context.Context) error {
+	if err := service.validateReady(); err != nil {
+		return err
+	}
+	if _, err := auth.Admin(ctx); err != nil {
+		return err
+	}
+	session, exists := auth.Session(ctx)
+	if !exists || session.Subject != auth.AdminKind || session.ID == "" {
+		return loginExpiredError()
+	}
+	if err := service.sessions.Revoke(ctx, session.ID); err != nil {
+		return exception.WrapCore(err, "撤销登录 Session 失败")
+	}
+
+	return nil
+}
+
+func (service *LoginService) validateReady() error {
+	if service == nil || service.runtime == nil || service.runtime.Runner() == nil || service.user == nil ||
+		service.captcha == nil || service.password == nil || service.auth == nil || service.permission == nil ||
+		service.sessions == nil || !validTokenTTL(service.accessTTL, service.refreshTTL) {
+		return exception.Core("登录服务未初始化")
+	}
+
+	return nil
+}
+
+func (service *LoginService) userByUsername(ctx context.Context, username string) (*loginUserRow, error) {
+	model, err := service.user.Model(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var user *loginUserRow
+	err = model.
+		Fields("id", "username", "password", "passwordV", "status").
+		Where("username", username).
+		Scan(&user)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, exception.WrapCore(err, "查询登录用户失败")
+	}
+
+	return user, nil
+}
+
+func (service *LoginService) lockedUser(ctx context.Context, userID uint64) (*loginUserRow, error) {
+	if _, err := service.user.Tx(ctx); err != nil {
+		return nil, err
+	}
+	model, err := service.user.Model(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if service.runtime.Dialect().Kind() == driver.SQLite {
+		if _, err = model.Data(loginUserWriteLock{ID: userID}).Where("id", userID).Update(); err != nil {
+			return nil, exception.WrapCore(err, "锁定登录用户失败")
+		}
+		model, err = service.user.Model(ctx)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		model = model.LockUpdate()
+	}
+	var user *loginUserRow
+	err = model.
+		Fields("id", "username", "password", "passwordV", "status").
+		Where("id", userID).
+		Scan(&user)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, exception.WrapCore(err, "读取登录用户失败")
+	}
+
+	return user, nil
+}
+
+func (service *LoginService) adminPrincipal(ctx context.Context, user *loginUserRow) (auth.Principal, error) {
+	roleIDs, err := service.permission.RoleIDs(ctx, user.ID)
+	if err != nil {
+		return auth.Principal{}, err
+	}
+	if len(roleIDs) == 0 {
+		return auth.Principal{}, errLoginRolesMissing
+	}
+
+	return auth.Principal{
+		Subject: auth.AdminKind, UserID: user.ID, Username: user.Username,
+		RoleIDs: roleIDs, PasswordV: int(user.PasswordV),
+	}, nil
+}
+
+func (service *LoginService) rehashPassword(ctx context.Context, userID uint64, plain string) error {
+	encoded, err := service.password.Hash(plain)
+	if err != nil {
+		return err
+	}
+	model, err := service.user.Model(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err = model.Data(loginPasswordUpdate{Password: encoded}).Where("id", userID).Update(); err != nil {
+		return exception.WrapCore(err, "升级用户密码摘要失败")
+	}
+
+	return nil
+}
+
+func (service *LoginService) tokenResult(pair auth.TokenPair) dto.TokenResult {
+	return dto.TokenResult{
+		Token: pair.AccessToken, Expire: int64(service.accessTTL / time.Second),
+		RefreshToken: pair.RefreshToken, RefreshExpire: int64(service.refreshTTL / time.Second),
+	}
+}
+
+func validTokenTTL(accessTTL, refreshTTL time.Duration) bool {
+	return accessTTL >= time.Second && refreshTTL > accessTTL &&
+		accessTTL%time.Second == 0 && refreshTTL%time.Second == 0
+}
+
+func loginCredentialError() error {
+	return exception.Comm("账户或密码不正确~")
+}
+
+func loginExpiredError() error {
+	return exception.Comm("登录失效~", http.StatusUnauthorized)
+}

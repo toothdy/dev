@@ -1,0 +1,133 @@
+{
+  "code": 1000,
+  "message": "success",
+  "data": {
+    "base": [
+      {
+        "module": "base",
+        "name": "BaseSysUserEntity",
+        "prefix": "/admin/base/sys/user",
+        "info": {
+          "type": {
+            "name": "user",
+            "description": "用户管理"
+          }
+        },
+        "api": [
+          {
+            "method": "POST",
+            "path": "/add",
+            "summary": "新增",
+            "dts": {},
+            "tag": "",
+            "prefix": "/admin/base/sys/user",
+            "ignoreToken": false
+          },
+          {
+            "method": "POST",
+            "path": "/delete",
+            "summary": "删除",
+            "dts": {},
+            "tag": "",
+            "prefix": "/admin/base/sys/user",
+            "ignoreToken": false
+          },
+          {
+            "method": "POST",
+            "path": "/update",
+            "summary": "修改",
+            "dts": {},
+            "tag": "",
+            "prefix": "/admin/base/sys/user",
+            "ignoreToken": false
+          },
+          {
+            "method": "GET",
+            "path": "/info",
+            "summary": "单个信息",
+            "dts": {},
+            "tag": "",
+            "prefix": "/admin/base/sys/user",
+            "ignoreToken": false
+          },
+          {
+            "method": "POST",
+            "path": "/list",
+            "summary": "列表查询",
+            "dts": {},
+            "tag": "",
+            "prefix": "/admin/base/sys/user",
+            "ignoreToken": false
+          },
+          {
+            "method": "POST",
+            "path": "/page",
+            "summary": "分页查询",
+            "dts": {},
+            "tag": "",
+            "prefix": "/admin/base/sys/user",
+            "ignoreToken": false
+          }
+        ],
+        "columns": [
+          {
+            "propertyName": "id",
+            "type": "int",
+            "length": "",
+            "comment": "ID",
+            "nullable": false,
+            "defaultValue": null,
+            "dict": null,
+            "source": "a.id"
+          },
+          {
+            "propertyName": "username",
+            "type": "varchar",
+            "length": "100",
+            "comment": "用户名",
+            "nullable": false,
+            "defaultValue": null,
+            "dict": null,
+            "source": "a.username"
+          },
+          {
+            "propertyName": "status",
+            "type": "int",
+            "length": "",
+            "comment": "状态",
+            "nullable": false,
+            "defaultValue": 1,
+            "dict": ["禁用", "启用"],
+            "source": "a.status"
+          },
+          {
+            "propertyName": "createTime",
+            "type": "varchar",
+            "length": "",
+            "comment": "创建时间",
+            "nullable": false,
+            "defaultValue": null,
+            "dict": null,
+            "source": "a.createTime"
+          },
+          {
+            "propertyName": "updateTime",
+            "type": "varchar",
+            "length": "",
+            "comment": "更新时间",
+            "nullable": false,
+            "defaultValue": null,
+            "dict": null,
+            "source": "a.updateTime"
+          }
+        ],
+        "pageQueryOp": {
+          "keyWordLikeFields": [],
+          "fieldEq": [],
+          "fieldLike": []
+        },
+        "pageColumns": []
+      }
+    ]
+  }
+}

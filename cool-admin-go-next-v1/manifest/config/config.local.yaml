@@ -1,0 +1,7 @@
+# 本地配置覆盖示例。不要提交真实生产密码。
+server:
+  address: ":8001"
+
+database:
+  default:
+    link: "mysql:root:123456@tcp(127.0.0.1:3306)/cool-go?loc=Local&parseTime=true&charset=utf8mb4"

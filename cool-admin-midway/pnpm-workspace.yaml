@@ -1,0 +1,4 @@
+allowBuilds:
+  esbuild: true
+  javascript-obfuscator: true
+  msgpackr-extract: true

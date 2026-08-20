@@ -1,0 +1,21 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# 本地配置
+manifest/config/config.local.yaml
+
+# 构建与测试产物
+/.cache/
+/bin/
+/dist/
+/tmp/
+coverage.out
+/coverage/
+/reports/
+*_test.go
+/test/
+/docs/
+*.db
+*.db-*
