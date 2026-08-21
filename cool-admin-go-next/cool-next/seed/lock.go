@@ -13,8 +13,6 @@ import (
 // 种子导入幂等标记的内部表名
 const TableName = "cool_seed_lock"
 
-// cool_seed_lock 表结构，用 entity.Compile 按标准 Descriptor 机制编译，
-// 与 cool-next/db/recycle 的内部表模式一致，非业务实体，不经 cool generate 发现
 type lockRecord struct {
 	g.Meta `orm:"table:cool_seed_lock" description:"种子导入幂等标记"`
 	coreentity.Base

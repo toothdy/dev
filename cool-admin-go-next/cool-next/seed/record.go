@@ -1,6 +1,3 @@
-// Package seed 提供模块初始化种子数据的通用执行原语：记录解析、字段解码与
-// 树形同步。嵌入数据由 cool generate 从模块根的 db.json / menu.json 产出，
-// 导入编排与幂等守卫见 runtime.go 与 lock.go
 package seed
 
 import (
