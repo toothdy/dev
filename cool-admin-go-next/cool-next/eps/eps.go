@@ -2,11 +2,9 @@ package eps
 
 import (
 	"fmt"
-	"net/http"
 	"path"
 	"reflect"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -73,13 +71,6 @@ type QueryField struct {
 	Multiple   bool
 }
 
-// EPS 与 OpenAPI 的同源编译结果
-type Bundle struct {
-	EPS     Document        `json:"eps"`
-	OpenAPI OpenAPIDocument `json:"openapi"`
-}
-
-// 前端按身份区域读取的 EPS 文档
 type Views struct {
 	Admin Document `json:"admin"`
 	App   Document `json:"app"`
@@ -87,8 +78,7 @@ type Views struct {
 
 // EPS 根文档
 type Document struct {
-	Modules []Module          `json:"modules"`
-	Schemas map[string]Schema `json:"schemas"`
+	Modules []Module `json:"modules"`
 }
 
 // EPS 模块元数据
@@ -143,134 +133,13 @@ type Field struct {
 
 // EPS API 元数据
 type API struct {
-	Method         string  `json:"method"`
-	Path           string  `json:"path"`
-	Summary        string  `json:"summary"`
-	Description    string  `json:"description"`
-	Bind           string  `json:"bind"`
-	Authenticated  bool    `json:"authenticated"`
-	Permission     string  `json:"permission,omitempty"`
-	RequestSchema  *Schema `json:"requestSchema,omitempty"`
-	ResponseSchema Schema  `json:"responseSchema"`
-	Errors         []Error `json:"errors"`
-}
-
-// EPS 错误响应元数据
-type Error struct {
-	Status      int    `json:"status"`
-	Code        int    `json:"code"`
-	Description string `json:"description"`
-}
-
-// OpenAPI 3 文档
-type OpenAPIDocument struct {
-	OpenAPI    string              `json:"openapi"`
-	Info       OpenAPIInfo         `json:"info"`
-	Tags       []OpenAPITag        `json:"tags"`
-	Paths      map[string]PathItem `json:"paths"`
-	Components OpenAPIComponents   `json:"components"`
-}
-
-// OpenAPI 基本信息
-type OpenAPIInfo struct {
-	Title   string `json:"title"`
-	Version string `json:"version"`
-}
-
-// OpenAPI 标签
-type OpenAPITag struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-// OpenAPI 路径项
-type PathItem struct {
-	Connect *Operation `json:"connect,omitempty"`
-	Delete  *Operation `json:"delete,omitempty"`
-	Get     *Operation `json:"get,omitempty"`
-	Head    *Operation `json:"head,omitempty"`
-	Options *Operation `json:"options,omitempty"`
-	Patch   *Operation `json:"patch,omitempty"`
-	Post    *Operation `json:"post,omitempty"`
-	Put     *Operation `json:"put,omitempty"`
-	Trace   *Operation `json:"trace,omitempty"`
-}
-
-// OpenAPI 操作
-type Operation struct {
-	Tags        []string                   `json:"tags,omitempty"`
-	Summary     string                     `json:"summary,omitempty"`
-	Description string                     `json:"description,omitempty"`
-	OperationID string                     `json:"operationId"`
-	Parameters  []Parameter                `json:"parameters,omitempty"`
-	RequestBody *RequestBody               `json:"requestBody,omitempty"`
-	Responses   map[string]OpenAPIResponse `json:"responses"`
-	Security    []map[string][]string      `json:"security,omitempty"`
-	Permission  string                     `json:"x-permission,omitempty"`
-}
-
-// OpenAPI 参数
-type Parameter struct {
-	Name        string `json:"name"`
-	In          string `json:"in"`
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
-	Schema      Schema `json:"schema"`
-}
-
-// OpenAPI 请求体
-type RequestBody struct {
-	Required bool                 `json:"required"`
-	Content  map[string]MediaType `json:"content"`
-}
-
-// OpenAPI 响应
-type OpenAPIResponse struct {
-	Description string               `json:"description"`
-	Content     map[string]MediaType `json:"content,omitempty"`
-}
-
-// OpenAPI 媒体类型
-type MediaType struct {
-	Schema Schema `json:"schema"`
-}
-
-// OpenAPI Components
-type OpenAPIComponents struct {
-	Schemas         map[string]Schema         `json:"schemas"`
-	SecuritySchemes map[string]SecurityScheme `json:"securitySchemes"`
-}
-
-// OpenAPI 安全方案
-type SecurityScheme struct {
-	Type         string `json:"type"`
-	Scheme       string `json:"scheme"`
-	BearerFormat string `json:"bearerFormat"`
-}
-
-// OpenAPI Schema
-type Schema struct {
-	Ref                  string            `json:"$ref,omitempty"`
-	OneOf                []Schema          `json:"oneOf,omitempty"`
-	Type                 string            `json:"type,omitempty"`
-	Format               string            `json:"format,omitempty"`
-	Description          string            `json:"description,omitempty"`
-	Enum                 []any             `json:"enum,omitempty"`
-	Default              *any              `json:"default,omitempty"`
-	Nullable             bool              `json:"nullable,omitempty"`
-	ReadOnly             bool              `json:"readOnly,omitempty"`
-	Properties           map[string]Schema `json:"properties,omitempty"`
-	Required             []string          `json:"required,omitempty"`
-	Items                *Schema           `json:"items,omitempty"`
-	AdditionalProperties *bool             `json:"additionalProperties,omitempty"`
-	MaxLength            *uint64           `json:"maxLength,omitempty"`
-	GoType               string            `json:"x-go-type,omitempty"`
-	DatabaseType         string            `json:"x-database-type,omitempty"`
-	Source               string            `json:"x-source,omitempty"`
-	Hidden               bool              `json:"x-hidden,omitempty"`
-	Sortable             bool              `json:"x-sortable,omitempty"`
-	Precision            *uint64           `json:"x-precision,omitempty"`
-	Scale                *uint64           `json:"x-scale,omitempty"`
+	Method        string `json:"method"`
+	Path          string `json:"path"`
+	Summary       string `json:"summary"`
+	Description   string `json:"description"`
+	Bind          string `json:"bind"`
+	Authenticated bool   `json:"authenticated"`
+	Permission    string `json:"permission,omitempty"`
 }
 
 type compiler struct {
@@ -281,9 +150,6 @@ type compiler struct {
 	controllerRoutes map[string][]coreroute.Route
 	specs            map[string]compiledSpec
 	tables           map[string]string
-	schemas          map[string]Schema
-	paths            map[string]PathItem
-	tags             []OpenAPITag
 }
 
 type compiledSpec struct {
@@ -306,8 +172,8 @@ type compiledQueryField struct {
 	multiple bool
 }
 
-// 从 Descriptor 和静态路由图编译 EPS 与 OpenAPI
-func Compile(input Input) (*Bundle, error) {
+// CompileViews 编译并按后台、App 及运行环境投影 EPS
+func CompileViews(input Input, includeDevelopment bool) (*Views, error) {
 	current := &compiler{
 		input:            input,
 		moduleIndexes:    make(map[string]int),
@@ -315,44 +181,15 @@ func Compile(input Input) (*Bundle, error) {
 		controllerRoutes: make(map[string][]coreroute.Route),
 		specs:            make(map[string]compiledSpec),
 		tables:           make(map[string]string),
-		schemas:          make(map[string]Schema),
-		paths:            make(map[string]PathItem),
 	}
 	if err := current.compile(); err != nil {
 		return nil, err
 	}
-
-	document := Document{Modules: current.modules, Schemas: current.schemas}
-	return &Bundle{
-		EPS: document,
-		OpenAPI: OpenAPIDocument{
-			OpenAPI: openAPIVersion,
-			Info: OpenAPIInfo{
-				Title:   defaultText(input.Title, "Cool Admin API"),
-				Version: defaultText(input.Version, "1.0.0"),
-			},
-			Tags:  current.tags,
-			Paths: current.paths,
-			Components: OpenAPIComponents{
-				Schemas: current.schemas,
-				SecuritySchemes: map[string]SecurityScheme{
-					bearerAuthName: {Type: "http", Scheme: "bearer", BearerFormat: "JWT"},
-				},
-			},
-		},
-	}, nil
-}
-
-// CompileViews 编译并按后台、App 及运行环境投影 EPS
-func CompileViews(input Input, includeDevelopment bool) (*Views, error) {
-	bundle, err := Compile(input)
-	if err != nil {
-		return nil, err
-	}
+	document := Document{Modules: current.modules}
 
 	return &Views{
-		Admin: projectDocument(bundle.EPS, input.Graph, false, includeDevelopment),
-		App:   projectDocument(bundle.EPS, input.Graph, true, includeDevelopment),
+		Admin: projectDocument(document, input.Graph, false, includeDevelopment),
+		App:   projectDocument(document, input.Graph, true, includeDevelopment),
 	}, nil
 }
 
@@ -378,13 +215,7 @@ func projectDocument(document Document, graph module.Graph, appArea, includeDeve
 		routes[route.Controller()][route.Method()+" "+route.Path()] = true
 	}
 
-	result := Document{
-		Modules: make([]Module, 0, len(document.Modules)),
-		Schemas: make(map[string]Schema, len(document.Schemas)),
-	}
-	for name, schema := range document.Schemas {
-		result.Schemas[name] = schema
-	}
+	result := Document{Modules: make([]Module, 0, len(document.Modules))}
 	for _, sourceModule := range document.Modules {
 		projectedModule := sourceModule
 		projectedModule.Controllers = make([]Controller, 0, len(sourceModule.Controllers))
@@ -438,7 +269,6 @@ func (current *compiler) compile() error {
 func (current *compiler) compileModules() error {
 	modules := current.input.Graph.Modules()
 	current.modules = make([]Module, len(modules))
-	current.tags = make([]OpenAPITag, len(modules))
 	for index, item := range modules {
 		key := item.Identity().Key()
 		if _, exists := current.moduleIndexes[key]; exists {
@@ -451,7 +281,6 @@ func (current *compiler) compileModules() error {
 			Description: item.Description(),
 			Controllers: make([]Controller, 0),
 		}
-		current.tags[index] = OpenAPITag{Name: key, Description: item.Description()}
 	}
 
 	return nil
@@ -498,11 +327,6 @@ func (current *compiler) compileControllers() error {
 			return exception.WrapCore(err, fmt.Sprintf("EPS Controller %s 的 CRUD 前缀无效", definition.Key()))
 		}
 		controller.Prefix = prefix
-		tagName := definition.TagName()
-		if tagName == "" {
-			tagName = definition.Key()
-		}
-		current.tags = append(current.tags, OpenAPITag{Name: tagName, Description: definition.Description()})
 	}
 
 	return nil
@@ -718,432 +542,49 @@ func compileField(
 func (current *compiler) compileRoutes() error {
 	for _, definition := range current.input.Graph.Routes().Controllers() {
 		controller := current.controllers[definition.Key()]
-		spec, hasSpec := current.specs[definition.Key()]
+		_, hasSpec := current.specs[definition.Key()]
 		for _, route := range current.controllerRoutes[definition.Key()] {
-			api, operation, schemas, err := current.compileRoute(definition, route, spec, hasSpec)
+			api, err := compileAPI(route, hasSpec)
 			if err != nil {
 				return err
 			}
 			controller.API = append(controller.API, api)
-			for name, schema := range schemas {
-				if previous, exists := current.schemas[name]; exists && !reflect.DeepEqual(previous, schema) {
-					return exception.Core(fmt.Sprintf("OpenAPI Schema %s 冲突", name))
-				}
-				current.schemas[name] = schema
-			}
-			pathItem := current.paths[route.Path()]
-			if err = setOperation(&pathItem, route.Method(), operation); err != nil {
-				return err
-			}
-			current.paths[route.Path()] = pathItem
 		}
 	}
-	current.schemas["ErrorResponse"] = errorSchema()
 
 	return nil
 }
 
-func (current *compiler) compileRoute(
-	controller coreroute.Controller,
-	route coreroute.Route,
-	spec compiledSpec,
-	hasSpec bool,
-) (API, *Operation, map[string]Schema, error) {
-	authenticated := !contains(route.Tags(), "ignoreToken")
-	errors := apiErrors(authenticated, route.Permission())
-	api := API{
+// 将静态路由编译为 EPS API 元数据
+func compileAPI(route coreroute.Route, hasSpec bool) (API, error) {
+	if route.Kind() == coreroute.KindCRUD {
+		if !hasSpec {
+			return API{}, exception.Core(fmt.Sprintf("CRUD 路由 %s %s 缺少 EPS 规格", route.Method(), route.Path()))
+		}
+		if action := crud.Action(routeAction(route.Path())); !isCRUDAction(action) {
+			return API{}, exception.Core(fmt.Sprintf("CRUD 路由动作 %s 无效", action))
+		}
+	}
+
+	return API{
 		Method:        route.Method(),
 		Path:          route.Path(),
 		Summary:       route.Summary(),
 		Description:   route.Description(),
 		Bind:          string(route.Bind()),
-		Authenticated: authenticated,
+		Authenticated: !contains(route.Tags(), "ignoreToken"),
 		Permission:    route.Permission(),
-		Errors:        errors,
-	}
-	prefix := schemaPrefix(controller.Key(), controller.Factory().Symbol)
-	schemas := make(map[string]Schema)
-	responseData := Schema{Type: "object"}
-	if route.Kind() == coreroute.KindCRUD {
-		if !hasSpec {
-			return API{}, nil, nil, exception.Core(fmt.Sprintf("CRUD 路由 %s %s 缺少 EPS 规格", route.Method(), route.Path()))
-		}
-		action := crud.Action(routeAction(route.Path()))
-		request, response, generated, err := compileCRUDSchemas(prefix, action, spec)
-		if err != nil {
-			return API{}, nil, nil, err
-		}
-		api.RequestSchema = request
-		api.ResponseSchema = response
-		for name, schema := range generated {
-			schemas[name] = schema
-		}
-		responseData = response
-	} else {
-		api.ResponseSchema = genericResponseEnvelope()
-		responseData = api.ResponseSchema
-	}
-	operationName := routeAction(route.Path())
-	if route.Kind() == coreroute.KindCustom && route.Handler().Method != "" {
-		operationName = route.Handler().Method
-	}
-	tagName := controller.TagName()
-	if tagName == "" {
-		tagName = controller.Key()
-	}
-	operationID := prefix + upperFirst(operationName)
-	operation := &Operation{
-		Tags:        []string{tagName},
-		Summary:     route.Summary(),
-		Description: route.Description(),
-		OperationID: operationID,
-		Responses:   operationResponses(responseData, authenticated, route.Permission()),
-		Permission:  route.Permission(),
-	}
-	if authenticated {
-		operation.Security = []map[string][]string{{bearerAuthName: {}}}
-	}
-	if api.RequestSchema != nil {
-		if route.Bind() == coreroute.BindQuery {
-			operation.Parameters = schemaParameters(resolveSchema(*api.RequestSchema, schemas))
-		} else {
-			operation.RequestBody = &RequestBody{
-				Required: true,
-				Content:  map[string]MediaType{jsonMediaType: {Schema: *api.RequestSchema}},
-			}
-		}
-	}
-
-	return api, operation, schemas, nil
+	}, nil
 }
 
-func compileCRUDSchemas(
-	prefix string,
-	action crud.Action,
-	spec compiledSpec,
-) (*Schema, Schema, map[string]Schema, error) {
-	if action != crud.ActionAdd && action != crud.ActionDelete && action != crud.ActionUpdate &&
-		action != crud.ActionInfo && action != crud.ActionList && action != crud.ActionPage {
-		return nil, Schema{}, nil, exception.Core(fmt.Sprintf("CRUD 路由动作 %s 无效", action))
-	}
-	generated := make(map[string]Schema)
-	requestName := prefix + upperFirst(string(action)) + "Request"
-	responseName := prefix + upperFirst(string(action)) + "Response"
-	request := crudRequestSchema(action, spec)
-	responseFields := responseFields(action, spec)
-	record := recordSchema(responseFields)
-	var data Schema
+// CRUD 路由允许的动作
+func isCRUDAction(action crud.Action) bool {
 	switch action {
-	case crud.ActionAdd:
-		id := fieldSchema(spec.spec.Descriptor.Primary(), false, false, false)
-		data = Schema{OneOf: []Schema{
-			objectSchema(map[string]Schema{"id": id}, "id"),
-			objectSchema(map[string]Schema{"id": arraySchema(id)}, "id"),
-		}}
-	case crud.ActionDelete, crud.ActionUpdate:
-	case crud.ActionInfo:
-		data = record
-	case crud.ActionList:
-		data = arraySchema(record)
-	case crud.ActionPage:
-		pagination := objectSchema(map[string]Schema{
-			"page":  {Type: "integer", Format: "int32"},
-			"size":  {Type: "integer", Format: "int32"},
-			"total": {Type: "integer", Format: "int64"},
-		}, "page", "size", "total")
-		data = objectSchema(map[string]Schema{
-			"list":       arraySchema(record),
-			"pagination": pagination,
-		}, "list", "pagination")
-	}
-	response := responseEnvelope(data)
-	if action == crud.ActionDelete || action == crud.ActionUpdate {
-		response = responseWithoutData()
-	}
-	generated[requestName] = request
-	generated[responseName] = response
-	requestRef := refSchema(requestName)
-	responseRef := refSchema(responseName)
-
-	return &requestRef, responseRef, generated, nil
-}
-
-func crudRequestSchema(action crud.Action, spec compiledSpec) Schema {
-	descriptor := spec.spec.Descriptor
-	primary := descriptor.Primary()
-	writable := make(map[string]Schema)
-	addRequired := make([]string, 0)
-	for _, field := range descriptor.Fields() {
-		if spec.hidden[field.Name()] || spec.readonly[field.Name()] || field.Primary() || field.AutoIncrement() || field.SystemMaintained() {
-			continue
-		}
-		writable[field.JSONName()] = fieldSchema(field, false, false, false)
-		if !field.Nullable() && !field.Constraints().HasDefault {
-			addRequired = append(addRequired, field.JSONName())
-		}
-	}
-	switch action {
-	case crud.ActionAdd:
-		object := objectSchema(writable, addRequired...)
-		return Schema{OneOf: []Schema{object, arraySchema(object)}}
-	case crud.ActionDelete:
-		id := fieldSchema(primary, false, false, false)
-		ids := Schema{OneOf: []Schema{id, {Type: "string"}, arraySchema(id)}}
-		return Schema{OneOf: []Schema{
-			id,
-			{Type: "string"},
-			arraySchema(id),
-			objectSchema(map[string]Schema{"ids": ids}, "ids"),
-		}}
-	case crud.ActionUpdate:
-		properties := cloneProperties(writable)
-		properties[primary.JSONName()] = fieldSchema(primary, false, false, false)
-		object := objectSchema(properties, primary.JSONName())
-		return Schema{OneOf: []Schema{object, arraySchema(object)}}
-	case crud.ActionInfo:
-		return objectSchema(map[string]Schema{
-			primary.JSONName(): fieldSchema(primary, false, false, false),
-		}, primary.JSONName())
-	case crud.ActionList, crud.ActionPage:
-		return queryRequestSchema(action, spec)
+	case crud.ActionAdd, crud.ActionDelete, crud.ActionUpdate, crud.ActionInfo, crud.ActionList, crud.ActionPage:
+		return true
 	default:
-		return objectSchema(nil)
+		return false
 	}
-}
-
-func queryRequestSchema(action crud.Action, spec compiledSpec) Schema {
-	properties := map[string]Schema{
-		"keyWord":        {Type: "string", Description: "关键词"},
-		"order":          arraySchema(Schema{Type: "string", Enum: stringValues(spec.spec.SortFields)}),
-		"sort":           arraySchema(Schema{Type: "string", Enum: []any{"asc", "desc"}}),
-		"isExport":       {Type: "boolean", Description: "是否导出"},
-		"maxExportLimit": {Type: "integer", Format: "int32", Description: "导出数量上限"},
-	}
-	if action == crud.ActionPage {
-		properties["page"] = Schema{Type: "integer", Format: "int32", Description: "页码"}
-		properties["size"] = Schema{Type: "integer", Format: "int32", Description: "每页数量"}
-	}
-	if query, exists := spec.queries[action]; exists {
-		for _, requested := range query.requestFields {
-			schema := fieldSchema(requested.field, false, false, false)
-			if requested.multiple {
-				schema = Schema{OneOf: []Schema{schema, arraySchema(schema)}}
-			}
-			properties[requested.name] = schema
-		}
-	}
-
-	return objectSchema(properties)
-}
-
-func responseFields(action crud.Action, spec compiledSpec) []Field {
-	if query, exists := spec.queries[action]; exists && len(query.fields) > 0 {
-		result := make([]Field, 0, len(query.fields))
-		for _, field := range query.fields {
-			if !field.Hidden {
-				result = append(result, field)
-			}
-		}
-
-		return result
-	}
-	result := make([]Field, 0, len(spec.spec.Descriptor.Fields()))
-	for _, field := range spec.spec.Descriptor.Fields() {
-		if spec.hidden[field.Name()] || action == crud.ActionInfo && spec.infoIgnore[field.Name()] {
-			continue
-		}
-		result = append(result, compileField(
-			field,
-			field.JSONName(),
-			"a."+field.JSONName(),
-			false,
-			spec.readonly[field.Name()],
-			spec.sortable[field.Name()],
-		))
-	}
-
-	return result
-}
-
-func recordSchema(fields []Field) Schema {
-	properties := make(map[string]Schema, len(fields))
-	required := make([]string, 0, len(fields))
-	for _, field := range fields {
-		properties[field.Name] = epsFieldSchema(field)
-		if !field.Nullable {
-			required = append(required, field.Name)
-		}
-	}
-
-	return objectSchema(properties, required...)
-}
-
-func epsFieldSchema(field Field) Schema {
-	result := Schema{
-		Type:         field.JSONType,
-		Description:  field.Description,
-		Nullable:     field.Nullable,
-		ReadOnly:     field.Readonly,
-		MaxLength:    field.Size,
-		GoType:       field.GoType,
-		DatabaseType: field.DatabaseType,
-		Source:       field.Source,
-		Hidden:       field.Hidden,
-		Sortable:     field.Sortable,
-		Precision:    field.Precision,
-		Scale:        field.Scale,
-	}
-	setSchemaFormat(&result, coreentity.LogicalType(field.DatabaseType))
-	if field.HasDefault {
-		result.Default = pointer(field.Default)
-	}
-
-	return result
-}
-
-func fieldSchema(field coreentity.Field, hidden, readonly, sortable bool) Schema {
-	return epsFieldSchema(compileField(field, field.JSONName(), "", hidden, readonly, sortable))
-}
-
-func responseEnvelope(data Schema) Schema {
-	return objectSchema(map[string]Schema{
-		"code":    {Type: "integer", Format: "int32", Enum: []any{1000}},
-		"message": {Type: "string", Enum: []any{"success"}},
-		"data":    data,
-	}, "code", "message", "data")
-}
-
-func responseWithoutData() Schema {
-	return objectSchema(map[string]Schema{
-		"code":    {Type: "integer", Format: "int32", Enum: []any{1000}},
-		"message": {Type: "string", Enum: []any{"success"}},
-	}, "code", "message")
-}
-
-func genericResponseEnvelope() Schema {
-	return objectSchema(map[string]Schema{
-		"code":    {Type: "integer", Format: "int32", Enum: []any{1000}},
-		"message": {Type: "string", Enum: []any{"success"}},
-		"data":    {Type: "object", Nullable: true},
-	}, "code", "message")
-}
-
-func errorSchema() Schema {
-	return objectSchema(map[string]Schema{
-		"code":    {Type: "integer", Format: "int32", Enum: []any{1001, 1002, 1003}},
-		"message": {Type: "string"},
-	}, "code", "message")
-}
-
-func operationResponses(success Schema, authenticated bool, permission string) map[string]OpenAPIResponse {
-	responses := map[string]OpenAPIResponse{
-		"200": responseWithSchema("成功或业务错误", Schema{OneOf: []Schema{success, refSchema("ErrorResponse")}}),
-		"500": responseWithSchema("未处理的服务错误", refSchema("ErrorResponse")),
-	}
-	if authenticated {
-		responses["401"] = responseWithSchema("身份未验证", refSchema("ErrorResponse"))
-	}
-	if permission != "" {
-		responses["403"] = responseWithSchema("权限不足", refSchema("ErrorResponse"))
-	}
-
-	return responses
-}
-
-func responseWithSchema(description string, schema Schema) OpenAPIResponse {
-	return OpenAPIResponse{
-		Description: description,
-		Content:     map[string]MediaType{jsonMediaType: {Schema: schema}},
-	}
-}
-
-func apiErrors(authenticated bool, permission string) []Error {
-	errors := []Error{
-		{Status: http.StatusOK, Code: 1001, Description: "业务失败"},
-		{Status: http.StatusOK, Code: 1002, Description: "参数校验失败"},
-		{Status: http.StatusOK, Code: 1003, Description: "核心服务失败"},
-	}
-	if authenticated {
-		errors = append(errors, Error{Status: http.StatusUnauthorized, Code: 1001, Description: "身份未验证"})
-	}
-	if permission != "" {
-		errors = append(errors, Error{Status: http.StatusForbidden, Code: 1001, Description: "权限不足"})
-	}
-	errors = append(errors, Error{Status: http.StatusInternalServerError, Code: 1001, Description: "未处理的服务错误"})
-
-	return errors
-}
-
-func schemaParameters(schema Schema) []Parameter {
-	if schema.Ref != "" {
-		return nil
-	}
-	names := make([]string, 0, len(schema.Properties))
-	for name := range schema.Properties {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	required := make(map[string]bool, len(schema.Required))
-	for _, name := range schema.Required {
-		required[name] = true
-	}
-	result := make([]Parameter, 0, len(names))
-	for _, name := range names {
-		value := schema.Properties[name]
-		result = append(result, Parameter{
-			Name:        name,
-			In:          "query",
-			Description: value.Description,
-			Required:    required[name],
-			Schema:      value,
-		})
-	}
-
-	return result
-}
-
-func resolveSchema(schema Schema, schemas map[string]Schema) Schema {
-	const prefix = "#/components/schemas/"
-	if !strings.HasPrefix(schema.Ref, prefix) {
-		return schema
-	}
-	if resolved, exists := schemas[strings.TrimPrefix(schema.Ref, prefix)]; exists {
-		return resolved
-	}
-
-	return schema
-}
-
-func setOperation(item *PathItem, method string, operation *Operation) error {
-	var target **Operation
-	switch method {
-	case http.MethodConnect:
-		target = &item.Connect
-	case http.MethodDelete:
-		target = &item.Delete
-	case http.MethodGet:
-		target = &item.Get
-	case http.MethodHead:
-		target = &item.Head
-	case http.MethodOptions:
-		target = &item.Options
-	case http.MethodPatch:
-		target = &item.Patch
-	case http.MethodPost:
-		target = &item.Post
-	case http.MethodPut:
-		target = &item.Put
-	case http.MethodTrace:
-		target = &item.Trace
-	default:
-		return exception.Core(fmt.Sprintf("OpenAPI 不支持 HTTP Method %s", method))
-	}
-	if *target != nil {
-		return exception.Core(fmt.Sprintf("OpenAPI 路径存在重复操作 %s", method))
-	}
-	*target = operation
-
-	return nil
 }
 
 func (current *compiler) attachControllers() {
@@ -1208,23 +649,6 @@ func jsonType(logicalType coreentity.LogicalType) string {
 	}
 }
 
-func setSchemaFormat(schema *Schema, logicalType coreentity.LogicalType) {
-	switch logicalType {
-	case coreentity.LogicalInt, coreentity.LogicalUint:
-		schema.Type = "integer"
-		schema.Format = "int64"
-	case coreentity.LogicalFloat:
-		schema.Type = "number"
-		schema.Format = "double"
-	case coreentity.LogicalBytes:
-		schema.Type = "string"
-		schema.Format = "byte"
-	case coreentity.LogicalTime:
-		schema.Type = "string"
-		schema.Format = "date-time"
-	}
-}
-
 func parseDefault(logicalType coreentity.LogicalType, value string) any {
 	switch logicalType {
 	case coreentity.LogicalBool:
@@ -1246,50 +670,6 @@ func parseDefault(logicalType coreentity.LogicalType, value string) any {
 	}
 
 	return value
-}
-
-func objectSchema(properties map[string]Schema, required ...string) Schema {
-	additionalProperties := false
-	if properties == nil {
-		properties = map[string]Schema{}
-	}
-
-	return Schema{
-		Type:                 "object",
-		Properties:           properties,
-		Required:             append([]string(nil), required...),
-		AdditionalProperties: &additionalProperties,
-	}
-}
-
-func arraySchema(items Schema) Schema {
-	return Schema{Type: "array", Items: &items}
-}
-
-func refSchema(name string) Schema {
-	return Schema{Ref: "#/components/schemas/" + name}
-}
-
-func schemaPrefix(key, fallback string) string {
-	value := key + "." + fallback
-	var result strings.Builder
-	upper := true
-	for _, character := range value {
-		if unicode.IsLetter(character) || unicode.IsDigit(character) {
-			if upper {
-				character = unicode.ToUpper(character)
-			}
-			result.WriteRune(character)
-			upper = false
-			continue
-		}
-		upper = true
-	}
-	if result.Len() == 0 {
-		return "Controller"
-	}
-
-	return result.String()
 }
 
 func routePrefix(fallback string, routes []coreroute.Route) (string, error) {
@@ -1349,24 +729,6 @@ func contains(values []string, target string) bool {
 	}
 
 	return false
-}
-
-func cloneProperties(values map[string]Schema) map[string]Schema {
-	result := make(map[string]Schema, len(values))
-	for name, value := range values {
-		result[name] = value
-	}
-
-	return result
-}
-
-func stringValues(values []string) []any {
-	result := make([]any, len(values))
-	for index, value := range values {
-		result[index] = value
-	}
-
-	return result
 }
 
 func pointer[T any](value T) *T {
