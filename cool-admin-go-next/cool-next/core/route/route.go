@@ -148,16 +148,6 @@ func BuildTable(input TableInput) (Table, error) {
 	return Table{controllers: controllers, routes: routes}, nil
 }
 
-// 静态路由表
-func MustBuildTable(input TableInput) Table {
-	table, err := BuildTable(input)
-	if err != nil {
-		panic(err)
-	}
-
-	return table
-}
-
 // Controllers Controller 副本
 func (table Table) Controllers() []Controller {
 	result := append([]Controller(nil), table.controllers...)
@@ -556,4 +546,26 @@ func contains(values []string, target string) bool {
 	}
 
 	return false
+}
+
+// ValidRelativePath 判断 Controller 前缀这类相对路径是否合法：允许空串（表示
+// 不指定），非空时不得有首尾斜杠、前后空白、? 或 #，且每一段都不能为空、. 或 ..。
+//
+// 运行期 Controller Builder 与编译期 cool generate 共用这一份规则，避免两处
+// 各写一遍后随时间漂移。
+func ValidRelativePath(value string) bool {
+	if value == "" {
+		return true
+	}
+	if strings.TrimSpace(value) != value || strings.HasPrefix(value, "/") ||
+		strings.HasSuffix(value, "/") || strings.ContainsAny(value, "?#") {
+		return false
+	}
+	for _, segment := range strings.Split(value, "/") {
+		if segment == "" || segment == "." || segment == ".." {
+			return false
+		}
+	}
+
+	return true
 }

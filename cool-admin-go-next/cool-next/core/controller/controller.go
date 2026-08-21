@@ -330,16 +330,8 @@ func validateCurdOption(option CurdOption) {
 }
 
 func validateRelativePath(path, label string) {
-	if path == "" {
-		return
-	}
-	if strings.TrimSpace(path) != path || strings.HasPrefix(path, "/") || strings.HasSuffix(path, "/") || strings.ContainsAny(path, "?#") {
+	if !coreroute.ValidRelativePath(path) {
 		panicCore("%s无效", label)
-	}
-	for _, segment := range strings.Split(path, "/") {
-		if segment == "" || segment == "." || segment == ".." {
-			panicCore("%s无效", label)
-		}
 	}
 }
 

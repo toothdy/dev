@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/module"
+	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 )
 
 const controllerPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
@@ -116,7 +117,7 @@ func (a *analysis) analyzeControllerFactory(
 	if chain.path != nil {
 		var exists bool
 		explicitPath, exists = constantControllerString(pkg, chain.path)
-		if !exists || !validControllerRelativePath(explicitPath) {
+		if !exists || !coreroute.ValidRelativePath(explicitPath) {
 			a.add("CG024", "Controller 路径必须是合法常量相对路径", a.position(pkg, chain.path.Pos()))
 			return ControllerDeclaration{}, false
 		}
@@ -147,7 +148,7 @@ func (a *analysis) analyzeControllerFactory(
 			return ControllerDeclaration{}, false
 		}
 		prefix, prefixValid := controllerPrefix(pkg, literal)
-		if !prefixValid || !validControllerRelativePath(prefix) {
+		if !prefixValid || !coreroute.ValidRelativePath(prefix) {
 			position := literal.Pos()
 			if value, exists := controllerLiteralField(literal, "Prefix"); exists {
 				position = value.Pos()
@@ -355,22 +356,6 @@ func inferredControllerPath(area ControllerArea, moduleKey, relative string) str
 
 func explicitControllerPath(area ControllerArea, relative string) string {
 	return path.Join("/", string(area), relative)
-}
-
-func validControllerRelativePath(value string) bool {
-	if value == "" {
-		return true
-	}
-	if strings.TrimSpace(value) != value || strings.HasPrefix(value, "/") || strings.HasSuffix(value, "/") || strings.ContainsAny(value, "?#") {
-		return false
-	}
-	for _, segment := range strings.Split(value, "/") {
-		if segment == "" || segment == "." || segment == ".." {
-			return false
-		}
-	}
-
-	return true
 }
 
 func constantControllerString(pkg *loadedPackage, expression ast.Expr) (string, bool) {

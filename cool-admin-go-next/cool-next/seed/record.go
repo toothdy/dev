@@ -1,7 +1,6 @@
-// Package seed 提供模块初始化种子数据的通用执行原语：记录解析、树形同步、
-// 幂等插入。业务模块负责编排（哪些表、什么顺序、字段变换），本包只提供
-// 与具体业务无关的通用机制——迁自 modules/base/service/initializer.go，
-// 语义未变，仅去除对 Base 类型的依赖
+// Package seed 提供模块初始化种子数据的通用执行原语：记录解析、字段解码与
+// 树形同步。嵌入数据由 cool generate 从模块根的 db.json / menu.json 产出，
+// 导入编排与幂等守卫见 runtime.go 与 lock.go
 package seed
 
 import (
@@ -51,38 +50,6 @@ func NewDO(descriptor coreentity.RuntimeDescriptor, values map[string]any, isIns
 	}
 
 	return do, nil
-}
-
-// 按唯一字段补齐缺失记录，已存在则跳过
-func InsertMissing(
-	ctx context.Context,
-	transaction Model,
-	descriptor coreentity.RuntimeDescriptor,
-	records []Record,
-	uniqueField string,
-) error {
-	for _, record := range records {
-		value, err := record.String(uniqueField)
-		if err != nil {
-			return err
-		}
-		existing, err := transaction.Model(descriptor.Table()).Ctx(ctx).Where(uniqueField, value).One()
-		if err != nil {
-			return exception.WrapCore(err, "查询初始化记录失败")
-		}
-		if existing != nil {
-			continue
-		}
-		data, dataErr := record.Data(descriptor)
-		if dataErr != nil {
-			return dataErr
-		}
-		if _, err = transaction.Model(descriptor.Table()).Ctx(ctx).Data(data).Insert(); err != nil {
-			return exception.WrapCore(err, "写入初始化记录失败")
-		}
-	}
-
-	return nil
 }
 
 // 按父子依赖顺序补齐或更新树形记录，返回种子键到实际 ID 的映射
@@ -155,36 +122,6 @@ func SyncTree(
 	}
 
 	return ids, nil
-}
-
-// 按唯一字段查找记录 ID
-func FindID(ctx context.Context, transaction Model, table, field, value string) (uint64, error) {
-	if value == "" {
-		return 0, exception.Core("初始化关系引用无效")
-	}
-	record, err := transaction.Model(table).Ctx(ctx).Where(field, value).One()
-	if err != nil {
-		return 0, exception.WrapCore(err, "查询初始化关系失败")
-	}
-	if record == nil || record["id"].Uint64() == 0 {
-		return 0, exception.Core("初始化关系引用不存在")
-	}
-
-	return record["id"].Uint64(), nil
-}
-
-// 按 Descriptor 解码并构造插入用 DO 数据
-func (record Record) Data(descriptor coreentity.RuntimeDescriptor) (any, error) {
-	values, err := record.Values(descriptor)
-	if err != nil {
-		return nil, err
-	}
-	do, err := NewDO(descriptor, values, true)
-	if err != nil {
-		return nil, err
-	}
-
-	return do.DBData(), nil
 }
 
 // 解码完整种子记录并保留显式主键
