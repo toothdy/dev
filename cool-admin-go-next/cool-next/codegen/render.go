@@ -89,6 +89,14 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 	for _, current := range modules {
 		imports.add(current.config.packagePath, current.config.packageName)
 	}
+	hasSeed := false
+	for _, current := range modules {
+		hasSeed = hasSeed || current.seedDB || current.seedMenu
+	}
+	if hasSeed {
+		imports.add("embed", "_")
+		imports.add(seedPackagePath, "seed")
+	}
 	hasOutbox := len(graph.producers) > 0 || len(graph.consumers) > 0
 	for _, fragment := range fragments {
 		imports.add(entityPackagePath, "coreentity")
@@ -161,6 +169,7 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 	source.WriteString(generatedFileHeader)
 	source.WriteString("package modules\n\n")
 	writeImports(&source, imports)
+	writeSeedDeclarations(&source, modules)
 	writeDescriptorDeclarations(&source, fragments, imports)
 	writeInfrastructureDeclarations(&source, fragments, hasOutbox, len(controllers) > 0, hasAuthProviders(graph.Providers()))
 	writeBaseProviderDeclarations(&source, fragments, imports)
@@ -180,6 +189,20 @@ type renderModule struct {
 	config     ConfigDeclaration
 	key        string
 	references []Reference
+	seedDB     bool
+	seedMenu   bool
+}
+
+func writeSeedDeclarations(source *strings.Builder, modules []renderModule) {
+	for _, current := range modules {
+		identifier := generatedIdentifier(current.key)
+		if current.seedDB {
+			fmt.Fprintf(source, "//go:embed %s/db.json\nvar seedDB_%s []byte\n\n", current.key, identifier)
+		}
+		if current.seedMenu {
+			fmt.Fprintf(source, "//go:embed %s/menu.json\nvar seedMenu_%s []byte\n\n", current.key, identifier)
+		}
+	}
 }
 
 type renderComponent struct {
@@ -269,7 +292,7 @@ func renderModel(model *Model) ([]renderModule, map[string]Constructor, error) {
 		if current.identity.Key() == "" || current.config.packagePath == "" || current.config.packageName == "" || current.config.name == "" || current.config.description == "" {
 			return nil, nil, renderError("CG073", "模块静态描述信息不完整", current.config.position)
 		}
-		modules[index] = renderModule{config: current.config, key: current.identity.Key(), references: current.references}
+		modules[index] = renderModule{config: current.config, key: current.identity.Key(), references: current.references, seedDB: current.seedDB, seedMenu: current.seedMenu}
 		for _, constructor := range current.constructors {
 			if constructor.packagePath == "" || constructor.packageName == "" {
 				return nil, nil, renderError("CG074", "构造器源码信息不完整", constructor.position)
@@ -1357,6 +1380,19 @@ func providerExpression(provider Provider, modules []renderModule, fragments []D
 				return fmt.Sprintf("config%d.Config()", index), true
 			}
 		}
+	case ProviderKindSeed:
+		for _, current := range modules {
+			if current.key == provider.module {
+				db, menu := "nil", "nil"
+				if current.seedDB {
+					db = "seedDB_" + generatedIdentifier(current.key)
+				}
+				if current.seedMenu {
+					menu = "seedMenu_" + generatedIdentifier(current.key)
+				}
+				return fmt.Sprintf("seed.NewData(%s, %s)", db, menu), true
+			}
+		}
 	case ProviderKindDescriptor:
 		for _, fragment := range fragments {
 			key := descriptorKey(fragment.module, fragment.entityPackage, fragment.entity)
@@ -2052,6 +2088,8 @@ func moduleProviderKind(kind ProviderKind) string {
 	switch kind {
 	case ProviderKindConfig:
 		return "module.ProviderKindConfig"
+	case ProviderKindSeed:
+		return "module.ProviderKindSeed"
 	case ProviderKindComponent:
 		return "module.ProviderKindComponent"
 	case ProviderKindDescriptor:

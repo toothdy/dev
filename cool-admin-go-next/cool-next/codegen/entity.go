@@ -15,6 +15,7 @@ const (
 	gPackagePath        = "github.com/gogf/gf/v2/frame/g"
 	recyclePackagePath  = "github.com/toothdy/cool-admin-go-next/cool-next/db/recycle"
 	servicePackagePath  = "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	seedPackagePath     = "github.com/toothdy/cool-admin-go-next/cool-next/seed"
 	frameworkModuleKey  = ".framework"
 )
 

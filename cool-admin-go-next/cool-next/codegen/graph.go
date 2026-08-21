@@ -21,6 +21,7 @@ type ProviderKind string
 
 const (
 	ProviderKindConfig             ProviderKind = "config"          // 模块配置
+	ProviderKindSeed               ProviderKind = "seed"            // 模块种子数据
 	ProviderKindComponent          ProviderKind = "component"       // 普通构造器
 	ProviderKindDescriptor         ProviderKind = "descriptor"      // 实体 Descriptor
 	ProviderKindBase               ProviderKind = "base"            // 实体 Base Service
@@ -189,6 +190,11 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 			provider:       Provider{kind: ProviderKindConfig, name: current.config.typeName, module: key, packagePath: current.config.packagePath, typ: types.TypeString(current.config.typ, qualifier)},
 			typ:            current.config.typ,
 		})
+	}
+	if seedType := findSeedDataType(model); seedType != nil {
+		for _, current := range model.modules {
+			providers = append(providers, graphProvider{componentIndex: -1, provider: Provider{kind: ProviderKindSeed, name: "Data", module: current.identity.Key(), packagePath: seedPackagePath, typ: types.TypeString(seedType, qualifier)}, typ: seedType})
+		}
 	}
 	// 框架数据库 Runtime 作为共享 Provider，由生成的装配局部变量 runtime 提供
 	if runtimeProviderType := findRuntimeProviderType(model); runtimeProviderType != nil {
@@ -379,6 +385,21 @@ func findBaseProviderType(model *Model, entityType types.Type) types.Type {
 		for _, constructor := range current.constructors {
 			for _, parameter := range constructor.types {
 				if isBaseProviderType(parameter, entityType) {
+					return parameter
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func findSeedDataType(model *Model) types.Type {
+	for _, current := range model.modules {
+		for _, constructor := range current.constructors {
+			for _, parameter := range constructor.types {
+				named, ok := types.Unalias(parameter).(*types.Named)
+				if ok && named.Obj().Pkg() != nil && named.Obj().Pkg().Path() == seedPackagePath && named.Obj().Name() == "Data" {
 					return parameter
 				}
 			}

@@ -1,28 +1,10 @@
 package base
 
 import (
-	_ "embed"
 	"time"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/module"
 )
-
-var (
-	//go:embed db.json
-	dbSeed []byte
-	//go:embed menu.json
-	menuSeed []byte
-)
-
-// DBSeed 返回数据库初始化数据副本。
-func DBSeed() []byte {
-	return append([]byte(nil), dbSeed...)
-}
-
-// MenuSeed 返回菜单初始化数据副本。
-func MenuSeed() []byte {
-	return append([]byte(nil), menuSeed...)
-}
 
 const (
 	defaultAccessTTL    = 2 * time.Hour

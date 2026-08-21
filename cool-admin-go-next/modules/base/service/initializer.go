@@ -10,7 +10,6 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/seed"
-	base "github.com/toothdy/cool-admin-go-next/modules/base"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
 
@@ -24,6 +23,7 @@ const initializerLockKey = "base"
 // 管理员初始口令哈希、用户与角色的名称级关系解析。
 type Initializer struct {
 	runtime    *coredb.Runtime
+	data       seed.Data
 	lock       *seed.Store
 	password   *bcrypt.Verifier
 	conf       coreentity.Descriptor[entity.Conf, uint64]
@@ -38,6 +38,7 @@ type Initializer struct {
 // NewInitializer 创建 Base 幂等初始化器。
 func NewInitializer(
 	runtime *coredb.Runtime,
+	data seed.Data,
 	conf coreentity.Descriptor[entity.Conf, uint64],
 	department coreentity.Descriptor[entity.Department, uint64],
 	menu coreentity.Descriptor[entity.Menu, uint64],
@@ -60,7 +61,7 @@ func NewInitializer(
 	}
 
 	return &Initializer{
-		runtime: runtime, lock: lock, password: password, conf: conf, department: department,
+		runtime: runtime, data: data, lock: lock, password: password, conf: conf, department: department,
 		menu: menu, param: param, role: role, user: user, userRole: userRole,
 	}, nil
 }
@@ -70,7 +71,10 @@ func (initializer *Initializer) OnInit(ctx context.Context) error {
 	if initializer == nil || initializer.runtime == nil || initializer.lock == nil {
 		return exception.Core("Base 初始化器未初始化")
 	}
-	seeds, err := parseInitialSeeds(base.DBSeed(), base.MenuSeed())
+	if len(initializer.data.DB()) == 0 && len(initializer.data.Menu()) == 0 {
+		return nil
+	}
+	seeds, err := parseInitialSeeds(initializer.data.DB(), initializer.data.Menu())
 	if err != nil {
 		return err
 	}

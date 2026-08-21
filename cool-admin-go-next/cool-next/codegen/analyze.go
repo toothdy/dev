@@ -291,6 +291,8 @@ func (a *analysis) analyzeModule(root string, model *Model) {
 	}
 	a.analyzeQueryDSL(root)
 	result := Module{identity: identity, root: filepath.ToSlash(directory)}
+	result.seedDB = regularFileExists(filepath.Join(root, "db.json"))
+	result.seedMenu = regularFileExists(filepath.Join(root, "menu.json"))
 	result.config, result.references = a.analyzeConfig(pkg, configFile, root)
 	result.entities, result.schemas = a.analyzeEntities(root)
 	result.constructors = a.analyzeConstructors(root)
@@ -298,6 +300,11 @@ func (a *analysis) analyzeModule(root string, model *Model) {
 	result.services = a.analyzeServices(root)
 	result.controllers = a.analyzeControllers(root, identity, result.entities, result.services)
 	model.modules = append(model.modules, result)
+}
+
+func regularFileExists(path string) bool {
+	info, err := os.Lstat(path)
+	return err == nil && info.Mode().IsRegular()
 }
 
 func (a *analysis) add(code, message string, position Position) {

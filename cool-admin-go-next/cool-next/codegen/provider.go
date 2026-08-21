@@ -92,7 +92,7 @@ func providerLabels(indexes []int, providers []graphProvider) []string {
 }
 
 func isCrossModuleContract(constructor Constructor, parameterIndex int, parameter types.Type, provider graphProvider, modules map[string]Module) bool {
-	if provider.provider.kind == ProviderKindConfig {
+	if provider.provider.kind == ProviderKindConfig || provider.provider.kind == ProviderKindSeed {
 		return false
 	}
 	named, ok := types.Unalias(parameter).(*types.Named)

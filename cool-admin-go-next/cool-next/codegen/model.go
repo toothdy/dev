@@ -358,6 +358,8 @@ type Module struct {
 	registrars   []GRPCRegistrarDeclaration // gRPC 服务注册函数
 	references   []Reference                // 静态组件引用
 	root         string                     // 工作区相对模块根目录
+	seedDB       bool                       // 模块根存在 db.json
+	seedMenu     bool                       // 模块根存在 menu.json
 	schemas      []SchemaDeclaration        // Schema 声明
 	services     []ServiceDeclaration       // Base Service 声明
 }
@@ -367,6 +369,9 @@ func (m Module) Identity() module.Identity { return m.identity }
 
 // 返回模块配置声明
 func (m Module) Config() ConfigDeclaration { return m.config }
+
+func (m Module) HasSeedDB() bool   { return m.seedDB }
+func (m Module) HasSeedMenu() bool { return m.seedMenu }
 
 // 返回实体声明副本
 func (m Module) Entities() []EntityDeclaration {

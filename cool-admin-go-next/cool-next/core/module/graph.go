@@ -57,6 +57,7 @@ type ProviderKind string
 
 const (
 	ProviderKindConfig             ProviderKind = "config"          // 模块配置
+	ProviderKindSeed               ProviderKind = "seed"            // 模块种子数据
 	ProviderKindComponent          ProviderKind = "component"       // 普通组件
 	ProviderKindDescriptor         ProviderKind = "descriptor"      // 实体 Descriptor
 	ProviderKindBase               ProviderKind = "base"            // 实体 Base Service
@@ -449,7 +450,7 @@ func compileProviders(definitions []ProviderDefinition, moduleKeys map[string]bo
 
 func validateProviderDefinition(definition ProviderDefinition, moduleKeys map[string]bool) error {
 	switch definition.Kind {
-	case ProviderKindConfig, ProviderKindComponent, ProviderKindDescriptor, ProviderKindBase,
+	case ProviderKindConfig, ProviderKindSeed, ProviderKindComponent, ProviderKindDescriptor, ProviderKindBase,
 		ProviderKindEnqueuer, ProviderKindConsumerDefinition:
 	default:
 		return exception.Core(fmt.Sprintf("Provider 类别无效: %s", definition.Kind))
