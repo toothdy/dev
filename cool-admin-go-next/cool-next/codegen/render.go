@@ -171,7 +171,7 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 	writeImports(&source, imports)
 	writeSeedDeclarations(&source, modules)
 	writeDescriptorDeclarations(&source, fragments, imports)
-	writeInfrastructureDeclarations(&source, fragments, hasOutbox, len(controllers) > 0, hasAuthProviders(graph.Providers()))
+	writeInfrastructureDeclarations(&source, fragments, hasOutbox, len(controllers) > 0 || hasSeed, hasAuthProviders(graph.Providers()))
 	writeBaseProviderDeclarations(&source, fragments, imports)
 	writeServiceAdapterDeclarations(&source, services, imports)
 	writeControllerDeclarations(&source, controllers, imports)
@@ -1037,7 +1037,7 @@ func writeGeneratedFunction(
 		name := generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity)
 		fmt.Fprintf(source, "\tdescriptor_%s := %s()\n", name, descriptorFunctionName(fragment))
 	}
-	if len(fragments) > 0 || hasProducers || hasConsumers || len(controllers) > 0 {
+	if len(fragments) > 0 || hasProducers || hasConsumers || len(controllers) > 0 || hasSeedModules(modules) {
 		source.WriteString("\truntime, recycler, err := generatedDataRuntime(ctx, infrastructure")
 		for _, fragment := range fragments {
 			fmt.Fprintf(source, ", descriptor_%s", generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity))
@@ -1045,6 +1045,31 @@ func writeGeneratedFunction(
 		source.WriteString(")\n")
 		source.WriteString("\tif err != nil {\n\t\treturn assembly, err\n\t}\n")
 		source.WriteString("\t_ = runtime\n\t_ = recycler\n")
+	}
+	if hasSeedModules(modules) {
+		source.WriteString("\tseedRuntime, err := seed.NewRuntime(runtime,\n")
+		for _, current := range modules {
+			if !current.seedDB && !current.seedMenu {
+				continue
+			}
+			db, menu := "nil", "nil"
+			if current.seedDB {
+				db = "seedDB_" + generatedIdentifier(current.key)
+			}
+			if current.seedMenu {
+				menu = "seedMenu_" + generatedIdentifier(current.key)
+			}
+			fmt.Fprintf(source, "\t\tseed.NewDefinition(%q, seed.NewData(%s, %s)", current.key, db, menu)
+			for _, fragment := range fragments {
+				if fragment.module == current.key {
+					fmt.Fprintf(source, ", descriptor_%s", generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity))
+				}
+			}
+			source.WriteString("),\n")
+		}
+		source.WriteString("\t)\n")
+		source.WriteString("\tif err != nil { return assembly, exception.WrapCore(err, \"构造种子运行时失败\") }\n")
+		source.WriteString("\tif err = seedRuntime.OnInit(ctx); err != nil { return assembly, exception.WrapCore(err, \"导入模块种子失败\") }\n")
 	}
 	if hasProducers || hasConsumers {
 		source.WriteString("\toutboxStore, err := outboxstore.New(runtime)\n")
@@ -1134,6 +1159,15 @@ func writeGeneratedFunction(
 		fmt.Fprintf(source, ", graph.Modules()[%d].Identity()", index)
 	}
 	source.WriteString(")\n\t})\n}\n")
+}
+
+func hasSeedModules(modules []renderModule) bool {
+	for _, current := range modules {
+		if current.seedDB || current.seedMenu {
+			return true
+		}
+	}
+	return false
 }
 
 func componentExpressionForType(parameter types.Type, components []renderComponent) (string, bool) {

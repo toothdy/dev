@@ -10,24 +10,24 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/schema"
 )
 
-// TableName 是种子导入幂等标记的内部表名。
+// 种子导入幂等标记的内部表名
 const TableName = "cool_seed_lock"
 
-// lockRecord 是 cool_seed_lock 表结构，用 entity.Compile 按标准 Descriptor 机制编译，
-// 与 cool-next/db/recycle 的内部表模式一致，非业务实体，不经 cool generate 发现。
+// cool_seed_lock 表结构，用 entity.Compile 按标准 Descriptor 机制编译，
+// 与 cool-next/db/recycle 的内部表模式一致，非业务实体，不经 cool generate 发现
 type lockRecord struct {
 	g.Meta `orm:"table:cool_seed_lock" description:"种子导入幂等标记"`
 	coreentity.Base
 	SeedKey string `json:"seedKey" orm:"seedKey" description:"模块与种子类型标识" cool:"size=191"`
 }
 
-// Store 是种子导入幂等标记的存储与守卫。
+// 种子导入幂等标记的存储与守卫
 type Store struct {
 	runtime    *coredb.Runtime
 	descriptor coreentity.Descriptor[lockRecord, uint64]
 }
 
-// NewStore 创建种子导入幂等守卫。
+// 种子导入幂等守卫
 func NewStore(runtime *coredb.Runtime) (*Store, error) {
 	if runtime == nil || runtime.DB() == nil || runtime.Runner() == nil {
 		return nil, exception.Core("种子导入守卫依赖的框架数据库 Runtime 无效")
@@ -42,9 +42,9 @@ func NewStore(runtime *coredb.Runtime) (*Store, error) {
 	return &Store{runtime: runtime, descriptor: descriptor}, nil
 }
 
-// Prepare 确保 cool_seed_lock 表存在且结构匹配。种子导入是框架内部记账，不受业务
+// 确保 cool_seed_lock 表存在且结构匹配。种子导入是框架内部记账，不受业务
 // schema.mode 策略约束——固定 Sync，与 cool_outbox/cool_inbox 只校验不同（那两张表
-// 目前依赖仓库外的迁移流程置备；本包自成一体，不引入同样的外部前置依赖）。
+// 目前依赖仓库外的迁移流程置备；本包自成一体，不引入同样的外部前置依赖）
 func (store *Store) Prepare(ctx context.Context) error {
 	if store == nil || store.runtime == nil {
 		return exception.Core("种子导入守卫未初始化")
@@ -60,9 +60,24 @@ func (store *Store) Prepare(ctx context.Context) error {
 	return nil
 }
 
-// Guard 在当前框架事务内以 key 为幂等键执行 fn：key 已存在则跳过并返回 nil；
+// 指定种子导入标记是否已存在
+func (store *Store) Has(ctx context.Context, key string) (bool, error) {
+	if store == nil || store.runtime == nil {
+		return false, exception.Core("种子导入守卫未初始化")
+	}
+	if key == "" {
+		return false, exception.Core("种子导入幂等键不能为空")
+	}
+	record, err := store.runtime.DB().Model(TableName).Ctx(ctx).Where("seedKey", key).One()
+	if err != nil {
+		return false, exception.WrapCore(err, "查询种子导入标记失败")
+	}
+	return record != nil, nil
+}
+
+// 在当前框架事务内以 key 为幂等键执行 fn：key 已存在则跳过并返回 nil；
 // 否则执行 fn，成功后写入标记，随事务一并提交或回滚。调用方须已处于
-// runtime.Runner().Within 开启的框架事务中。
+// runtime.Runner().Within 开启的框架事务中
 func (store *Store) Guard(ctx context.Context, key string, fn func(context.Context) error) error {
 	if store == nil || store.runtime == nil {
 		return exception.Core("种子导入守卫未初始化")

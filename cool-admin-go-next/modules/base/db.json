@@ -87,6 +87,7 @@
       "departmentId": 1,
       "name": "超级管理员",
       "username": "admin",
+      "password": "$2y$12$hf/2EQlItAmCitoN0ZDG3u9.ZCQM9KEpOXkKTbVlAPuwn2BfbfEjW",
       "passwordV": 7,
       "nickName": "管理员",
       "phone": "18000000000",
