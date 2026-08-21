@@ -242,4 +242,8 @@ Node 把下面两项放在 **`@cool-midway/core`**，不是 base：
 2. `jwt.sso` 单点登录是否纳入 v2
 3. 数据权限范围（`departmentIds`）的实现形态——Node 依赖缓存，Go 侧需确定是否引入等价机制
 4. `event/` 目录与框架 Event 能力的落地时机（§4）
-5. **种子字段的 codegen 注入**（§5.2 推迟项）：给 `cool-next/core/module` 新增 `ProviderKindSeed`（或等价机制），让 `cool generate` 发现模块根 `db.json`/`menu.json` 并作为可注入依赖挂到该模块的构造器上，业务模块从此不必手写 `go:embed`。需要动 `codegen/graph.go`（Provider 类型匹配）、`provider.go`、`render.go`（至少 5 处生成点）。建议作为独立子任务排期，并配一次专门的人工验证（本仓库无单测，`cool generate` 成功不足以证明生成代码运行时正确）。
+5. ~~**种子字段的 codegen 注入**（§5.2 推迟项）~~ —— **已出方案，待实施**：完整设计见
+   [`2026-08-21-seed-provider-codegen.md`](2026-08-21-seed-provider-codegen.md)。该文档已验证
+   关键技术前提（生成文件 `go:embed` 子目录可行），并给出逐文件实现清单与验收标准。落地后
+   `modules/base/config.go` 的 `go:embed`/`DBSeed`/`MenuSeed` 一并消除，本文档 §2.1 提到的
+   "config.go 不该有辅助函数"问题随之解决。
