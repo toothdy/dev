@@ -2,7 +2,6 @@ package apphttp
 
 import (
 	"context"
-	"strings"
 
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/net/gtrace"
@@ -16,17 +15,19 @@ type Authenticator interface {
 	AuthenticateHTTP(context.Context, string, string, string, string, bool) (context.Context, error)
 }
 
-// 创建协议无关请求上下文中间件
-func NewContextMiddleware(authenticator Authenticator, requestPath string, rule auth.Rule) (ghttp.HandlerFunc, error) {
+// 创建协议无关请求上下文中间件。权限标识由最终路径推导，推导失败即启动失败
+func NewContextMiddleware(authenticator Authenticator, requestPath string, ignoreToken bool) (ghttp.HandlerFunc, error) {
 	if authenticator == nil {
 		return nil, exception.Core("HTTP Authenticator 不能为空")
-	}
-	if rule.IgnoreToken && strings.TrimSpace(rule.Permission) != "" {
-		return nil, exception.Core("HTTP ignoreToken 与权限不能同时配置")
 	}
 	if _, err := auth.HTTPResource("GET", requestPath); err != nil {
 		return nil, err
 	}
+	permission, err := auth.DerivePermission(requestPath, ignoreToken)
+	if err != nil {
+		return nil, err
+	}
+	rule := auth.Rule{Permission: permission, IgnoreToken: ignoreToken}
 
 	return func(request *ghttp.Request) {
 		if err := authenticateRequest(request, authenticator, requestPath, rule); err != nil {

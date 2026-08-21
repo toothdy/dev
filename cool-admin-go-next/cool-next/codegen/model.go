@@ -289,7 +289,6 @@ type RouteDeclaration struct {
 	method          string
 	middleware      []string
 	path            string
-	permission      string
 	position        Position
 	summary         string
 	tags            []string
@@ -309,7 +308,6 @@ func (d RouteDeclaration) Path() string { return d.path }
 func (d RouteDeclaration) Bind() coreroute.BindSource { return d.bind }
 
 // 返回权限字符串
-func (d RouteDeclaration) Permission() string { return d.permission }
 
 // 返回标签副本
 func (d RouteDeclaration) Tags() []string { return append([]string(nil), d.tags...) }

@@ -52,26 +52,23 @@ func AdminSysLogController(log *service.LogService, handler *LogHandler) control
 		}).
 		Route(
 			controller.Route{
-				Method:     http.MethodPost,
-				Path:       "/clear",
-				Summary:    "清理",
-				Handler:    controller.Handle(handler.Clear),
-				Permission: "base:sys:log:clear",
+				Method:  http.MethodPost,
+				Path:    "/clear",
+				Summary: "清理",
+				Handler: controller.Handle(handler.Clear),
 			},
 			controller.Route{
-				Method:     http.MethodPost,
-				Path:       "/setKeep",
-				Summary:    "日志保存时间",
-				Handler:    controller.Handle(handler.SetKeep),
-				Bind:       controller.BindJSON,
-				Permission: "base:sys:log:setKeep",
+				Method:  http.MethodPost,
+				Path:    "/setKeep",
+				Summary: "日志保存时间",
+				Handler: controller.Handle(handler.SetKeep),
+				Bind:    controller.BindJSON,
 			},
 			controller.Route{
 				Method:      http.MethodGet,
 				Path:        "/getKeep",
 				Summary:     "获得日志保存时间",
 				Handler:     controller.Handle(handler.GetKeep),
-				Permission:  "base:sys:log:getKeep",
 				Transaction: controller.NonTransactional(),
 			},
 		).

@@ -139,7 +139,6 @@ type API struct {
 	Description   string `json:"description"`
 	Bind          string `json:"bind"`
 	Authenticated bool   `json:"authenticated"`
-	Permission    string `json:"permission,omitempty"`
 }
 
 type compiler struct {
@@ -573,7 +572,6 @@ func compileAPI(route coreroute.Route, hasSpec bool) (API, error) {
 		Description:   route.Description(),
 		Bind:          string(route.Bind()),
 		Authenticated: !contains(route.Tags(), "ignoreToken"),
-		Permission:    route.Permission(),
 	}, nil
 }
 

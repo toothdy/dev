@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/codegen"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
@@ -31,7 +30,6 @@ func AdminSysMenuController(menu *service.MenuService, tool *MenuToolHandler) co
 				Path:        "/list",
 				Summary:     "列表查询",
 				Handler:     controller.Handle(menu.List),
-				Permission:  "base:sys:menu:list",
 				Transaction: controller.NonTransactional(),
 			},
 			controller.Route{
@@ -76,24 +74,16 @@ type MenuImportRequest struct {
 	Menus []dto.MenuTree `json:"menus" v:"required"`
 }
 
-type menuAdminChecker interface {
-	IsAdmin(context.Context, []uint64) (bool, error)
-}
-
-// 适配只允许平台管理员调用的菜单代码生成与树导入导出
+// 菜单代码生成与树导入导出。
+// 访问控制由路由权限标识承担：超管全通，其他角色需在后台菜单中获得授权
 type MenuToolHandler struct {
-	scaffold   *codegen.Scaffold
-	menu       *service.MenuService
-	permission menuAdminChecker
+	scaffold *codegen.Scaffold
+	menu     *service.MenuService
 }
 
 // 菜单工具接口适配器
-func NewMenuToolHandler(
-	config base.Config,
-	menu *service.MenuService,
-	permission *service.PermissionService,
-) (*MenuToolHandler, error) {
-	if menu == nil || permission == nil {
+func NewMenuToolHandler(config base.Config, menu *service.MenuService) (*MenuToolHandler, error) {
+	if menu == nil {
 		return nil, exception.Core("菜单工具接口依赖无效")
 	}
 	scaffold, err := codegen.NewScaffold(config.Coding.Workspace)
@@ -101,13 +91,13 @@ func NewMenuToolHandler(
 		return nil, err
 	}
 
-	return &MenuToolHandler{scaffold: scaffold, menu: menu, permission: permission}, nil
+	return &MenuToolHandler{scaffold: scaffold, menu: menu}, nil
 }
 
 // 静态解析菜单代码元数据
 func (handler *MenuToolHandler) ParseMenu(ctx context.Context, request *dto.MenuParseReq) (codegen.MenuParseResult, error) {
-	if err := handler.requireAdmin(ctx); err != nil {
-		return codegen.MenuParseResult{}, err
+	if handler == nil || handler.scaffold == nil {
+		return codegen.MenuParseResult{}, exception.Core("菜单工具接口未初始化")
 	}
 	if request == nil {
 		return codegen.MenuParseResult{}, exception.Validate("菜单解析请求不能为空")
@@ -118,8 +108,8 @@ func (handler *MenuToolHandler) ParseMenu(ctx context.Context, request *dto.Menu
 
 // 创建菜单对应的 Go 文件
 func (handler *MenuToolHandler) CreateMenuCode(ctx context.Context, request *codegen.MenuCreateInput) error {
-	if err := handler.requireAdmin(ctx); err != nil {
-		return err
+	if handler == nil || handler.scaffold == nil {
+		return exception.Core("菜单工具接口未初始化")
 	}
 	if request == nil {
 		return exception.Validate("菜单代码创建请求不能为空")
@@ -130,8 +120,8 @@ func (handler *MenuToolHandler) CreateMenuCode(ctx context.Context, request *cod
 
 // 导出选中的菜单树，不含维护字段
 func (handler *MenuToolHandler) ExportMenu(ctx context.Context, request *dto.MenuExportReq) ([]dto.MenuTree, error) {
-	if err := handler.requireAdmin(ctx); err != nil {
-		return nil, err
+	if handler == nil || handler.menu == nil {
+		return nil, exception.Core("菜单工具接口未初始化")
 	}
 	if request == nil {
 		return nil, exception.Validate("菜单导出请求不能为空")
@@ -145,30 +135,11 @@ func (handler *MenuToolHandler) ExportMenu(ctx context.Context, request *dto.Men
 
 // 在调用方事务中插入菜单树，并用实际新 ID 重建父子关系
 func (handler *MenuToolHandler) ImportMenu(ctx context.Context, request *MenuImportRequest) error {
-	if err := handler.requireAdmin(ctx); err != nil {
-		return err
+	if handler == nil || handler.menu == nil {
+		return exception.Core("菜单工具接口未初始化")
 	}
 	if request == nil {
 		return exception.Validate("菜单导入请求不能为空")
 	}
 	return handler.menu.Import(ctx, request.Menus)
-}
-
-func (handler *MenuToolHandler) requireAdmin(ctx context.Context) error {
-	if handler == nil || handler.scaffold == nil || handler.menu == nil || handler.permission == nil {
-		return exception.Core("菜单工具接口未初始化")
-	}
-	identity, err := auth.Admin(ctx)
-	if err != nil {
-		return err
-	}
-	isAdmin, err := handler.permission.IsAdmin(ctx, identity.RoleIDs())
-	if err != nil {
-		return err
-	}
-	if !isAdmin {
-		return exception.Comm("权限不足", http.StatusForbidden)
-	}
-
-	return nil
 }

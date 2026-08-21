@@ -44,7 +44,6 @@ func AdminSysParamController(param *service.ParamService, handler *ParamHTMLHand
 			Summary:     "获得网页内容的参数值",
 			Handler:     controller.Handle(handler.HTML),
 			Bind:        controller.BindQuery,
-			Permission:  "base:sys:param:html",
 			Transaction: controller.NonTransactional(),
 		}).
 		Build()

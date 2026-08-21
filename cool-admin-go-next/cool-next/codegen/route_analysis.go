@@ -155,18 +155,6 @@ func (a *analysis) analyzeDefaultRoutes(
 	if declaration.ignoreGlobalPrefix {
 		basePath = removeControllerGlobalPrefix(basePath, declaration.area)
 	}
-	permissionPrefix, valid := controllerLiteralOptionalString(pkg, literal, "PermissionPrefix")
-	if !valid || !validPermission(permissionPrefix) {
-		a.add("CG101", "Curd PermissionPrefix 必须是合法权限前缀常量", a.position(pkg, literal.Pos()))
-		return nil, false
-	}
-	if permissionPrefix == "" {
-		permissionPrefix = defaultCRUDPermissionPrefix(basePath)
-	}
-	if permissionPrefix == "" {
-		a.add("CG101", "Curd 权限前缀无法从路径推导", a.position(pkg, literal.Pos()))
-		return nil, false
-	}
 	result := make([]RouteDeclaration, 0, len(apis))
 	for _, api := range apis {
 		method, bind, summary, methodName := defaultRouteValues(api)
@@ -183,10 +171,6 @@ func (a *analysis) analyzeDefaultRoutes(
 		if tagName != "" && (len(tagAPIs) == 0 || selectedTags[api]) {
 			tags = []string{tagName}
 		}
-		permission := permissionPrefix + ":" + api
-		if containsString(tags, "ignoreToken") {
-			permission = ""
-		}
 		result = append(result, RouteDeclaration{
 			bind:            bind,
 			developmentOnly: declaration.developmentOnly,
@@ -195,29 +179,12 @@ func (a *analysis) analyzeDefaultRoutes(
 			method:          method,
 			path:            path.Join(basePath, api),
 			position:        a.position(pkg, expression.Pos()),
-			permission:      permission,
 			summary:         summary,
 			tags:            tags,
 		})
 	}
 
 	return result, true
-}
-
-func defaultCRUDPermissionPrefix(routePath string) string {
-	segments := strings.Split(strings.Trim(routePath, "/"), "/")
-	if len(segments) > 0 && (segments[0] == "admin" || segments[0] == "app") {
-		segments = segments[1:]
-	}
-	if len(segments) == 0 {
-		return ""
-	}
-	for _, segment := range segments {
-		if !token.IsIdentifier(segment) {
-			return ""
-		}
-	}
-	return strings.Join(segments, ":")
 }
 
 func (a *analysis) analyzeCustomRoute(
@@ -279,11 +246,6 @@ func (a *analysis) analyzeCustomRoute(
 		a.add("CG101", "Route Tags 必须是无重复静态 URLTag 列表", a.position(pkg, literal.Pos()))
 		return RouteDeclaration{}, false
 	}
-	permission, valid := controllerLiteralOptionalString(pkg, literal, "Permission")
-	if !valid || !validPermission(permission) || containsString(tags, "ignoreToken") && permission != "" {
-		a.add("CG101", "Route Permission 无效或与 ignoreToken 冲突", a.position(pkg, literal.Pos()))
-		return RouteDeclaration{}, false
-	}
 	summary, valid := controllerLiteralOptionalString(pkg, literal, "Summary")
 	if !valid || !validStaticText(summary) {
 		a.add("CG101", "Route Summary 必须是合法常量字符串", a.position(pkg, literal.Pos()))
@@ -331,7 +293,6 @@ func (a *analysis) analyzeCustomRoute(
 		method:          method,
 		middleware:      middleware,
 		path:            path.Join(basePath, routePath),
-		permission:      permission,
 		position:        a.position(pkg, expression.Pos()),
 		summary:         summary,
 		tags:            tags,
@@ -872,22 +833,6 @@ func validStaticText(value string) bool {
 		return true
 	}
 	return strings.TrimSpace(value) != ""
-}
-
-func validPermission(value string) bool {
-	if value == "" {
-		return true
-	}
-	if strings.TrimSpace(value) != value {
-		return false
-	}
-	for _, segment := range strings.Split(value, ":") {
-		if !token.IsIdentifier(segment) {
-			return false
-		}
-	}
-
-	return true
 }
 
 func uniqueValid(values []string, validate func(string) bool) bool {

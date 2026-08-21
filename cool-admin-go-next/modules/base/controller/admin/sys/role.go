@@ -34,7 +34,6 @@ func AdminSysRoleController(role *service.RoleService) controller.Definition {
 			Path:        "/list",
 			Summary:     "列表查询",
 			Handler:     controller.Handle(role.List),
-			Permission:  "base:sys:role:list",
 			Transaction: controller.NonTransactional(),
 		}).
 		Build()

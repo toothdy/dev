@@ -71,7 +71,6 @@ type Route struct {
 	Bind               BindSource
 	Middleware         []MiddlewareRef
 	Tags               []URLTag
-	Permission         string
 	Transaction        TransactionPolicy
 	IgnoreGlobalPrefix bool
 }
@@ -99,7 +98,6 @@ type URLTag struct {
 // 默认 CRUD 配置
 type CurdOption struct {
 	Prefix             string
-	PermissionPrefix   string
 	API                []APIType
 	PageQueryOp        QueryProvider
 	ListQueryOp        QueryProvider
@@ -303,15 +301,10 @@ func validateRoute(value Route) {
 		}
 		seenTags[tag.Name] = true
 	}
-	validatePermission(value.Permission)
-	if seenTags[TagIgnoreToken] && value.Permission != "" {
-		panicCore("Route ignoreToken 标签与 Permission 冲突")
-	}
 }
 
 func validateCurdOption(option CurdOption) {
 	validateRelativePath(option.Prefix, "Curd Prefix")
-	validatePermission(option.PermissionPrefix)
 	validateAPIs(option.API)
 	validateEntity(option.Entity)
 	validateService(option.Service)
@@ -393,20 +386,6 @@ func validComponentRef(value MiddlewareRef) bool {
 	}
 
 	return true
-}
-
-func validatePermission(value string) {
-	if value == "" {
-		return
-	}
-	if strings.TrimSpace(value) != value {
-		panicCore("Route Permission 无效")
-	}
-	for _, segment := range strings.Split(value, ":") {
-		if !token.IsIdentifier(segment) {
-			panicCore("Route Permission 无效")
-		}
-	}
 }
 
 func validateOptionalText(value, label string) {

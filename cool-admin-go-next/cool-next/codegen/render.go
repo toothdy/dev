@@ -1589,9 +1589,6 @@ func writeRouteDefinition(source *strings.Builder, controller renderController, 
 	writeCallableReference(source, route.handler)
 	writeStringField(source, "Middleware", route.middleware)
 	writeStringField(source, "Tags", route.tags)
-	if route.permission != "" {
-		fmt.Fprintf(source, ", Permission: %q", route.permission)
-	}
 	if route.transaction.IsNonTransactional() {
 		source.WriteString(", Transaction: coreroute.NonTransactional()")
 	}
@@ -1885,14 +1882,12 @@ func writeHTTPRouteInstall(
 	ignoreToken := containsString(route.tags, "ignoreToken")
 	fmt.Fprintf(
 		source,
-		"%scontextMiddleware_%s, err := apphttp.NewContextMiddleware(%s, %q, %s.Rule{IgnoreToken: %t, Permission: %q})\n",
+		"%scontextMiddleware_%s, err := apphttp.NewContextMiddleware(%s, %q, %t)\n",
 		indent,
 		routeName,
 		authenticator,
 		route.path,
-		imports.alias(authPackagePath),
 		ignoreToken,
-		route.permission,
 	)
 	fmt.Fprintf(source, "%sif err != nil {\n%s\treturn exception.WrapCore(err, %q)\n%s}\n", indent, indent, "构造 HTTP 路由中间件失败: "+route.method+" "+route.path, indent)
 	fmt.Fprintf(source, "%sserver.BindMiddleware(%q, contextMiddleware_%s)\n", indent, pattern, routeName)

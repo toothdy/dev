@@ -91,10 +91,14 @@ func DerivePermission(fullPath string, ignoreToken bool) (string, error)
 | 1 | `ignoreToken == true` | `""` |
 | 2 | 路径不以 `/admin/` 开头 | `""` |
 | 3 | 去掉 `/admin/` 后存在某段等于 `comm` 且该段不是最后一段 | `""` |
-| 4 | 任一段不是合法 Go 标识符 | error，启动失败 |
+| 4 | 任一段不匹配 `^[A-Za-z_][A-Za-z0-9_]*$` | error，启动失败 |
 | 5 | 其余 | 各段以 `:` 连接 |
 
 空串统一表示"只校验登录"，复用 `auth/service.go:129` 的既有语义。
+
+第 4 条**不得使用 `go/token.IsIdentifier`**。该函数拒绝 Go 关键字，而真实路由中存在关键字段：当前仓库的 `/admin/base/sys/menu/import`，以及 Node 全量集中的 `/admin/dict/type/*` 与 `/admin/space/type/*`（共 12 条）。权限标识只作为 map 键与字符串字面量使用，从不成为 Go 标识符，因此按字符形状校验即可。
+
+现有 `codegen/route_analysis.go:207` 的 `defaultCRUDPermissionPrefix` 与 `core/route/route.go:509`、`core/controller/controller.go:398` 的 `validatePermission` 均使用 `token.IsIdentifier`，属既有过度约束——当前未暴露仅因带关键字段的路由恰好都没有权限标识。这三处随第 8 节一并删除或替换。
 
 第 3 条的"不是最后一段"与 Node 正则 `^/admin/?.*/comm/` 精确等价——该正则要求 `/comm/` 带尾斜杠，因此 `comm` 之后必须还有内容。当前无此边界路由，规则按 Node 写死以免后续分歧。
 
@@ -108,7 +112,12 @@ func DerivePermission(fullPath string, ignoreToken bool) (string, error)
 
 ### 6.2 顺带修正的潜在分歧
 
-现有 `defaultCRUDPermissionPrefix` 会剥离 `admin` **或 `app`** 前缀，因此 App 侧 CRUD 控制器会得到真实权限标识并被强制校验，而 Node 的 `UserMiddleware` 对 `/app/` 从不做权限比对。当前仓库无 App CRUD 控制器故未暴露，新规则第 2 条堵住此口。
+现有 `defaultCRUDPermissionPrefix` 的做法是**剥离** `admin`/`app` 前缀后拼接剩余段，而非**以** `/admin/` 为准入条件。这带来两处与 Node 不一致的行为：
+
+1. App 侧 CRUD 控制器会得到真实权限标识并被强制校验，而 Node 的 `UserMiddleware` 对 `/app/` 从不做权限比对；
+2. 使用 `IgnoreGlobalPrefix` 让路径脱离 `/admin/` 与 `/app/` 的控制器，其全部路径段会被直接拼成权限标识（例如 `/upload` 得到 `upload:add`），而 Node 的 `BaseAuthorityMiddleware` 对非 `/admin/` 路径完全放行。
+
+当前仓库既无 App CRUD 控制器，也无脱离前缀的 CRUD 控制器，故两者均未暴露。新规则第 2 条以 `/admin/` 前缀为准入条件，同时堵住这两个口。
 
 ## 7. 全路由验证
 

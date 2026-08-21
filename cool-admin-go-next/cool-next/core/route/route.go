@@ -84,7 +84,6 @@ type Definition struct {
 	Method          string
 	Middleware      []string
 	Path            string
-	Permission      string
 	Summary         string
 	Tags            []string
 	Transaction     TransactionPolicy
@@ -128,7 +127,6 @@ type Route struct {
 	method          string
 	middleware      []string
 	path            string
-	permission      string
 	summary         string
 	tags            []string
 	transaction     TransactionPolicy
@@ -237,9 +235,6 @@ func (route Route) Middleware() []string { return append([]string(nil), route.mi
 
 // Tags 路由标签副本
 func (route Route) Tags() []string { return append([]string(nil), route.tags...) }
-
-// Permission 权限字符串
-func (route Route) Permission() string { return route.permission }
 
 // Transaction 事务策略
 func (route Route) Transaction() TransactionPolicy { return route.transaction }
@@ -364,12 +359,6 @@ func compileRoute(definition Definition, controllerKeys map[string]bool) (Route,
 	if err != nil {
 		return Route{}, exception.WrapCore(err, fmt.Sprintf("路由 %s %s 无效", method, fullPath))
 	}
-	if contains(tags, "ignoreToken") && strings.TrimSpace(definition.Permission) != "" {
-		return Route{}, exception.Core(fmt.Sprintf("路由 %s %s 的 ignoreToken 与权限冲突", method, fullPath))
-	}
-	if err = validatePermission(definition.Permission); err != nil {
-		return Route{}, exception.WrapCore(err, fmt.Sprintf("路由 %s %s 权限无效", method, fullPath))
-	}
 	if err = validateText("摘要", definition.Summary, true); err != nil {
 		return Route{}, exception.WrapCore(err, fmt.Sprintf("路由 %s %s 无效", method, fullPath))
 	}
@@ -387,7 +376,6 @@ func compileRoute(definition Definition, controllerKeys map[string]bool) (Route,
 		method:          method,
 		middleware:      middleware,
 		path:            fullPath,
-		permission:      definition.Permission,
 		summary:         definition.Summary,
 		tags:            tags,
 		transaction:     definition.Transaction,
@@ -504,22 +492,6 @@ func validSymbolPath(value string) bool {
 
 func validTag(value string) bool {
 	return strings.TrimSpace(value) == value && token.IsIdentifier(value)
-}
-
-func validatePermission(value string) error {
-	if value == "" {
-		return nil
-	}
-	if strings.TrimSpace(value) != value {
-		return exception.Core("不能包含首尾空白")
-	}
-	for _, segment := range strings.Split(value, ":") {
-		if !token.IsIdentifier(segment) {
-			return exception.Core("必须是冒号分隔的标识符")
-		}
-	}
-
-	return nil
 }
 
 func validateText(label, value string, optional bool) error {

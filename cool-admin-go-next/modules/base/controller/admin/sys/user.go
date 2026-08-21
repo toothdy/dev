@@ -73,20 +73,18 @@ func AdminSysUserController(user *service.UserService, handler *UserHandler) con
 		}).
 		Route(
 			controller.Route{
-				Method:     http.MethodPost,
-				Path:       "/add",
-				Summary:    "新增",
-				Handler:    controller.Handle(handler.Add),
-				Bind:       controller.BindJSON,
-				Permission: "base:sys:user:add",
+				Method:  http.MethodPost,
+				Path:    "/add",
+				Summary: "新增",
+				Handler: controller.Handle(handler.Add),
+				Bind:    controller.BindJSON,
 			},
 			controller.Route{
-				Method:     http.MethodPost,
-				Path:       "/update",
-				Summary:    "更新",
-				Handler:    controller.Handle(handler.Update),
-				Bind:       controller.BindJSON,
-				Permission: "base:sys:user:update",
+				Method:  http.MethodPost,
+				Path:    "/update",
+				Summary: "更新",
+				Handler: controller.Handle(handler.Update),
+				Bind:    controller.BindJSON,
 			},
 			controller.Route{
 				Method:      http.MethodPost,
@@ -94,16 +92,14 @@ func AdminSysUserController(user *service.UserService, handler *UserHandler) con
 				Summary:     "分页查询",
 				Handler:     controller.Handle(handler.Page),
 				Bind:        controller.BindJSON,
-				Permission:  "base:sys:user:page",
 				Transaction: controller.NonTransactional(),
 			},
 			controller.Route{
-				Method:     http.MethodPost,
-				Path:       "/move",
-				Summary:    "移动部门",
-				Handler:    controller.Handle(handler.Move),
-				Bind:       controller.BindJSON,
-				Permission: "base:sys:user:move",
+				Method:  http.MethodPost,
+				Path:    "/move",
+				Summary: "移动部门",
+				Handler: controller.Handle(handler.Move),
+				Bind:    controller.BindJSON,
 			},
 		).
 		Build()
