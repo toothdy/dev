@@ -72,7 +72,15 @@ func LegacyView(document Document) map[string][]LegacyController {
 		}
 		items := make([]LegacyController, 0, len(module.Controllers))
 		for _, controller := range module.Controllers {
-			items = append(items, legacyController(module.Key, controller))
+			item := legacyController(module.Key, controller)
+			// 过滤后无接口可用的 Controller 不进入契约，与 cool-admin-node 的输出保持一致
+			if len(item.API) == 0 {
+				continue
+			}
+			items = append(items, item)
+		}
+		if len(items) == 0 {
+			continue
 		}
 		result[module.Key] = items
 	}
@@ -81,19 +89,24 @@ func LegacyView(document Document) map[string][]LegacyController {
 }
 
 func legacyController(moduleKey string, controller Controller) LegacyController {
-	var (
-		entityName string
-		columns    = make([]LegacyColumn, 0)
-	)
+	// 有 Entity 的 CRUD Controller 用实体名，其余用 Controller 名，
+	// 与 cool-admin-node 生成的 Eps 实体接口命名保持一致
+	name := controller.Name
+	columns := make([]LegacyColumn, 0)
 	if controller.Entity != nil {
-		entityName = controller.Entity.Name
+		name = controller.Entity.Name
 		columns = legacyColumns(controller.Entity.Fields)
 	}
 	apis := make([]LegacyAPI, 0, len(controller.API))
 	for _, api := range controller.API {
+		// 带路径参数的路由（如静态文件读取）无法用 `/${namespace}${api.path}` 拼接调用，
+		// cool-admin-node 也从不将其纳入 EPS，跳过以免产生非法的 service 方法名与权限项
+		if strings.ContainsAny(api.Path, "{}") {
+			continue
+		}
 		apis = append(apis, LegacyAPI{
 			Method:      api.Method,
-			Path:        api.Path,
+			Path:        legacyAPIPath(controller.Prefix, api.Path),
 			Summary:     api.Summary,
 			DTS:         map[string]interface{}{},
 			Prefix:      controller.Prefix,
@@ -103,7 +116,7 @@ func legacyController(moduleKey string, controller Controller) LegacyController 
 
 	return LegacyController{
 		Module: moduleKey,
-		Name:   entityName,
+		Name:   name,
 		Prefix: controller.Prefix,
 		Info: LegacyInfo{Type: LegacyInfoType{
 			Name:        legacyControllerTypeName(controller.Prefix),
@@ -177,15 +190,27 @@ func legacyColumnType(databaseType string) string {
 	}
 }
 
-// legacyControllerTypeName 从 Controller 前缀提取类型名，与 v1 controllerTypeName 行为一致
+// legacyControllerTypeName 取 Controller 前缀的末段，对齐 cool-admin-node 的 prefix.split('/').pop()
 func legacyControllerTypeName(prefix string) string {
-	trimmed := strings.TrimPrefix(prefix, "/admin/")
-	trimmed = strings.TrimPrefix(trimmed, "/app/")
-	trimmed = strings.Trim(trimmed, "/")
-	if trimmed == "" {
-		return ""
-	}
-	parts := strings.Split(trimmed, "/")
+	parts := strings.Split(prefix, "/")
 
 	return parts[len(parts)-1]
+}
+
+// legacyAPIPath 将 EPS 中的完整路由路径还原为相对 Controller 前缀的路径。
+// cool-admin-vue 依赖该相对路径拼接请求地址（`/${namespace}${api.path}`）并推导 service 方法名
+// （`api.path.replace("/", "")`），传入完整路径会导致 URL 前缀重复且方法名非法。
+func legacyAPIPath(prefix, fullPath string) string {
+	if prefix == "" || !strings.HasPrefix(fullPath, prefix) {
+		return fullPath
+	}
+	relative := strings.TrimPrefix(fullPath, prefix)
+	if relative == "" {
+		return fullPath
+	}
+	if !strings.HasPrefix(relative, "/") {
+		return "/" + relative
+	}
+
+	return relative
 }
