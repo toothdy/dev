@@ -109,6 +109,11 @@ func (runtime *Runtime) importDB(ctx context.Context, definition Definition, dat
 						return exception.WrapCore(insertErr, "写入数据库种子失败: "+table)
 					}
 				}
+				// SeedData 保留种子里的显式主键，PostgreSQL 的序列不会因此推进，
+				// 必须显式同步，否则后续自动分配的主键会从 1 开始撞上种子行。
+				if err = runtime.syncPrimarySequence(guardCtx, descriptors[table]); err != nil {
+					return err
+				}
 			}
 			return nil
 		})
@@ -138,6 +143,16 @@ func (runtime *Runtime) importMenu(ctx context.Context, definition Definition, d
 			return syncErr
 		})
 	})
+}
+
+// 种子写入显式主键后同步自增序列，非自增主键直接跳过。
+func (runtime *Runtime) syncPrimarySequence(ctx context.Context, descriptor coreentity.RuntimeDescriptor) error {
+	primary := descriptor.Primary()
+	if primary == nil || !primary.AutoIncrement() {
+		return nil
+	}
+
+	return runtime.runtime.SyncSequence(ctx, descriptor.Table(), primary.Column())
 }
 
 func definitionDescriptors(definition Definition) map[string]coreentity.RuntimeDescriptor {
