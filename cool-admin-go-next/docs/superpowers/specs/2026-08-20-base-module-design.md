@@ -215,6 +215,8 @@ Node 把下面两项放在 **`@cool-midway/core`**，不是 base：
 
 结果：`go build ./...`、`go vet ./...`、`gofmt -l .`、`cool generate`（幂等，二次运行无新增 diff）、`cool check` 全部通过；`modules/modules_gen.go` 已按新构造函数签名重新生成并提交。
 
+**边界修正**：上面把 `ExportMenu`/`ImportMenu` 先放进了 `controller/admin/coding.go`，回头核对 Node 源码（`cool-admin-midway-packages` 之外，`cool-admin-midway/src/modules/base/controller/admin/{coding.ts,sys/menu.ts}`）后发现这个边界划错了。Node 里 `AdminCodingController`/`BaseCodingService`（`coding.ts`）只有 `getModuleTree`/`createCode` 两个和具体实体无关的通用接口；`parse`/`create`/`export`/`import` 四个方法全部实现在 `BaseSysMenuService` 上、挂在 `BaseSysMenuController`（`sys/menu.ts`）——和菜单 CRUD 同一个 Controller、同一张表。按这个依据把 `ParseMenu`/`CreateMenuCode`/`ExportMenu`/`ImportMenu` 连同专属的 `menuExportRow`/`buildMenuTreeNode`/`menuTreeValues`/`menuTreeChildren`/`MenuImportRequest` 一并移到 `controller/admin/sys/menu.go`，新增 `MenuToolHandler` 类型（`sys` 与 `admin` 是不同 Go package，`ToolHandler` 的方法不能跨包复用，只能建一个新类型），`MenuController` 签名从 `(menu)` 改为 `(menu, tool)`，四条工具路由折进同一个 `controller.Definition`。`requireAdmin`/`adminRoleChecker` 这类"平台管理员硬门槛"（区别于普通 CRUD 用的 `Permission: "base:xxx:yyy"` 声明式字符串）在 `sys/user.go`/`role.go`/`department.go` 里也是各文件各自定义一份，未见共享抽象，此处照旧不新增跨包公共类型。`coding.go` 收窄到只剩 `ToolHandler{scaffold, permission}` + `GetModuleTree`/`CreateCode`/`CodingController`。路由路径验证：`/admin/base/sys/menu/{parse,create,export,import}` 与迁移前逐字节一致（生成结果对比 `modules_gen.go`），前端契约不受影响。
+
 ### 5.4 验收
 
 每步均须 `make check` 全绿（含 `cool check` 的生成新鲜度与静态契约校验）。注意仓库当前 `.gitignore` 排除了 `*_test.go` 与 `/test/`，本地无单测可依赖，因此静态门禁是唯一自动化保障——不得以「改动简单」为由跳过。
