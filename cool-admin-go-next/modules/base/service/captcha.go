@@ -33,7 +33,7 @@ const (
 	captchaCharacters    = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 )
 
-// CaptchaService 提供 Base 模块的进程内验证码。
+// Base 模块的进程内验证码
 type CaptchaService struct {
 	cache  *gcache.Cache
 	color  string
@@ -44,7 +44,7 @@ type CaptchaService struct {
 	width  int
 }
 
-// NewCaptcha 按 Base 配置创建使用私有内存缓存的验证码服务。
+// 按 Base 配置使用私有内存缓存的验证码服务
 func NewCaptcha(config base.Config) (*CaptchaService, error) {
 	captcha := config.Captcha
 	if captcha.TTL <= 0 || captcha.Width < captchaMinWidth || captcha.Width > captchaMaxWidth ||
@@ -113,7 +113,6 @@ func (service *CaptchaService) Verify(ctx context.Context, captchaID, verifyCode
 	return true, nil
 }
 
-// 生成随机字符串验证码
 func (service *CaptchaService) randomString(length int, characters string) (string, error) {
 	var builder strings.Builder
 	builder.Grow(length)
@@ -129,7 +128,6 @@ func (service *CaptchaService) randomString(length int, characters string) (stri
 	return builder.String(), nil
 }
 
-// 生成随机十六进制字符串验证码
 func (service *CaptchaService) randomHex(size int) (string, error) {
 	value := make([]byte, size)
 	if _, err := io.ReadFull(service.random, value); err != nil {
@@ -139,7 +137,6 @@ func (service *CaptchaService) randomHex(size int) (string, error) {
 	return hex.EncodeToString(value), nil
 }
 
-// 归一化验证码选项
 func (service *CaptchaService) normalizeOptions(query dto.CaptchaQuery) (int, int, string) {
 	width := query.Width
 	if width < captchaMinWidth || width > captchaMaxWidth {
@@ -157,7 +154,6 @@ func (service *CaptchaService) normalizeOptions(query dto.CaptchaQuery) (int, in
 	return width, height, color
 }
 
-// 校验验证码颜色是否有效
 func isCaptchaColor(color string) bool {
 	if (len(color) != 4 && len(color) != 7) || color[0] != '#' {
 		return false
@@ -174,7 +170,6 @@ func isCaptchaColor(color string) bool {
 	return true
 }
 
-// 生成验证码 SVG 图片
 func buildCaptchaSVG(code string, width, height int, color string) string {
 	fontSize := height * 3 / 5
 	return fmt.Sprintf(
@@ -189,7 +184,6 @@ func buildCaptchaSVG(code string, width, height int, color string) string {
 	)
 }
 
-// 生成验证码缓存键
 func captchaCacheKey(captchaID string) string {
 	return captchaCachePrefix + captchaID
 }

@@ -50,7 +50,7 @@ type serializedEnvelope struct {
 	Headers     map[string]string `json:"headers"`
 }
 
-// 创建数据库 Enqueuer
+// 数据库 Enqueuer
 func NewEnqueuer(runtime *coredb.Runtime, store outboxstore.Store, limits EnqueueLimits) (Enqueuer, error) {
 	if runtime == nil || runtime.DB() == nil || runtime.Runner() == nil || runtime.Group() == "" {
 		return nil, gerror.New("outbox: 框架数据库 Runtime 无效")
@@ -65,7 +65,7 @@ func NewEnqueuer(runtime *coredb.Runtime, store outboxstore.Store, limits Enqueu
 	return &databaseEnqueuer{runtime: runtime, store: store, limits: limits}, nil
 }
 
-// 在 Framework Database Group 中持久入队
+// 框架事务内落库待发消息
 func (enqueuer *databaseEnqueuer) Enqueue(ctx context.Context, message Envelope) error {
 	record, err := enqueuer.toRecord(message)
 	if err != nil {

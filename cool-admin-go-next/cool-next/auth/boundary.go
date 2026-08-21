@@ -8,15 +8,13 @@ import (
 	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
 )
 
-// Boundary 统一授权关系变更的数据库锁和 Session 撤销顺序：业务模块改角色/菜单/
-// 部门/用户这类授权关系前，先按主键升序锁定目标行、校验其确实存在，改的是用户
-// 本身时随后撤销其全部已签发 Session，防止旧 Token 在权限变更后继续生效。
+// 授权关系变更的统一入口：先锁目标行再写入，必要时撤销 Session
 type Boundary struct {
 	runtime  *coredb.Runtime
 	sessions SessionStore
 }
 
-// NewBoundary 创建授权变更边界。
+// 授权变更边界
 func NewBoundary(runtime *coredb.Runtime, sessions SessionStore) (*Boundary, error) {
 	if runtime == nil || runtime.Runner() == nil || sessions == nil {
 		return nil, exception.Core("授权变更边界依赖无效")
@@ -25,8 +23,7 @@ func NewBoundary(runtime *coredb.Runtime, sessions SessionStore) (*Boundary, err
 	return &Boundary{runtime: runtime, sessions: sessions}, nil
 }
 
-// LockTable 在当前框架事务内按主键升序锁定 table 中的 ids，并校验请求的记录全部
-// 存在；message 用作失败时的错误文案前缀。ids 为空时直接返回 nil，不发起查询。
+// 授权变更使用的行锁与存在性校验
 func (boundary *Boundary) LockTable(ctx context.Context, table string, ids []uint64, message string) error {
 	if boundary == nil || boundary.runtime == nil {
 		return exception.Core("授权变更边界未初始化")
@@ -46,8 +43,7 @@ func (boundary *Boundary) LockTable(ctx context.Context, table string, ids []uin
 	return nil
 }
 
-// LockUsersAndRevoke 锁定 table 中的 userIDs，成功后按 kind 批量撤销这些用户的
-// 已签发 Session。用于"改了某人的授权关系，其旧登录必须失效"这类语义。
+// 授权变更后让目标用户的旧 Token 失效
 func (boundary *Boundary) LockUsersAndRevoke(ctx context.Context, table string, userIDs []uint64, kind Kind, message string) error {
 	if boundary == nil || boundary.sessions == nil {
 		return exception.Core("授权变更边界未初始化")
@@ -66,8 +62,7 @@ func (boundary *Boundary) LockUsersAndRevoke(ctx context.Context, table string, 
 	return nil
 }
 
-// RevokeUsers 按 kind 批量撤销 userIDs 的已签发 Session，不加锁。调用方已在别处
-// 完成加锁（例如与其他授权变更共用一次锁定）时用这个跳过重复加锁。
+// 调用方已加锁时跳过重复加锁的 Session 撤销
 func (boundary *Boundary) RevokeUsers(ctx context.Context, kind Kind, userIDs []uint64) error {
 	if boundary == nil || boundary.sessions == nil {
 		return exception.Core("授权变更边界未初始化")
@@ -83,8 +78,7 @@ func (boundary *Boundary) RevokeUsers(ctx context.Context, kind Kind, userIDs []
 	return nil
 }
 
-// ValidateSnapshot 校验 before 与 after 归一化后的 ID 集合相同，用于锁定后重新
-// 查询当前授权关系、确认加锁期间未被其他事务并发改动。
+// 授权变更提交前的并发一致性校验
 func ValidateSnapshot(before, after []uint64, message string) error {
 	if !slices.Equal(NormalizeIDs(before), NormalizeIDs(after)) {
 		return exception.Comm(message)
@@ -93,7 +87,7 @@ func ValidateSnapshot(before, after []uint64, message string) error {
 	return nil
 }
 
-// NormalizeIDs 去零、去重并升序排列 ID，调用顺序一致可避免多事务交叉加锁产生死锁。
+// 为交叉加锁准备一致的 ID 顺序
 func NormalizeIDs(ids []uint64) []uint64 {
 	result := make([]uint64, 0, len(ids))
 	for _, id := range ids {

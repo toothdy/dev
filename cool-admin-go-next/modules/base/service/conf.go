@@ -21,12 +21,12 @@ type confValueUpdate struct {
 	CValue string `orm:"cValue"`
 }
 
-// ConfService 提供 Base 内部配置读写。
+// Base 内部配置读写
 type ConfService struct {
 	*coreservice.Base[entity.Conf, uint64]
 }
 
-// NewConf 创建内部配置服务。
+// 内部配置服务
 func NewConf(baseService *coreservice.Base[entity.Conf, uint64]) (*ConfService, error) {
 	if baseService == nil || baseService.Descriptor() == nil {
 		return nil, exception.Core("配置基础 Service 无效")
@@ -35,7 +35,7 @@ func NewConf(baseService *coreservice.Base[entity.Conf, uint64]) (*ConfService, 
 	return &ConfService{Base: baseService}, nil
 }
 
-// Value 按键读取内部配置。
+// 按键读取内部配置
 func (service *ConfService) Value(ctx context.Context, key string) (string, bool, error) {
 	if service == nil || service.Base == nil || strings.TrimSpace(key) == "" {
 		return "", false, exception.Core("配置服务或配置键无效")
@@ -58,7 +58,7 @@ func (service *ConfService) Value(ctx context.Context, key string) (string, bool
 	return value.String(), true, nil
 }
 
-// SetValue 更新已存在的内部配置。
+// 更新已存在的内部配置
 func (service *ConfService) SetValue(ctx context.Context, key, value string) error {
 	if service == nil || service.Base == nil || strings.TrimSpace(key) == "" {
 		return exception.Core("配置服务或配置键无效")
@@ -82,7 +82,7 @@ func (service *ConfService) SetValue(ctx context.Context, key, value string) err
 	return nil
 }
 
-// LogKeep 返回操作日志保留天数。
+// 返回操作日志保留天数
 func (service *ConfService) LogKeep(ctx context.Context) (int, error) {
 	value, exists, err := service.Value(ctx, logKeepKey)
 	if err != nil {
@@ -99,7 +99,7 @@ func (service *ConfService) LogKeep(ctx context.Context) (int, error) {
 	return days, nil
 }
 
-// SetLogKeep 更新操作日志保留天数。
+// 更新操作日志保留天数
 func (service *ConfService) SetLogKeep(ctx context.Context, days int) error {
 	if days <= 0 {
 		return exception.Validate("日志保留天数必须大于 0")

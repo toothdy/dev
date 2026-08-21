@@ -13,17 +13,17 @@ import (
 
 const maxOperationLogParams = 8 << 10
 
-// LogHandler 记录后台业务操作日志。
+// 后台业务操作日志
 type LogHandler struct {
 	log *service.LogService
 }
 
-// NewLogHandler 创建操作日志中间件。
+// 操作日志中间件
 func NewLogHandler(logService *service.LogService) *LogHandler {
 	return &LogHandler{log: logService}
 }
 
-// Handle 记录允许范围内的后台请求，不影响业务响应。
+// 记录允许范围内的后台请求
 func (handler *LogHandler) Handle(request *ghttp.Request) {
 	if request == nil {
 		return

@@ -39,7 +39,7 @@ type tableContract struct {
 	indexes    map[string][]string
 }
 
-// 验证 Store 的结构与运行能力
+// 自检 Store 与 Schema 契约
 func (store *DatabaseStore) Probe(ctx context.Context) error {
 	if store == nil || store.runtime == nil || store.runtime.DB() == nil {
 		return gerror.New("outbox store: Store 未初始化")

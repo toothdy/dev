@@ -12,7 +12,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
-// AdminSysRoleController 声明系统角色管理路由。
+// 系统角色管理路由
 func AdminSysRoleController(role *service.RoleService) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{Description: "系统角色", TagName: "系统角色"}).

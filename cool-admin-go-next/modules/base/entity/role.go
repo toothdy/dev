@@ -5,7 +5,7 @@ import (
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 )
 
-// Role 是后台用户角色。
+// 后台用户角色
 type Role struct {
 	g.Meta `orm:"table:base_sys_role" description:"系统角色"`
 	coreentity.Base
@@ -18,7 +18,7 @@ type Role struct {
 	DepartmentIDList []uint64 `json:"departmentIdList" orm:"departmentIdList" description:"部门权限" cool:"json=true"`
 }
 
-// RoleSchema 返回角色表补充索引。
+// 角色表补充索引
 func RoleSchema() coreentity.Schema {
 	return coreentity.Schema{Indexes: []coreentity.Index{
 		coreentity.UniqueIndexOf("uk_base_sys_role_name", "name"),

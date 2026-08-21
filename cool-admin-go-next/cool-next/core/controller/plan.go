@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-// CompilePlan 编译默认 CRUD 动作计划
+// 默认 CRUD 动作计划
 func CompilePlan(
 	ctx context.Context,
 	resolver crud.DescriptorResolver,

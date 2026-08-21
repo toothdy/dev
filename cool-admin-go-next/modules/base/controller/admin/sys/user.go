@@ -12,17 +12,17 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
-// UserHandler 适配用户管理自定义接口。
+// 适配用户管理自定义接口
 type UserHandler struct {
 	user *service.UserService
 }
 
-// NewUserHandler 创建用户管理接口适配器。
+// 用户管理接口适配器
 func NewUserHandler(user *service.UserService) *UserHandler {
 	return &UserHandler{user: user}
 }
 
-// Add 新增用户并写入角色关系。
+// 新增用户并写入角色关系
 func (handler *UserHandler) Add(ctx context.Context, request *dto.UserAddReq) (coreservice.AddResult[uint64], error) {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
@@ -32,17 +32,17 @@ func (handler *UserHandler) Add(ctx context.Context, request *dto.UserAddReq) (c
 	return handler.user.Add(ctx, *request, identity.UserID)
 }
 
-// Update 更新用户并按提交状态替换角色关系。
+// 更新用户并按提交状态替换角色关系
 func (handler *UserHandler) Update(ctx context.Context, request *dto.UserUpdateReq) error {
 	return handler.user.Update(ctx, request)
 }
 
-// Move 批量移动用户部门。
+// 批量移动用户部门
 func (handler *UserHandler) Move(ctx context.Context, request *dto.UserMoveReq) error {
 	return handler.user.Move(ctx, *request)
 }
 
-// Page 返回当前管理员数据范围内的用户分页。
+// 当前管理员数据范围内的用户分页
 func (handler *UserHandler) Page(ctx context.Context, request *dto.UserPageReq) (service.UserPageResult, error) {
 	page := request.Page
 	if page == 0 {
@@ -60,7 +60,7 @@ func (handler *UserHandler) Page(ctx context.Context, request *dto.UserPageReq) 
 	})
 }
 
-// 声明系统用户管理路由
+// 系统用户管理路由
 func AdminSysUserController(user *service.UserService, handler *UserHandler) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{Description: "系统用户", TagName: "系统用户"}).

@@ -16,7 +16,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 )
 
-// CodeFile 是待写入工作区的 Go 文件。
+// 待写入工作区的 Go 文件
 type CodeFile struct {
 	Path    string `json:"path"`
 	Content string `json:"content"`
@@ -27,16 +27,16 @@ type preparedCodeFile struct {
 	content []byte
 }
 
-// Scaffold 提供受工作区边界约束的开发代码读写能力：受控写入 modules/ 下的新
+// 受工作区边界约束的开发代码读写能力：受控写入 modules/ 下的新
 // 生成文件、列出可生成代码的模块目录。业务模块不直接注册它为 DI 组件——它只
 // 服务于开发期的一个管理端点，模块的 Controller 直接在构造函数里创建实例，
-// 用法与 bcrypt.New() 等纯库依赖一致。
+// 用法与 bcrypt.New() 等纯库依赖一致
 type Scaffold struct {
 	workspace string
 	mu        sync.Mutex
 }
 
-// NewScaffold 创建代码脚手架工具，workspace 是模块代码生成的写入根目录。
+// 代码脚手架工具，workspace 是模块代码生成的写入根目录
 func NewScaffold(workspace string) (*Scaffold, error) {
 	workspace = strings.TrimSpace(workspace)
 	if workspace == "" {
@@ -61,7 +61,7 @@ func NewScaffold(workspace string) (*Scaffold, error) {
 	return &Scaffold{workspace: resolved}, nil
 }
 
-// GetModuleTree 返回含合法 config.go 的模块名称。
+// 含合法 config.go 的模块名称
 func (scaffold *Scaffold) GetModuleTree() ([]string, error) {
 	root, err := scaffold.openRoot()
 	if err != nil {
@@ -102,7 +102,7 @@ func (scaffold *Scaffold) GetModuleTree() ([]string, error) {
 	return modules, nil
 }
 
-// CreateCode 全量校验后创建一批不允许覆盖的 Go 文件。
+// CreateCode 创建一批不允许覆盖的 Go 文件
 func (scaffold *Scaffold) CreateCode(codes []CodeFile) error {
 	if scaffold == nil {
 		return exception.Core("代码脚手架未初始化")

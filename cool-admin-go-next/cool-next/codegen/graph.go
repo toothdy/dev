@@ -333,7 +333,7 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 	return graph, nil
 }
 
-// appendAuthProviders 注册由生成装配负责创建的认证端口。
+// 由生成装配负责创建的认证端口
 func appendAuthProviders(model *Model, providers []graphProvider) []graphProvider {
 	seen := make(map[string]bool)
 	for _, current := range providers {
@@ -409,7 +409,7 @@ func findSeedDataType(model *Model) types.Type {
 	return nil
 }
 
-// findRuntimeProviderType 搜索任意构造器参数中的 *coredb.Runtime 类型，返回其 types.Type 对象。
+// 任意构造器参数中的 *coredb.Runtime 类型，返回其 types.Type 对象
 func findRuntimeProviderType(model *Model) types.Type {
 	runtimePackagePath := databasePackagePath
 	for _, current := range model.modules {

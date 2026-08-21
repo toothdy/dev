@@ -157,7 +157,7 @@ func SyncTree(
 	return ids, nil
 }
 
-// 按唯一字段查找记录 ID，未命中视为错误
+// 按唯一字段查找记录 ID
 func FindID(ctx context.Context, transaction Model, table, field, value string) (uint64, error) {
 	if value == "" {
 		return 0, exception.Core("初始化关系引用无效")
@@ -187,7 +187,7 @@ func (record Record) Data(descriptor coreentity.RuntimeDescriptor) (any, error) 
 	return do.DBData(), nil
 }
 
-// 按 Descriptor 解码完整种子记录，保留显式主键以维持 JSON 中的关联关系
+// 解码完整种子记录并保留显式主键
 func (record Record) SeedData(descriptor coreentity.RuntimeDescriptor) (any, error) {
 	for name := range record {
 		if _, exists := descriptor.JSON(name); !exists {

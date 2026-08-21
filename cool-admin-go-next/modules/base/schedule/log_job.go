@@ -14,7 +14,7 @@ import (
 
 const logCleanupJobName = "base-operation-log-cleanup"
 
-// LogJob 管理操作日志每日清理任务。
+// 操作日志每日清理任务
 type LogJob struct {
 	service *service.LogService
 	cleanup func(context.Context, bool) (int64, error)
@@ -25,7 +25,7 @@ type LogJob struct {
 	started bool
 }
 
-// NewLogJob 创建操作日志清理生命周期组件。
+// 操作日志清理生命周期组件
 func NewLogJob(logService *service.LogService, config base.Config) (*LogJob, error) {
 	if logService == nil || config.Log.CleanupPattern == "" || config.Log.CleanupTimeout <= 0 {
 		return nil, exception.Core("操作日志清理配置无效")
@@ -40,7 +40,7 @@ func NewLogJob(logService *service.LogService, config base.Config) (*LogJob, err
 	}, nil
 }
 
-// OnStart 注册单例操作日志清理任务。
+// 注册单例操作日志清理任务
 func (job *LogJob) OnStart(ctx context.Context) error {
 	if job == nil || job.cron == nil || job.service == nil || job.cleanup == nil {
 		return exception.Core("操作日志清理任务未初始化")
@@ -58,7 +58,7 @@ func (job *LogJob) OnStart(ctx context.Context) error {
 	return nil
 }
 
-// OnStop 移除任务并等待当前清理完成。
+// 移除任务并等待当前清理完成
 func (job *LogJob) OnStop(ctx context.Context) error {
 	if job == nil || job.cron == nil {
 		return nil

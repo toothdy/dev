@@ -36,12 +36,12 @@ type TransactionPolicy struct {
 	nonTransactional bool
 }
 
-// NonTransactional 创建非事务策略
+// 非事务策略
 func NonTransactional() TransactionPolicy {
 	return TransactionPolicy{nonTransactional: true}
 }
 
-// IsNonTransactional 判断是否显式关闭事务
+// 是否显式关闭事务
 func (policy TransactionPolicy) IsNonTransactional() bool {
 	return policy.nonTransactional
 }
@@ -134,7 +134,7 @@ type Route struct {
 	transaction     TransactionPolicy
 }
 
-// BuildTable 构建不可变静态路由表
+// 不可变静态路由表
 func BuildTable(input TableInput) (Table, error) {
 	controllers, controllerKeys, err := compileControllers(input.Controllers)
 	if err != nil {
@@ -148,7 +148,7 @@ func BuildTable(input TableInput) (Table, error) {
 	return Table{controllers: controllers, routes: routes}, nil
 }
 
-// MustBuildTable 构建静态路由表
+// 静态路由表
 func MustBuildTable(input TableInput) Table {
 	table, err := BuildTable(input)
 	if err != nil {

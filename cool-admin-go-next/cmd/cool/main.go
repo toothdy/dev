@@ -41,7 +41,6 @@ type commandSet struct {
 	outbox   outboxCommand
 }
 
-// 执行 Cool CLI 命令
 func run(ctx context.Context, args []string, cwd string, stdout, stderr io.Writer) int {
 	return runCommands(ctx, args, cwd, stdout, stderr, commandSet{
 		generate: codegen.Generate,
@@ -121,7 +120,6 @@ func runCommands(
 	return exitSuccess
 }
 
-// 构建应用二进制
 func buildApplication(ctx context.Context, cwd string, stdout, stderr io.Writer) error {
 	if err := os.MkdirAll(filepath.Join(cwd, "bin"), 0o755); err != nil {
 		return fmt.Errorf("创建构建目录失败: %w", err)
@@ -130,7 +128,6 @@ func buildApplication(ctx context.Context, cwd string, stdout, stderr io.Writer)
 	return runGoCommand(ctx, cwd, stdout, stderr, "build", "-buildvcs=false", "-o", filepath.Join("bin", "cool-admin-go-next"), ".")
 }
 
-// 在本地运行应用
 func runApplication(ctx context.Context, cwd string, stdout, stderr io.Writer) error {
 	err := runGoCommand(ctx, cwd, stdout, stderr, "run", "-buildvcs=false", ".")
 	if ctx.Err() != nil {

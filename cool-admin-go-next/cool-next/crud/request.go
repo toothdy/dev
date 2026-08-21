@@ -64,7 +64,7 @@ func NewQueryRequest(values []RequestValue) (*QueryRequest, error) {
 	return request, nil
 }
 
-// 判断请求字段是否提交
+// 请求字段是否提交
 func (request *QueryRequest) Has(name string) bool {
 	if request == nil {
 		return false
@@ -74,7 +74,6 @@ func (request *QueryRequest) Has(name string) bool {
 	return exists
 }
 
-// 读取请求字段原值
 func (request *QueryRequest) Value(name string) (any, bool) {
 	if request == nil {
 		return nil, false
@@ -90,7 +89,6 @@ func (request *QueryRequest) Value(name string) (any, bool) {
 	return cloneRequestData(value.value), true
 }
 
-// 读取字符串请求字段
 func (request *QueryRequest) String(name string) (string, bool) {
 	value, exists := request.Value(name)
 	if !exists || value == nil {
@@ -101,7 +99,6 @@ func (request *QueryRequest) String(name string) (string, bool) {
 	return result, matches
 }
 
-// 读取布尔请求字段
 func (request *QueryRequest) Bool(name string) (bool, bool) {
 	value, exists := request.Value(name)
 	if !exists || value == nil {
@@ -112,7 +109,7 @@ func (request *QueryRequest) Bool(name string) (bool, bool) {
 	return result, matches
 }
 
-// 读取字符串切片请求字段
+// 切片(独立副本)
 func (request *QueryRequest) Strings(name string) ([]string, bool) {
 	value, exists := request.Value(name)
 	if !exists || value == nil {

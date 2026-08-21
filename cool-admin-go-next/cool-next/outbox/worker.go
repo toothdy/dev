@@ -97,7 +97,7 @@ type claimedRecord struct {
 
 type noopWorkerObserver struct{}
 
-// 创建受应用 Host 管理的发布组件
+// 受应用 Host 管理的发布组件
 func NewWorker(
 	store WorkerStore,
 	publisher Publisher,
@@ -132,7 +132,7 @@ func NewWorker(
 	}, nil
 }
 
-// 返回当前 Worker 实例 ID
+// 当前 Worker 实例 ID
 func (worker *Worker) ID() string {
 	if worker == nil {
 		return ""
@@ -141,7 +141,7 @@ func (worker *Worker) ID() string {
 	return worker.id
 }
 
-// 启动轮询和 Retention 清理
+// 轮询和 Retention 清理
 func (worker *Worker) OnStart(ctx context.Context) error {
 	if worker == nil {
 		return gerror.New("outbox worker: Worker 不能为空")
@@ -171,7 +171,7 @@ func (worker *Worker) OnStart(ctx context.Context) error {
 	return nil
 }
 
-// 停止领取并等待在途发布
+// 领取并等待在途发布
 func (worker *Worker) OnStop(ctx context.Context) error {
 	if worker == nil {
 		return nil
@@ -199,7 +199,7 @@ func (worker *Worker) OnStop(ctx context.Context) error {
 	}
 }
 
-// 返回发布循环终止信号
+// 发布循环终止信号
 func (worker *Worker) Terminated() <-chan error {
 	if worker == nil {
 		return nil

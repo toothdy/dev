@@ -25,7 +25,6 @@ type Config struct {
 	Registry bool   `json:"registry"` // 是否注册服务发现
 }
 
-// 返回 gRPC 默认配置
 func DefaultConfig() Config {
 	return Config{
 		Address: DefaultAddress,
@@ -48,7 +47,7 @@ func LoadConfig(ctx context.Context, source configuration.Source) (Config, error
 	return config, nil
 }
 
-// 校验 gRPC 监听与服务发现配置
+// gRPC 监听与服务发现配置
 func (config Config) Validate() error {
 	if strings.TrimSpace(config.Address) == "" || strings.TrimSpace(config.Address) != config.Address {
 		return exception.Core("gRPC Address 无效")

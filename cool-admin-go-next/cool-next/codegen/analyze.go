@@ -227,8 +227,7 @@ func isAllowedDirectory(directory string) bool {
 func isIgnoredDirectory(name string) bool { return name == "testdata" || strings.HasPrefix(name, ".") }
 
 // 校验模块根目录只包含协议允许的子目录和 config.go；
-// 未列入白名单的目录或散落文件此前会被 discoverEligibleFiles 静默跳过，
-// 逃逸所有基于 eligible 集合的 AST 校验（CG098/CG099 等），此处将其转为显式诊断。
+// 不符合项一律以诊断码显式报告，不被静默跳过
 func validateModuleDirectories(dir string, roots []string) []Diagnostic {
 	var diagnostics []Diagnostic
 	for _, root := range roots {

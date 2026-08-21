@@ -5,7 +5,7 @@ import (
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 )
 
-// Menu 是后台目录、菜单和按钮。
+// 后台目录、菜单和按钮
 type Menu struct {
 	g.Meta `orm:"table:base_sys_menu" description:"系统菜单"`
 	coreentity.Base
@@ -22,7 +22,7 @@ type Menu struct {
 	SeedKey   *string `json:"seedKey" orm:"seedKey" description:"初始化键" cool:"size=255"`
 }
 
-// MenuSchema 返回菜单表补充索引。
+// 菜单表补充索引
 func MenuSchema() coreentity.Schema {
 	return coreentity.Schema{Indexes: []coreentity.Index{
 		coreentity.IndexOf("idx_base_sys_menu_parent_id", "parentId"),

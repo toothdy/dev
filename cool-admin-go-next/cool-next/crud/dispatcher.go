@@ -34,7 +34,7 @@ type DispatchScope struct {
 
 type dispatchContextKey struct{}
 
-// 创建 CRUD Dispatcher
+// CRUD Dispatcher
 func NewDispatcher(runner dbtx.Runner) (*Dispatcher, error) {
 	if isNilPlanValue(runner) {
 		return nil, exception.Core("CRUD Dispatcher 的事务 Runner 不能为空")
@@ -79,7 +79,6 @@ func (dispatcher *Dispatcher) Dispatch(
 	})
 }
 
-// 查询当前 CRUD 调度状态
 func CurrentDispatch(ctx context.Context) (*DispatchScope, bool) {
 	if ctx == nil {
 		return nil, false
@@ -92,7 +91,6 @@ func CurrentDispatch(ctx context.Context) (*DispatchScope, bool) {
 	return scope, true
 }
 
-// 返回当前调度动作
 func (scope *DispatchScope) Action() Action {
 	if scope == nil {
 		return ""
@@ -101,7 +99,6 @@ func (scope *DispatchScope) Action() Action {
 	return scope.action
 }
 
-// 返回当前调度模式
 func (scope *DispatchScope) Mode() ActionMode {
 	if scope == nil {
 		return ""

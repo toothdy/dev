@@ -5,7 +5,7 @@ import (
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 )
 
-// Log 是后台业务操作日志。
+// 后台业务操作日志
 type Log struct {
 	g.Meta `orm:"table:base_sys_log" description:"系统操作日志"`
 	coreentity.Base
@@ -15,7 +15,7 @@ type Log struct {
 	Params *map[string]any `json:"params" orm:"params" description:"参数" cool:"json=true"`
 }
 
-// LogSchema 返回操作日志表补充索引。
+// 操作日志表补充索引
 func LogSchema() coreentity.Schema {
 	return coreentity.Schema{Indexes: []coreentity.Index{
 		coreentity.IndexOf("idx_base_sys_log_user_id", "userId"),

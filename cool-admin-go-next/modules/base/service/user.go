@@ -42,20 +42,20 @@ type userRoleNameRow struct {
 	Name   string `orm:"name"`
 }
 
-// UserPageFilter 是用户分页的固定筛选条件。
+// 用户分页的固定筛选条件
 type UserPageFilter struct {
 	DepartmentIDs []uint64
 	KeyWord       string
 	Status        *int32
 }
 
-// UserPageResult 是用户分页响应。
+// 用户分页响应
 type UserPageResult struct {
 	List       []dto.UserPageItem     `json:"list"`
 	Pagination coreservice.Pagination `json:"pagination"`
 }
 
-// UserService 管理后台用户、角色关系和管理员保护。
+// 后台用户、角色关系和管理员保护
 type UserService struct {
 	*coreservice.Base[entity.User, uint64]
 	runtime    *coredb.Runtime
@@ -66,7 +66,7 @@ type UserService struct {
 	boundary   *auth.Boundary
 }
 
-// NewUser 创建用户业务服务。
+// 用户业务服务
 func NewUser(
 	runtime *coredb.Runtime,
 	user *coreservice.Base[entity.User, uint64],
@@ -87,7 +87,7 @@ func NewUser(
 	return &UserService{Base: user, runtime: runtime, userRole: userRole, role: role, department: department, password: password, boundary: boundary}, nil
 }
 
-// Add 新增用户并写入角色关系。
+// 新增用户并写入角色关系
 func (service *UserService) Add(ctx context.Context, request dto.UserAddReq, operatorID uint64) (coreservice.AddResult[uint64], error) {
 	input, err := userAddInput(service.Descriptor(), request, operatorID)
 	if err != nil {
@@ -97,7 +97,7 @@ func (service *UserService) Add(ctx context.Context, request dto.UserAddReq, ope
 	return service.AddWithRoles(ctx, input, request.RoleIDList)
 }
 
-// Update 更新用户并按提交状态替换角色关系。
+// 更新用户并按提交状态替换角色关系
 func (service *UserService) Update(ctx context.Context, request *dto.UserUpdateReq) error {
 	input, roleIDs, err := userUpdateInput(service.Descriptor(), request)
 	if err != nil {
@@ -239,7 +239,7 @@ func appendUserField(fields []coreservice.FieldValue, name string, value any) []
 	}
 }
 
-// AddWithRoles 在同一事务中新建用户并写入角色关系。
+// 在同一事务中新建用户并写入角色关系
 func (service *UserService) AddWithRoles(ctx context.Context, input coreservice.AddInput[entity.User], roleIDs []uint64) (coreservice.AddResult[uint64], error) {
 	if service == nil || service.runtime == nil {
 		return coreservice.AddResult[uint64]{}, exception.Core("用户服务未初始化")
@@ -272,7 +272,7 @@ func (service *UserService) AddWithRoles(ctx context.Context, input coreservice.
 	return result, err
 }
 
-// UpdateWithRoles 更新用户，并在提交前替换可选的角色关系。
+// 更新用户，并在提交前替换可选的角色关系
 func (service *UserService) UpdateWithRoles(ctx context.Context, input coreservice.UpdateInput[entity.User, uint64], roleIDs *[]uint64) error {
 	if service == nil || service.runtime == nil {
 		return exception.Core("用户服务未初始化")
@@ -351,7 +351,7 @@ func (service *UserService) UpdateWithRoles(ctx context.Context, input coreservi
 	})
 }
 
-// UpdateRelations 替换一个用户的角色关系并撤销其旧 Session。
+// 替换一个用户的角色关系并撤销其旧 Session
 func (service *UserService) UpdateRelations(ctx context.Context, userID uint64, input dto.UserRoleInput) error {
 	if service == nil || service.runtime == nil || userID == 0 {
 		return exception.Validate("用户角色关系参数无效")
@@ -378,7 +378,7 @@ func (service *UserService) UpdateRelations(ctx context.Context, userID uint64, 
 	})
 }
 
-// Delete 删除用户及其角色关系，并保护最后一个有效管理员。
+// 删除用户及其角色关系，并保护最后一个有效管理员
 func (service *UserService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
 	if service == nil || service.runtime == nil {
 		return exception.Core("用户服务未初始化")
@@ -405,7 +405,7 @@ func (service *UserService) Delete(ctx context.Context, input coreservice.Delete
 	})
 }
 
-// Move 批量移动用户部门。
+// 批量移动用户部门
 func (service *UserService) Move(ctx context.Context, request dto.UserMoveReq) error {
 	if service == nil || service.runtime == nil || request.DepartmentID == 0 || len(request.UserIDs) == 0 {
 		return exception.Validate("移动用户参数无效")
@@ -432,7 +432,7 @@ func (service *UserService) Move(ctx context.Context, request dto.UserMoveReq) e
 	})
 }
 
-// Info 返回用户详情及角色、部门虚拟字段，绝不返回密码摘要。
+// 用户详情及角色、部门虚拟字段，绝不返回密码摘要
 func (service *UserService) Info(ctx context.Context, userID uint64) (*dto.UserInfoResult, error) {
 	row, err := service.userByID(ctx, userID)
 	if err != nil || row == nil {
@@ -447,7 +447,7 @@ func (service *UserService) Info(ctx context.Context, userID uint64) (*dto.UserI
 	return &result, err
 }
 
-// Person 返回当前已认证管理员的个人资料。
+// 当前已认证管理员的个人资料
 func (service *UserService) Person(ctx context.Context) (*dto.UserInfoResult, error) {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
@@ -456,7 +456,7 @@ func (service *UserService) Person(ctx context.Context) (*dto.UserInfoResult, er
 	return service.Info(ctx, identity.UserID)
 }
 
-// PersonUpdate 更新当前用户允许修改的资料；修改密码时校验旧密码并递增版本。
+// 更新当前用户允许修改的资料；修改密码时校验旧密码并递增版本
 func (service *UserService) PersonUpdate(ctx context.Context, request dto.PersonUpdateReq) error {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
@@ -515,7 +515,7 @@ func (service *UserService) PersonUpdate(ctx context.Context, request dto.Person
 	})
 }
 
-// Page 按当前管理员的数据范围返回用户分页和虚拟字段。
+// 按当前管理员的数据范围返回用户分页和虚拟字段
 func (service *UserService) Page(ctx context.Context, page, size int, filter UserPageFilter) (UserPageResult, error) {
 	if service == nil || page <= 0 || size <= 0 {
 		return UserPageResult{}, exception.Validate("用户分页参数无效")

@@ -36,7 +36,7 @@ type loginPasswordUpdate struct {
 
 var errLoginRolesMissing = errors.New("登录用户未配置角色")
 
-// LoginService 提供后台登录、刷新和退出能力。
+// 后台登录、刷新和退出能力
 type LoginService struct {
 	runtime    *coredb.Runtime
 	user       *coreservice.Base[entity.User, uint64]
@@ -49,7 +49,7 @@ type LoginService struct {
 	refreshTTL time.Duration
 }
 
-// NewLogin 创建后台登录服务。
+// 后台登录服务
 func NewLogin(
 	runtime *coredb.Runtime,
 	user *coreservice.Base[entity.User, uint64],
@@ -72,7 +72,7 @@ func NewLogin(
 	}, nil
 }
 
-// Login 校验验证码和账号后创建后台 Session。
+// 校验验证码和账号后创建后台 Session
 func (service *LoginService) Login(ctx context.Context, request dto.LoginReq) (dto.TokenResult, error) {
 	if err := service.validateReady(); err != nil {
 		return dto.TokenResult{}, err
@@ -131,7 +131,7 @@ func (service *LoginService) Login(ctx context.Context, request dto.LoginReq) (d
 	return service.tokenResult(pair), nil
 }
 
-// Refresh 锁定用户并按权威状态重建身份后轮换 Token。
+// 锁定用户并按权威状态重建身份后轮换 Token
 func (service *LoginService) Refresh(ctx context.Context, request dto.RefreshReq) (dto.TokenResult, error) {
 	if err := service.validateReady(); err != nil {
 		return dto.TokenResult{}, err
@@ -174,7 +174,7 @@ func (service *LoginService) Refresh(ctx context.Context, request dto.RefreshReq
 	return service.tokenResult(pair), nil
 }
 
-// Logout 撤销当前已认证的后台 Session。
+// 撤销当前已认证的后台 Session
 func (service *LoginService) Logout(ctx context.Context) error {
 	if err := service.validateReady(); err != nil {
 		return err

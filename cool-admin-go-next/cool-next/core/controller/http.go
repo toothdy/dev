@@ -11,24 +11,24 @@ import (
 	dbtx "github.com/toothdy/cool-admin-go-next/cool-next/db/tx"
 )
 
-// HTTPRequest 是生成 Handler 使用的 GoFrame 空请求类型
+// 生成 Handler 使用的 GoFrame 空请求类型
 type HTTPRequest struct{}
 
-// HTTPRouteInvoke 是已绑定请求的自定义路由调用
+// 已绑定请求的自定义路由调用
 type HTTPRouteInvoke func(context.Context) (any, error)
 
-// HTTPDTOInvoke 是带 DTO 的自定义路由调用
+// 带 DTO 的自定义路由调用
 type HTTPDTOInvoke[T any] func(context.Context, *T) (any, error)
 
-// HTTPMiddleware 是生成路由可安装的业务中间件
+// 生成路由可安装的业务中间件
 type HTTPMiddleware interface {
 	Handle(*ghttp.Request)
 }
 
-// DescriptorResolverFunc 将生成的静态 Descriptor 分支适配为 Resolver
+// 静态 Descriptor 适配为 Resolver 的函数类型
 type DescriptorResolverFunc func(any) (coreentity.Metadata, bool)
 
-// Resolve 解析实体对应的静态 Descriptor
+// 实体对应的静态 Descriptor
 func (resolve DescriptorResolverFunc) Resolve(value any) (coreentity.Metadata, bool) {
 	if resolve == nil {
 		return nil, false
@@ -37,7 +37,7 @@ func (resolve DescriptorResolverFunc) Resolve(value any) (coreentity.Metadata, b
 	return resolve(value)
 }
 
-// HandleAdd 绑定新增输入并执行生成期选定的 Service Adapter
+// 新增输入并执行生成期选定的 Service Adapter
 func HandleAdd[E any, ID comparable](
 	ctx context.Context,
 	binder *Binder,
@@ -92,7 +92,7 @@ func HandleAdd[E any, ID comparable](
 	return result, err
 }
 
-// HandleDelete 绑定删除输入并执行生成期选定的 Service Adapter
+// 删除输入并执行生成期选定的 Service Adapter
 func HandleDelete[E any, ID comparable](
 	ctx context.Context,
 	binder *Binder,
@@ -132,7 +132,7 @@ func HandleDelete[E any, ID comparable](
 	return nil, err
 }
 
-// HandleUpdate 绑定更新输入并执行生成期选定的 Service Adapter
+// 更新输入并执行生成期选定的 Service Adapter
 func HandleUpdate[E any, ID comparable](
 	ctx context.Context,
 	binder *Binder,
@@ -172,7 +172,7 @@ func HandleUpdate[E any, ID comparable](
 	return nil, err
 }
 
-// HandleInfo 绑定详情主键并执行生成期选定的 Service Adapter
+// 详情主键并执行生成期选定的 Service Adapter
 func HandleInfo[ID comparable](
 	ctx context.Context,
 	binder *Binder,
@@ -219,7 +219,7 @@ func HandleInfo[ID comparable](
 	return result, err
 }
 
-// HandleQuery 绑定 List 或 Page 输入并执行生成期选定的 Service Adapter
+// List 或 Page 输入并执行生成期选定的 Service Adapter
 func HandleQuery(
 	ctx context.Context,
 	binder *Binder,
@@ -273,7 +273,7 @@ func HandleQuery(
 	return result, err
 }
 
-// HandleCRUDDTO 绑定自定义查询 DTO 并执行对应 CRUD Handler
+// 自定义查询 DTO 并执行对应 CRUD Handler
 func HandleCRUDDTO[T any](
 	ctx context.Context,
 	binder *Binder,
@@ -319,7 +319,7 @@ func HandleCRUDDTO[T any](
 	return result, err
 }
 
-// HandleDTO 绑定 DTO 并按声明的事务策略调用 Handler
+// DTO 并按声明的事务策略调用 Handler
 func HandleDTO[T any](
 	ctx context.Context,
 	binder *Binder,
@@ -348,7 +348,7 @@ func HandleDTO[T any](
 	})
 }
 
-// HandleNoDTO 按声明的事务策略调用无 DTO Handler
+// HandleNoDTO 依事务策略调用无 DTO Handler
 func HandleNoDTO(
 	ctx context.Context,
 	runner dbtx.Runner,

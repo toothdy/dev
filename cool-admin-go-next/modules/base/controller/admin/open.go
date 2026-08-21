@@ -11,19 +11,19 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
-// HTMLQuery 是按参数键读取富文本的查询请求。
+// 按参数键读取富文本的查询请求
 type HTMLQuery struct {
 	Key string `json:"key" in:"query" v:"required"`
 }
 
-// OpenHandler 适配 Base 公开接口到静态 HTTP Handler 契约。
+// 适配 Base 公开接口到静态 HTTP Handler 契约
 type OpenHandler struct {
 	login   *service.LoginService
 	captcha *service.CaptchaService
 	param   *service.ParamService
 }
 
-// NewOpenHandler 创建 Base 公开接口适配器。
+// Base 公开接口适配器
 func NewOpenHandler(
 	login *service.LoginService,
 	captcha *service.CaptchaService,
@@ -36,7 +36,7 @@ func NewOpenHandler(
 	return &OpenHandler{login: login, captcha: captcha, param: param}, nil
 }
 
-// HTML 按参数键返回原始 HTML。
+// 按参数键返回原始 HTML
 func (handler *OpenHandler) HTML(ctx context.Context, request *HTMLQuery) (controller.HTMLResponse, error) {
 	if handler == nil || handler.param == nil || request == nil {
 		return "", exception.Core("Base HTML 接口未初始化")
@@ -45,7 +45,7 @@ func (handler *OpenHandler) HTML(ctx context.Context, request *HTMLQuery) (contr
 	return handler.param.HTMLByKey(ctx, request.Key)
 }
 
-// Login 执行后台登录。
+// 后台登录
 func (handler *OpenHandler) Login(ctx context.Context, request *dto.LoginReq) (dto.TokenResult, error) {
 	if handler == nil || handler.login == nil || request == nil {
 		return dto.TokenResult{}, exception.Core("Base 登录接口未初始化")
@@ -54,7 +54,7 @@ func (handler *OpenHandler) Login(ctx context.Context, request *dto.LoginReq) (d
 	return handler.login.Login(ctx, *request)
 }
 
-// Captcha 生成图形验证码。
+// 图形验证码
 func (handler *OpenHandler) Captcha(ctx context.Context, request *dto.CaptchaQuery) (dto.CaptchaResult, error) {
 	if handler == nil || handler.captcha == nil || request == nil {
 		return dto.CaptchaResult{}, exception.Core("Base 验证码接口未初始化")
@@ -63,7 +63,7 @@ func (handler *OpenHandler) Captcha(ctx context.Context, request *dto.CaptchaQue
 	return handler.captcha.Generate(ctx, *request)
 }
 
-// Refresh 原子刷新后台令牌。
+// 原子刷新后台令牌
 func (handler *OpenHandler) Refresh(ctx context.Context, request *dto.RefreshReq) (dto.TokenResult, error) {
 	if handler == nil || handler.login == nil || request == nil {
 		return dto.TokenResult{}, exception.Core("Base 刷新令牌接口未初始化")
@@ -72,12 +72,12 @@ func (handler *OpenHandler) Refresh(ctx context.Context, request *dto.RefreshReq
 	return handler.login.Refresh(ctx, *request)
 }
 
-// AdminEPS 返回已发布的后台 EPS 视图。
+// 已发布的后台 EPS 视图
 func AdminEPS(context.Context) (eps.Document, error) {
 	return eps.AdminView()
 }
 
-// AdminOpenController 声明 Base 后台公开路由。
+// Base 后台公开路由
 func AdminOpenController(handler *OpenHandler) controller.Definition {
 	public := []controller.URLTag{{Name: controller.TagIgnoreToken}}
 

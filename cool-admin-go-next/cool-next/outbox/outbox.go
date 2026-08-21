@@ -1,4 +1,4 @@
-// Package outbox 提供可靠消息的不可变契约
+// Package outbox 可靠消息的不可变契约
 package outbox
 
 import (
@@ -49,7 +49,7 @@ type messageOptions struct {
 // Option 修改消息创建参数
 type Option func(*messageOptions) error
 
-// New 创建新的消息
+// 新的消息
 func New[T any](topic, messageType string, payload T, options ...Option) (Envelope, error) {
 	if err := validateMessageText("Topic", topic); err != nil {
 		return Envelope{}, err
@@ -84,7 +84,7 @@ func New[T any](topic, messageType string, payload T, options ...Option) (Envelo
 	return newEnvelope(messageID, topic, messageType, settings.version, settings.key, encoded, settings.headers)
 }
 
-// WithKey 设置消息路由键
+// 消息路由键
 func WithKey(key string) Option {
 	return func(settings *messageOptions) error {
 		if strings.TrimSpace(key) != key || key == "" {
@@ -96,7 +96,7 @@ func WithKey(key string) Option {
 	}
 }
 
-// WithVersion 设置消息版本
+// 消息版本
 func WithVersion(version uint32) Option {
 	return func(settings *messageOptions) error {
 		if version == 0 {
@@ -107,7 +107,7 @@ func WithVersion(version uint32) Option {
 	}
 }
 
-// WithHeader 设置允许的传输元数据
+// 允许的传输元数据
 func WithHeader(name, value string) Option {
 	return func(settings *messageOptions) error {
 		normalizedName, err := normalizeHeader(name)
@@ -153,17 +153,17 @@ func (message Envelope) Headers() map[string]string {
 	return cloneHeaders(message.headers)
 }
 
-// Enqueuer 接收需要可靠投递的消息
+// 需要可靠投递的消息
 type Enqueuer interface {
 	Enqueue(context.Context, Envelope) error
 }
 
-// Publisher 将消息持久发布到目标系统
+// 投递出口
 type Publisher interface {
 	Publish(context.Context, Envelope) error
 }
 
-// Incoming 已恢复并解码的消息
+// 解码后的消息
 type Incoming[T any] struct {
 	envelope Envelope
 	payload  T
@@ -190,10 +190,10 @@ func (message Incoming[T]) Payload() T { return message.payload }
 // 消息 Header 副本
 func (message Incoming[T]) Headers() map[string]string { return message.envelope.Headers() }
 
-// ConsumerHandler 处理一个消息
+// 消费回调函数
 type ConsumerHandler[T any] func(context.Context, Incoming[T]) error
 
-// 生成期消费注册定义
+// 编译期消费描述
 type ConsumerDefinition interface {
 	consumerDefinition()
 	subscription() Subscription
@@ -214,7 +214,7 @@ func (definition consumerDefinition[T]) subscription() Subscription {
 	return newSubscription(definition.name, definition.topic, definition.messageType, definition.supportedVersions)
 }
 
-// Consume 创建消费注册定义
+// 消费注册定义
 func Consume[T any](name, topic, messageType string, supportedVersions []uint32, handler ConsumerHandler[T]) (ConsumerDefinition, error) {
 	if err := validateConsumerName(name); err != nil {
 		return nil, err
@@ -242,7 +242,7 @@ func Consume[T any](name, topic, messageType string, supportedVersions []uint32,
 	}, nil
 }
 
-// NewSubscription 创建不可变订阅
+// 不可变订阅
 func NewSubscription(definition ConsumerDefinition) (Subscription, error) {
 	if definition == nil {
 		return Subscription{}, fmt.Errorf("outbox: Consumer Definition 不能为空")
@@ -297,10 +297,10 @@ type DeliveryDecision struct {
 	err         error
 }
 
-// Ack 创建确认结果
+// 确认结果
 func Ack() DeliveryDecision { return DeliveryDecision{disposition: DeliveryAck} }
 
-// Retry 创建临时失败结果
+// 临时失败结果
 func Retry(after time.Duration, err error) DeliveryDecision {
 	if after < 0 {
 		after = 0
@@ -308,7 +308,7 @@ func Retry(after time.Duration, err error) DeliveryDecision {
 	return DeliveryDecision{disposition: DeliveryRetry, retryAfter: after, err: err}
 }
 
-// DeadLetter 创建永久失败结果
+// 永久失败结果
 func DeadLetter(err error) DeliveryDecision {
 	return DeliveryDecision{disposition: DeliveryDeadLetter, err: err}
 }
@@ -322,10 +322,10 @@ func (decision DeliveryDecision) RetryAfter() time.Duration { return decision.re
 // 消费错误
 func (decision DeliveryDecision) Error() error { return decision.err }
 
-// DeliverFunc 执行一次持久化 Attempt 对应的消费
+// 一次持久化 Attempt 对应的消费
 type DeliverFunc func(context.Context, Subscription, Envelope, uint32) DeliveryDecision
 
-// ConsumerCapabilities 描述可靠 Consumer Adapter 能力
+// 可靠消费能力集合
 type ConsumerCapabilities struct {
 	DurableAck           bool
 	DurableRetryAttempts bool
@@ -335,7 +335,7 @@ type ConsumerCapabilities struct {
 	MaxEnvelopeBytes     int
 }
 
-// ConsumerAdapter 提供可靠消息消费能力
+// 可靠消息消费能力
 type ConsumerAdapter interface {
 	Name() string
 	Capabilities(context.Context) (ConsumerCapabilities, error)
@@ -346,7 +346,7 @@ type ConsumerAdapter interface {
 
 type permanentError struct{ cause error }
 
-// Permanent 将消费错误标记为不可重试
+// 不可重试错误包装
 func Permanent(cause error) error {
 	if cause == nil {
 		return nil
@@ -365,7 +365,7 @@ func isPermanent(err error) bool {
 	return errors.As(err, &target)
 }
 
-// Restore 从基础设施元数据恢复消息
+// 由持久字段重建 Envelope
 func Restore(messageID MessageID, topic, messageType string, version uint32, key *string, payload []byte, headers map[string]string) (Envelope, error) {
 	if err := validateMessageID(messageID); err != nil {
 		return Envelope{}, err

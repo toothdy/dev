@@ -23,7 +23,7 @@ const (
 	controllerImportPath = "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 )
 
-// MenuColumn 是开发端"生成代码"向导使用的实体字段元数据。
+// 开发端"生成代码"向导使用的实体字段元数据
 type MenuColumn struct {
 	PropertyName string `json:"propertyName"`
 	Type         string `json:"type"`
@@ -32,7 +32,7 @@ type MenuColumn struct {
 	Nullable     bool   `json:"nullable"`
 }
 
-// MenuParseResult 是静态解析实体与 Controller 源码的结果。
+// 静态解析实体与 Controller 源码的结果
 type MenuParseResult struct {
 	Columns   []MenuColumn `json:"columns"`
 	ClassName string       `json:"className,omitempty"`
@@ -41,8 +41,8 @@ type MenuParseResult struct {
 	Path      string       `json:"path"`
 }
 
-// MenuCreateInput 是新模块代码创建请求：Parse 解析出的元数据回填后，连同
-// entity/controller/service 三段源码一起提交，由 Scaffold 写入工作区。
+// 新模块代码创建请求：Parse 解析出的元数据回填后，连同
+// entity/controller/service 三段源码一起提交，由 Scaffold 写入工作区
 type MenuCreateInput struct {
 	Module     string `json:"module"`
 	Entity     string `json:"entity"`
@@ -57,7 +57,7 @@ type parsedEntity struct {
 	columns   []MenuColumn
 }
 
-// ParseMenu 静态提取实体列与 Controller 路径，不编译或执行输入源码。
+// 实体列与 Controller 路径，不编译或执行输入源码
 func (scaffold *Scaffold) ParseMenu(entitySource, controllerSource, moduleName string) (MenuParseResult, error) {
 	if !validCodeName(moduleName) {
 		return MenuParseResult{}, exception.Validate("模块名称无效")
@@ -88,7 +88,7 @@ func (scaffold *Scaffold) ParseMenu(entitySource, controllerSource, moduleName s
 	return result, nil
 }
 
-// CreateMenuCode 校验并创建实体、Controller、Service 和缺失的模块配置。
+// 实体、Controller、Service 和缺失的模块配置
 func (scaffold *Scaffold) CreateMenuCode(input MenuCreateInput) error {
 	if scaffold == nil {
 		return exception.Core("代码脚手架未初始化")

@@ -24,7 +24,7 @@ type Config struct {
 	ExportLimit int   `json:"exportLimit"`
 }
 
-// 返回 CRUD 默认配置
+// CRUD 默认配置
 func DefaultConfig() Config {
 	return Config{
 		SoftDelete:  true,
@@ -37,7 +37,7 @@ func DefaultConfig() Config {
 	}
 }
 
-// 校验 CRUD 限制只能在框架硬上限内收紧
+// CRUD 限制只能在框架硬上限内收紧
 func (config Config) Validate() error {
 	if config.BodyLimit <= 0 || config.BodyLimit > maxBodyLimit {
 		return exception.Core(fmt.Sprintf("CRUD BodyLimit 必须在 1 到 %d 之间", maxBodyLimit))

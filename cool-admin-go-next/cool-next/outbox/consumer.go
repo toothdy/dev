@@ -38,7 +38,7 @@ type Deliverer struct {
 
 type consumerInvocation func(context.Context) error
 
-// 创建 Inbox 消费事务执行器
+// Inbox 消费事务执行器
 func NewDeliverer(
 	runtime *coredb.Runtime,
 	store InboxStore,
@@ -81,7 +81,7 @@ func NewDeliverer(
 	}, nil
 }
 
-// 返回不可变订阅列表副本
+// 不可变订阅列表副本
 func (deliverer *Deliverer) Subscriptions() []Subscription {
 	if deliverer == nil {
 		return nil
@@ -90,7 +90,7 @@ func (deliverer *Deliverer) Subscriptions() []Subscription {
 	return append([]Subscription(nil), deliverer.subscriptions...)
 }
 
-// 执行一次持久化 Attempt 对应的消费
+// 一次持久化 Attempt 对应的消费
 func (deliverer *Deliverer) Deliver(
 	ctx context.Context,
 	subscription Subscription,

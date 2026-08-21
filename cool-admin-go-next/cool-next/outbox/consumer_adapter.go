@@ -75,7 +75,7 @@ type BrokerConsumerAdapter struct {
 	inFlight          sync.WaitGroup
 }
 
-// 创建可靠 Broker Consumer Adapter
+// 可靠 Broker Consumer Adapter
 func NewBrokerConsumerAdapter(
 	backend BrokerConsumerBackend,
 	config BrokerConsumerConfig,
@@ -93,7 +93,7 @@ func NewBrokerConsumerAdapter(
 	return &BrokerConsumerAdapter{backend: backend, config: config}, nil
 }
 
-// 返回 Adapter 名称
+// Adapter 名称
 func (adapter *BrokerConsumerAdapter) Name() string {
 	if adapter == nil || adapter.backend == nil {
 		return ""
@@ -102,7 +102,7 @@ func (adapter *BrokerConsumerAdapter) Name() string {
 	return adapter.backend.Name()
 }
 
-// 返回 Broker 可靠消费能力
+// Broker 可靠消费能力
 func (adapter *BrokerConsumerAdapter) Capabilities(ctx context.Context) (ConsumerCapabilities, error) {
 	if adapter == nil || adapter.backend == nil {
 		return ConsumerCapabilities{}, gerror.New("outbox consumer adapter: Adapter 不能为空")
@@ -114,7 +114,7 @@ func (adapter *BrokerConsumerAdapter) Capabilities(ctx context.Context) (Consume
 	return adapter.backend.Capabilities(ctx)
 }
 
-// 验证 Broker 能力、拓扑和消费注册
+// 注册订阅并探测 Broker
 func (adapter *BrokerConsumerAdapter) Prepare(
 	ctx context.Context,
 	subscriptions []Subscription,
@@ -167,7 +167,7 @@ func (adapter *BrokerConsumerAdapter) Prepare(
 	return nil
 }
 
-// 启动 Broker 消费循环
+// Broker 消费循环
 func (adapter *BrokerConsumerAdapter) Start(ctx context.Context) (<-chan error, error) {
 	if adapter == nil || adapter.backend == nil {
 		return nil, gerror.New("outbox consumer adapter: Adapter 不能为空")
@@ -209,7 +209,7 @@ func (adapter *BrokerConsumerAdapter) Start(ctx context.Context) (<-chan error, 
 	return terminated, nil
 }
 
-// 停止拉取并排空在途消费
+// 拉取并排空在途消费
 func (adapter *BrokerConsumerAdapter) Stop(ctx context.Context) error {
 	if adapter == nil || adapter.backend == nil {
 		return nil
@@ -256,7 +256,7 @@ func (adapter *BrokerConsumerAdapter) Stop(ctx context.Context) error {
 	return stopErr
 }
 
-// 检查指定 Consumer 的 DLQ 消息
+// 指定 Consumer 的 DLQ 消息
 func (adapter *BrokerConsumerAdapter) InspectDeadLetter(
 	ctx context.Context,
 	consumerName string,
@@ -278,7 +278,7 @@ func (adapter *BrokerConsumerAdapter) InspectDeadLetter(
 	return adapter.backend.InspectDeadLetter(ctx, consumerName, messageID)
 }
 
-// 受控重放指定 Consumer 的 DLQ 消息
+// 重新投递 DLQ 消息
 func (adapter *BrokerConsumerAdapter) ReplayDeadLetter(
 	ctx context.Context,
 	consumerName string,

@@ -29,7 +29,7 @@ type paramCacheEntry struct {
 	DataType int32  `orm:"dataType"`
 }
 
-// ParamService 提供参数查询、HTML 输出和变更缓存协调。
+// 参数查询、HTML 输出和变更缓存协调
 type ParamService struct {
 	*coreservice.Base[entity.Param, uint64]
 	allowKeys map[string]struct{}
@@ -38,7 +38,7 @@ type ParamService struct {
 	mu        sync.Mutex
 }
 
-// NewParam 创建使用私有内存缓存的参数服务。
+// 使用私有内存缓存的参数服务
 func NewParam(baseService *coreservice.Base[entity.Param, uint64], config base.Config) (*ParamService, error) {
 	if baseService == nil || baseService.Descriptor() == nil {
 		return nil, exception.Core("参数基础 Service 无效")
@@ -56,7 +56,7 @@ func NewParam(baseService *coreservice.Base[entity.Param, uint64], config base.C
 	}, nil
 }
 
-// DataByKey 按键返回已按 dataType 解析的参数值。
+// 按键返回已按 dataType 解析的参数值
 func (service *ParamService) DataByKey(ctx context.Context, key string) (any, error) {
 	record, err := service.paramByKey(ctx, key)
 	if err != nil || record == nil {
@@ -79,7 +79,7 @@ func (service *ParamService) DataByKey(ctx context.Context, key string) (any, er
 	}
 }
 
-// AppDataByKey 校验 App 公开键后返回参数值。
+// 校验 App 公开键后返回参数值
 func (service *ParamService) AppDataByKey(ctx context.Context, key string) (any, error) {
 	if service == nil {
 		return nil, exception.Core("参数服务未初始化")
@@ -91,7 +91,7 @@ func (service *ParamService) AppDataByKey(ctx context.Context, key string) (any,
 	return service.DataByKey(ctx, key)
 }
 
-// HTMLByKey 按键返回原始 HTML 响应。
+// 按键返回原始 HTML 响应
 func (service *ParamService) HTMLByKey(ctx context.Context, key string) (controller.HTMLResponse, error) {
 	record, err := service.paramByKey(ctx, key)
 	if err != nil {
@@ -107,7 +107,7 @@ func (service *ParamService) HTMLByKey(ctx context.Context, key string) (control
 	).Replace(paramHTMLTemplate)), nil
 }
 
-// Add 新增参数并失效相关缓存。
+// 新增参数并失效相关缓存
 func (service *ParamService) Add(
 	ctx context.Context,
 	input coreservice.AddInput[entity.Param],
@@ -130,7 +130,7 @@ func (service *ParamService) Add(
 	return result, nil
 }
 
-// Update 更新参数并失效旧键与新键。
+// 更新参数并失效旧键与新键
 func (service *ParamService) Update(
 	ctx context.Context,
 	input coreservice.UpdateInput[entity.Param, uint64],
@@ -156,7 +156,7 @@ func (service *ParamService) Update(
 	return service.markParamCacheDirty(ctx, affectedRows)
 }
 
-// Delete 删除参数并失效旧键缓存。
+// 删除参数并失效旧键缓存
 func (service *ParamService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
 	service.mu.Lock()
 	defer service.mu.Unlock()

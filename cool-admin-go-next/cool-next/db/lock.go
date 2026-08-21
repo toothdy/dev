@@ -21,12 +21,8 @@ type writeLockData struct {
 
 // LockRows 在当前框架事务内按主键升序锁定目标表记录，返回实际锁定的 ID。
 //
-// 调用方负责比对返回值与请求 ID 以判定记录是否存在，本方法只保证加锁与回读。
-// ID 会去零、去重并升序排列，调用顺序一致可避免多事务交叉加锁产生死锁。
-//
-// MySQL 与 PostgreSQL 使用 SELECT ... FOR UPDATE。SQLite 没有行级锁，
-// 改为先执行不触碰业务列的空更新把事务提升为写事务，再回读确认；
-// 该空更新走 Unscoped，避免框架的 updateTime 自动写入把加锁变成数据变更。
+// 调用方负责比对返回值与请求 ID 以判定记录是否存在；
+// ID 升序加锁是顺序约定，多事务并发调用必须遵循以避免死锁。
 func (r *Runtime) LockRows(ctx context.Context, table string, ids []uint64) ([]uint64, error) {
 	if r == nil || r.database == nil {
 		return nil, exception.Core("框架数据库 Runtime 未初始化")

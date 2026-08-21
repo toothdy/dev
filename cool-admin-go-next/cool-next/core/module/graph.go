@@ -316,7 +316,7 @@ func (c Component) PackagePath() string { return c.packagePath }
 // 返回构造器名称
 func (c Component) Name() string { return c.name }
 
-// ComponentFromDefinition 将静态组件定义转换为已登记组件身份
+// 已登记组件身份
 func ComponentFromDefinition(definition ComponentDefinition) Component {
 	return Component{module: definition.Module, packagePath: definition.PackagePath, name: definition.Name}
 }

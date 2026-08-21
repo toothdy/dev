@@ -30,7 +30,7 @@ type departmentDeleteTree struct {
 	IDs      []uint64
 }
 
-// DepartmentService 管理部门树、用户归属及角色部门关系。
+// 部门树、用户归属及角色部门关系
 type DepartmentService struct {
 	*coreservice.Base[entity.Department, uint64]
 	runtime        *coredb.Runtime
@@ -41,7 +41,7 @@ type DepartmentService struct {
 	boundary       *auth.Boundary
 }
 
-// NewDepartment 创建部门业务服务。
+// 部门业务服务
 func NewDepartment(
 	runtime *coredb.Runtime,
 	department *coreservice.Base[entity.Department, uint64],
@@ -67,7 +67,7 @@ func NewDepartment(
 	}, nil
 }
 
-// Add 新增部门。
+// 新增部门
 func (service *DepartmentService) Add(ctx context.Context, input coreservice.AddInput[entity.Department]) (coreservice.AddResult[uint64], error) {
 	if service == nil || service.runtime == nil {
 		return coreservice.AddResult[uint64]{}, exception.Core("部门服务未初始化")
@@ -87,7 +87,7 @@ func (service *DepartmentService) Add(ctx context.Context, input coreservice.Add
 	return result, err
 }
 
-// Update 更新部门。
+// 更新部门
 func (service *DepartmentService) Update(ctx context.Context, input coreservice.UpdateInput[entity.Department, uint64]) error {
 	if service == nil || service.runtime == nil {
 		return exception.Core("部门服务未初始化")
@@ -110,7 +110,7 @@ func (service *DepartmentService) Update(ctx context.Context, input coreservice.
 	})
 }
 
-// Order 按 Vue 顶层数组契约更新部门排序和父级。
+// 按 Vue 顶层数组契约更新部门排序和父级
 func (service *DepartmentService) Order(ctx context.Context, request dto.DepartmentOrderReq) error {
 	if service == nil || service.runtime == nil || len(request) == 0 {
 		return exception.Validate("部门排序参数无效")
@@ -155,7 +155,7 @@ func (service *DepartmentService) Order(ctx context.Context, request dto.Departm
 	})
 }
 
-// List 返回当前用户可见的部门列表。
+// 当前用户可见的部门列表
 func (service *DepartmentService) List(ctx context.Context) ([]dto.DepartmentListItem, error) {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
@@ -195,7 +195,7 @@ func (service *DepartmentService) List(ctx context.Context) ([]dto.DepartmentLis
 	return items, nil
 }
 
-// Delete 删除部门树，并按请求迁移或删除归属用户。
+// 删除部门树，并按请求迁移或删除归属用户
 func (service *DepartmentService) Delete(ctx context.Context, request dto.DepartmentDeleteReq) error {
 	if service == nil || service.runtime == nil {
 		return exception.Core("部门服务未初始化")

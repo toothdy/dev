@@ -30,13 +30,13 @@ type roleRow struct {
 	DepartmentIDList []uint64    `orm:"departmentIdList"`
 }
 
-// RolePageResult 是角色分页响应。
+// 角色分页响应
 type RolePageResult struct {
 	List       []dto.RoleInfoResult   `json:"list"`
 	Pagination coreservice.Pagination `json:"pagination"`
 }
 
-// RoleService 管理角色及其权威菜单、部门关系。
+// 角色及其权威菜单、部门关系
 type RoleService struct {
 	*coreservice.Base[entity.Role, uint64]
 	runtime        *coredb.Runtime
@@ -46,7 +46,7 @@ type RoleService struct {
 	boundary       *auth.Boundary
 }
 
-// NewRole 创建角色业务服务。
+// 角色业务服务
 func NewRole(
 	runtime *coredb.Runtime,
 	role *coreservice.Base[entity.Role, uint64],
@@ -71,7 +71,7 @@ func NewRole(
 	}, nil
 }
 
-// lockRolePermissions 按菜单、部门顺序锁定并校验角色权限资源存在。
+// 按菜单、部门顺序锁定并校验角色权限资源存在
 func (service *RoleService) lockRolePermissions(ctx context.Context, menuIDs, departmentIDs []uint64) error {
 	if err := service.boundary.LockTable(ctx, menuTable, menuIDs, "锁定授权菜单失败"); err != nil {
 		return err
@@ -80,7 +80,7 @@ func (service *RoleService) lockRolePermissions(ctx context.Context, menuIDs, de
 	return service.boundary.LockTable(ctx, departmentTable, departmentIDs, "锁定授权部门失败")
 }
 
-// Add 新建角色并同步菜单、部门权限关系。
+// 新建角色并同步菜单、部门权限关系
 func (service *RoleService) Add(
 	ctx context.Context,
 	input coreservice.AddInput[entity.Role],
@@ -97,7 +97,7 @@ func (service *RoleService) Add(
 	return service.AddWithPermissions(ctx, input, permissions)
 }
 
-// Update 更新角色并同步已提交的权限关系。
+// 更新角色并同步已提交的权限关系
 func (service *RoleService) Update(
 	ctx context.Context,
 	input coreservice.UpdateInput[entity.Role, uint64],
@@ -114,7 +114,7 @@ func (service *RoleService) Update(
 	return service.UpdateWithPermissions(ctx, input, permissions)
 }
 
-// AddWithPermissions 在同一事务中新建角色及权限关系。
+// 在同一事务中新建角色及权限关系
 func (service *RoleService) AddWithPermissions(
 	ctx context.Context,
 	input coreservice.AddInput[entity.Role],
@@ -147,7 +147,7 @@ func (service *RoleService) AddWithPermissions(
 	return result, err
 }
 
-// UpdateWithPermissions 更新角色及可选权限关系，并撤销受影响用户 Session。
+// 更新角色及可选权限关系，并撤销受影响用户 Session
 func (service *RoleService) UpdateWithPermissions(
 	ctx context.Context,
 	input coreservice.UpdateInput[entity.Role, uint64],
@@ -240,7 +240,7 @@ func (service *RoleService) UpdateWithPermissions(
 	})
 }
 
-// Delete 删除角色及全部关系，并保护平台管理员角色。
+// 删除角色及全部关系，并保护平台管理员角色
 func (service *RoleService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
 	if service == nil || service.runtime == nil {
 		return exception.Core("角色服务未初始化")
@@ -294,7 +294,7 @@ func (service *RoleService) Delete(ctx context.Context, input coreservice.Delete
 	})
 }
 
-// Info 返回角色详情及权威权限关系。
+// 角色详情及权威权限关系
 func (service *RoleService) Info(ctx context.Context, roleID uint64) (*dto.RoleInfoResult, error) {
 	row, err := service.roleByID(ctx, roleID)
 	if err != nil || row == nil {
@@ -313,7 +313,7 @@ func (service *RoleService) Info(ctx context.Context, roleID uint64) (*dto.RoleI
 	return &result, nil
 }
 
-// List 返回当前管理员可见的非平台管理员角色。
+// 当前管理员可见的非平台管理员角色
 func (service *RoleService) List(ctx context.Context) ([]dto.RoleInfoResult, error) {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
@@ -343,7 +343,7 @@ func (service *RoleService) List(ctx context.Context) ([]dto.RoleInfoResult, err
 	return result, nil
 }
 
-// Page 返回当前管理员可见的角色分页。
+// 当前管理员可见的角色分页
 func (service *RoleService) Page(ctx context.Context, query coreservice.Query) (RolePageResult, error) {
 	if service == nil || query.PageNumber() <= 0 || query.PageSize() <= 0 {
 		return RolePageResult{}, exception.Validate("角色分页参数无效")

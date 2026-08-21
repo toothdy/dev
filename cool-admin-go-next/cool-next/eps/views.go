@@ -8,7 +8,7 @@ import (
 
 var publishedViews atomic.Pointer[Views]
 
-// PublishViews 发布由当前静态模块图编译的 EPS 视图。
+// 由当前静态模块图编译的 EPS 视图
 func PublishViews(views *Views) error {
 	if views == nil {
 		return exception.Core("EPS 视图不能为空")
@@ -19,7 +19,7 @@ func PublishViews(views *Views) error {
 	return nil
 }
 
-// AdminView 返回已发布的后台 EPS 视图。
+// 已发布的后台 EPS 视图
 func AdminView() (Document, error) {
 	views := publishedViews.Load()
 	if views == nil {
@@ -29,7 +29,7 @@ func AdminView() (Document, error) {
 	return views.Admin, nil
 }
 
-// AppView 返回已发布的 App EPS 视图。
+// 已发布的 App EPS 视图
 func AppView() (Document, error) {
 	views := publishedViews.Load()
 	if views == nil {

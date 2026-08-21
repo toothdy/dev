@@ -9,39 +9,39 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
-// LogKeepReq 是操作日志保留天数请求。
+// 操作日志保留天数请求
 type LogKeepReq struct {
 	Value int `json:"value" v:"required|min:1"`
 }
 
-// LogHandler 适配操作日志自定义接口。
+// 适配操作日志自定义接口
 type LogHandler struct {
 	log *service.LogService
 }
 
-// NewLogHandler 创建操作日志接口适配器。
+// 操作日志接口适配器
 func NewLogHandler(log *service.LogService) *LogHandler {
 	return &LogHandler{log: log}
 }
 
-// Clear 清空全部操作日志。
+// 清空全部操作日志
 func (handler *LogHandler) Clear(ctx context.Context) error {
 	_, err := handler.log.Clear(ctx, true)
 
 	return err
 }
 
-// SetKeep 设置操作日志保留天数。
+// 设置操作日志保留天数
 func (handler *LogHandler) SetKeep(ctx context.Context, request *LogKeepReq) error {
 	return handler.log.SetKeep(ctx, request.Value)
 }
 
-// GetKeep 返回操作日志保留天数。
+// 返回操作日志保留天数
 func (handler *LogHandler) GetKeep(ctx context.Context) (int, error) {
 	return handler.log.GetKeep(ctx)
 }
 
-// AdminSysLogController 声明系统操作日志路由。
+// 系统操作日志路由
 func AdminSysLogController(log *service.LogService, handler *LogHandler) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{Description: "系统操作日志", TagName: "系统操作日志"}).

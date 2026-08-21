@@ -5,7 +5,7 @@ import (
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 )
 
-// Department 是后台部门节点。
+// 后台部门节点
 type Department struct {
 	g.Meta `orm:"table:base_sys_department" description:"系统部门"`
 	coreentity.Base
@@ -16,7 +16,7 @@ type Department struct {
 	SeedKey  *string `json:"seedKey" orm:"seedKey" description:"初始化键" cool:"size=255"`
 }
 
-// DepartmentSchema 返回部门表补充索引。
+// 部门表补充索引
 func DepartmentSchema() coreentity.Schema {
 	return coreentity.Schema{Indexes: []coreentity.Index{
 		coreentity.IndexOf("idx_base_sys_department_user_id", "userId"),

@@ -82,7 +82,7 @@ func applyQueryPlan(ctx context.Context, model *gdb.Model, plan *QueryPlan) (*gd
 	return applied, nil
 }
 
-// 校验查询计划的执行节点
+// 查询计划的执行节点
 func validatePlan(plan *QueryPlan) error {
 	if !planTableNamePattern.MatchString(plan.root.table) || plan.root.alias != rootQueryAlias {
 		return exception.Core("查询计划根实体无效")
@@ -130,7 +130,7 @@ func validatePlan(plan *QueryPlan) error {
 	return nil
 }
 
-// 校验查询计划条件
+// 查询计划条件
 func validateCondition(condition planCondition) error {
 	switch condition.operator {
 	case operatorEQ, operatorNE:
@@ -178,7 +178,7 @@ func validateCondition(condition planCondition) error {
 	return nil
 }
 
-// 生成参数化查询条件
+// 参数化查询条件
 func formatCondition(model *gdb.Model, condition planCondition) (string, []any) {
 	column := quoteColumn(model, condition.column)
 	switch condition.operator {
@@ -216,7 +216,7 @@ func quoteColumn(model *gdb.Model, column planColumn) string {
 	return model.QuoteWord(column.alias) + "." + model.QuoteWord(column.column)
 }
 
-// 校验查询计划字段
+// 查询计划字段
 func isValidColumn(column planColumn) bool {
 	return planTableNamePattern.MatchString(column.table) &&
 		queryNamePattern.MatchString(column.alias) &&

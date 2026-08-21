@@ -91,7 +91,7 @@ type Record struct {
 	sentAt         *time.Time
 }
 
-// 构造待入队的持久化记录
+// 待入队的持久化记录
 func NewRecord(
 	messageID string,
 	topic string,
@@ -126,19 +126,19 @@ func NewRecord(
 	}, nil
 }
 
-// 返回消息 ID
+// 消息 ID
 func (record Record) MessageID() string { return record.messageID }
 
-// 返回消息目的地
+// 消息目的地
 func (record Record) Topic() string { return record.topic }
 
-// 返回消息契约类型
+// 消息契约类型
 func (record Record) MessageType() string { return record.messageType }
 
-// 返回消息版本
+// 消息版本
 func (record Record) MessageVersion() uint32 { return record.messageVersion }
 
-// 返回消息路由键
+// 消息路由键
 func (record Record) MessageKey() (string, bool) {
 	if record.messageKey == nil {
 		return "", false
@@ -147,22 +147,22 @@ func (record Record) MessageKey() (string, bool) {
 	return *record.messageKey, true
 }
 
-// 返回序列化载荷副本
+// 序列化载荷副本
 func (record Record) Payload() []byte { return append([]byte(nil), record.payload...) }
 
-// 返回序列化 Header 副本
+// 序列化 Header 副本
 func (record Record) Headers() []byte { return append([]byte(nil), record.headers...) }
 
-// 返回发布状态
+// 发布状态
 func (record Record) Status() Status { return record.status }
 
-// 返回已持久化发布次数
+// 已持久化发布次数
 func (record Record) Attempts() uint32 { return record.attempts }
 
-// 返回下次可领取时间
+// 下次可领取时间
 func (record Record) AvailableAt() time.Time { return record.availableAt }
 
-// 返回当前 Worker
+// 当前 Worker
 func (record Record) LeaseOwner() (string, bool) {
 	if record.leaseOwner == nil {
 		return "", false
@@ -171,10 +171,10 @@ func (record Record) LeaseOwner() (string, bool) {
 	return *record.leaseOwner, true
 }
 
-// 返回当前领取令牌
+// 当前领取令牌
 func (record Record) ClaimToken() ClaimToken { return record.claimToken }
 
-// 返回当前 Lease 截止时间
+// 当前 Lease 截止时间
 func (record Record) LeaseExpiresAt() (time.Time, bool) {
 	if record.leaseExpiresAt == nil {
 		return time.Time{}, false
@@ -183,7 +183,7 @@ func (record Record) LeaseExpiresAt() (time.Time, bool) {
 	return *record.leaseExpiresAt, true
 }
 
-// 返回脱敏失败摘要
+// 脱敏失败摘要
 func (record Record) LastError() (string, bool) {
 	if record.lastError == nil {
 		return "", false
@@ -192,13 +192,13 @@ func (record Record) LastError() (string, bool) {
 	return *record.lastError, true
 }
 
-// 返回创建时间
+// 创建时间
 func (record Record) CreateTime() time.Time { return record.createTime }
 
-// 返回更新时间
+// 更新时间
 func (record Record) UpdateTime() time.Time { return record.updateTime }
 
-// 返回发布时间
+// 发布时间
 func (record Record) SentAt() (time.Time, bool) {
 	if record.sentAt == nil {
 		return time.Time{}, false
@@ -226,7 +226,7 @@ type Store interface {
 	InsertIfAbsent(ctx context.Context, transaction gdb.TX, consumer string, messageID string) (bool, error)
 }
 
-// 判断 Message ID 是否为规范的小写 UUIDv7
+// Message ID 是否为规范的小写 UUIDv7
 func IsValidMessageID(value string) bool {
 	return validMessageID(value)
 }

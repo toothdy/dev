@@ -14,10 +14,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
-// MenuController 声明系统菜单管理路由：CRUD 之外，/parse /create /export
-// /import 四条开发者工具路由与 Node 版 BaseSysMenuController 同源同表，
-// 因此和菜单 CRUD 挂在同一个 Controller 下，而不是放进通用的 coding.go
-// （那里只留与具体实体无关的 getModuleTree/createCode）。
+// 菜单 CRUD 与解析/创建/导出/导入同源同表，与 Node 版 BaseSysMenuController 一致
 func AdminSysMenuController(menu *service.MenuService, tool *MenuToolHandler) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{Description: "系统菜单", TagName: "系统菜单"}).
@@ -74,7 +71,7 @@ func AdminSysMenuController(menu *service.MenuService, tool *MenuToolHandler) co
 		Build()
 }
 
-// MenuImportRequest 是菜单树导入请求。
+// 菜单树导入请求
 type MenuImportRequest struct {
 	Menus []dto.MenuTree `json:"menus" v:"required"`
 }
@@ -83,14 +80,14 @@ type menuAdminChecker interface {
 	IsAdmin(context.Context, []uint64) (bool, error)
 }
 
-// MenuToolHandler 适配只允许平台管理员调用的菜单代码生成与树导入导出。
+// 适配只允许平台管理员调用的菜单代码生成与树导入导出
 type MenuToolHandler struct {
 	scaffold   *codegen.Scaffold
 	menu       *service.MenuService
 	permission menuAdminChecker
 }
 
-// NewMenuToolHandler 创建菜单工具接口适配器。
+// 菜单工具接口适配器
 func NewMenuToolHandler(
 	config base.Config,
 	menu *service.MenuService,
@@ -107,7 +104,7 @@ func NewMenuToolHandler(
 	return &MenuToolHandler{scaffold: scaffold, menu: menu, permission: permission}, nil
 }
 
-// ParseMenu 静态解析菜单代码元数据。
+// 静态解析菜单代码元数据
 func (handler *MenuToolHandler) ParseMenu(ctx context.Context, request *dto.MenuParseReq) (codegen.MenuParseResult, error) {
 	if err := handler.requireAdmin(ctx); err != nil {
 		return codegen.MenuParseResult{}, err
@@ -119,7 +116,7 @@ func (handler *MenuToolHandler) ParseMenu(ctx context.Context, request *dto.Menu
 	return handler.scaffold.ParseMenu(request.Entity, request.Controller, request.Module)
 }
 
-// CreateMenuCode 创建菜单对应的 Go 文件。
+// 创建菜单对应的 Go 文件
 func (handler *MenuToolHandler) CreateMenuCode(ctx context.Context, request *codegen.MenuCreateInput) error {
 	if err := handler.requireAdmin(ctx); err != nil {
 		return err
@@ -131,7 +128,7 @@ func (handler *MenuToolHandler) CreateMenuCode(ctx context.Context, request *cod
 	return handler.scaffold.CreateMenuCode(*request)
 }
 
-// ExportMenu 导出选中的菜单树，不含维护字段。
+// 导出选中的菜单树，不含维护字段
 func (handler *MenuToolHandler) ExportMenu(ctx context.Context, request *dto.MenuExportReq) ([]dto.MenuTree, error) {
 	if err := handler.requireAdmin(ctx); err != nil {
 		return nil, err
@@ -146,7 +143,7 @@ func (handler *MenuToolHandler) ExportMenu(ctx context.Context, request *dto.Men
 	return handler.menu.Export(ctx, request.IDs)
 }
 
-// ImportMenu 在调用方事务中插入菜单树，并用实际新 ID 重建父子关系。
+// 在调用方事务中插入菜单树，并用实际新 ID 重建父子关系
 func (handler *MenuToolHandler) ImportMenu(ctx context.Context, request *MenuImportRequest) error {
 	if err := handler.requireAdmin(ctx); err != nil {
 		return err

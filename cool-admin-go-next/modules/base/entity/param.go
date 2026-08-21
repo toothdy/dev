@@ -5,7 +5,7 @@ import (
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 )
 
-// Param 是公开参数配置。
+// 公开参数配置
 type Param struct {
 	g.Meta `orm:"table:base_sys_param" description:"参数配置"`
 	coreentity.Base
@@ -16,7 +16,7 @@ type Param struct {
 	Remark   *string `json:"remark" orm:"remark" description:"备注" cool:"size=255"`
 }
 
-// ParamSchema 返回参数表补充索引。
+// 参数表补充索引
 func ParamSchema() coreentity.Schema {
 	return coreentity.Schema{Indexes: []coreentity.Index{
 		coreentity.UniqueIndexOf("uk_base_sys_param_key_name", "keyName"),

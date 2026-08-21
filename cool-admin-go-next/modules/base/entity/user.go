@@ -5,7 +5,7 @@ import (
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 )
 
-// User 是后台系统用户。
+// 后台系统用户
 type User struct {
 	g.Meta `orm:"table:base_sys_user" description:"系统用户"`
 	coreentity.Base
@@ -24,7 +24,7 @@ type User struct {
 	SocketID     *string `json:"socketId" orm:"socketId" description:"Socket ID" cool:"size=255"`
 }
 
-// UserSchema 返回用户表补充索引。
+// 用户表补充索引
 func UserSchema() coreentity.Schema {
 	return coreentity.Schema{Indexes: []coreentity.Index{
 		coreentity.IndexOf("idx_base_sys_user_department_id", "departmentId"),

@@ -8,17 +8,17 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
-// TranslateHandler 翻译 Base 菜单响应。
+// Base 菜单响应
 type TranslateHandler struct {
 	translate *service.TranslateService
 }
 
-// NewTranslateHandler 创建 Base 翻译中间件。
+// Base 翻译中间件
 func NewTranslateHandler(translate *service.TranslateService) *TranslateHandler {
 	return &TranslateHandler{translate: translate}
 }
 
-// Handle 仅处理 Base 菜单接口的 name 字段。
+// 仅处理 Base 菜单接口的 name 字段
 func (handler *TranslateHandler) Handle(request *ghttp.Request) {
 	if request == nil {
 		return

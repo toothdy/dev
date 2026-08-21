@@ -95,7 +95,6 @@ func CompilePlan(
 	return plan, nil
 }
 
-// 返回字段策略
 func (plan *ActionPlan) Fields() *FieldPolicy {
 	if plan == nil {
 		return nil
@@ -104,7 +103,6 @@ func (plan *ActionPlan) Fields() *FieldPolicy {
 	return &plan.fields
 }
 
-// 判断字段是否隐藏
 func (policy *FieldPolicy) IsHidden(field string) bool {
 	if policy == nil {
 		return false
@@ -114,7 +112,6 @@ func (policy *FieldPolicy) IsHidden(field string) bool {
 	return exists
 }
 
-// 判断字段是否只读
 func (policy *FieldPolicy) IsReadonly(field string) bool {
 	if policy == nil {
 		return false
@@ -124,7 +121,6 @@ func (policy *FieldPolicy) IsReadonly(field string) bool {
 	return exists
 }
 
-// 判断详情字段是否忽略
 func (policy *FieldPolicy) IsInfoIgnored(field string) bool {
 	if policy == nil {
 		return false
@@ -134,7 +130,6 @@ func (policy *FieldPolicy) IsInfoIgnored(field string) bool {
 	return exists
 }
 
-// 返回 CRUD 动作
 func (plan *ActionPlan) Action() Action {
 	if plan == nil {
 		return ""
@@ -143,7 +138,6 @@ func (plan *ActionPlan) Action() Action {
 	return plan.action
 }
 
-// 返回查询计划
 func (plan *ActionPlan) Query() *QueryPlan {
 	if plan == nil {
 		return nil
@@ -173,7 +167,6 @@ func WithOperation(ctx context.Context, plan *ActionPlan) context.Context {
 	return context.WithValue(ctx, operationContextKey{}, &OperationScope{plan: plan})
 }
 
-// 查询当前 CRUD 操作
 func CurrentOperation(ctx context.Context) (*OperationScope, bool) {
 	if ctx == nil {
 		return nil, false
@@ -190,7 +183,6 @@ func withoutOperation(ctx context.Context) context.Context {
 	return context.WithValue(ctx, operationContextKey{}, emptyOperationScope{})
 }
 
-// 返回动作计划
 func (scope *OperationScope) Plan() *ActionPlan {
 	if scope == nil {
 		return nil

@@ -47,7 +47,7 @@ type menuExportRow struct {
 	IsShow    bool    `orm:"isShow"`
 }
 
-// MenuService 管理菜单树及角色菜单关系。
+// 菜单树及角色菜单关系
 type MenuService struct {
 	*coreservice.Base[entity.Menu, uint64]
 	runtime  *coredb.Runtime
@@ -57,7 +57,7 @@ type MenuService struct {
 	boundary *auth.Boundary
 }
 
-// NewMenu 创建菜单业务服务。
+// 菜单业务服务
 func NewMenu(
 	runtime *coredb.Runtime,
 	menu *coreservice.Base[entity.Menu, uint64],
@@ -78,7 +78,7 @@ func NewMenu(
 	return &MenuService{Base: menu, runtime: runtime, role: role, roleMenu: roleMenu, userRole: userRole, boundary: boundary}, nil
 }
 
-// Add 新增菜单。
+// 新增菜单
 func (service *MenuService) Add(ctx context.Context, input coreservice.AddInput[entity.Menu]) (coreservice.AddResult[uint64], error) {
 	if service == nil || service.runtime == nil {
 		return coreservice.AddResult[uint64]{}, exception.Core("菜单服务未初始化")
@@ -98,7 +98,7 @@ func (service *MenuService) Add(ctx context.Context, input coreservice.AddInput[
 	return result, err
 }
 
-// Update 更新菜单并撤销受影响用户 Session。
+// 更新菜单并撤销受影响用户 Session
 func (service *MenuService) Update(ctx context.Context, input coreservice.UpdateInput[entity.Menu, uint64]) error {
 	if service == nil || service.runtime == nil {
 		return exception.Core("菜单服务未初始化")
@@ -154,7 +154,7 @@ func (service *MenuService) Update(ctx context.Context, input coreservice.Update
 	})
 }
 
-// Delete 递归删除菜单和角色关系。
+// 递归删除菜单和角色关系
 func (service *MenuService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
 	if service == nil || service.runtime == nil {
 		return exception.Core("菜单服务未初始化")
@@ -186,7 +186,7 @@ func (service *MenuService) Delete(ctx context.Context, input coreservice.Delete
 	})
 }
 
-// Info 返回菜单详情。
+// 菜单详情
 func (service *MenuService) Info(ctx context.Context, menuID uint64) (*dto.MenuListItem, error) {
 	model, err := service.Base.Model(ctx)
 	if err != nil {
@@ -207,7 +207,7 @@ func (service *MenuService) Info(ctx context.Context, menuID uint64) (*dto.MenuL
 	return &item, err
 }
 
-// List 返回当前用户可见的菜单树。
+// 当前用户可见的菜单树
 func (service *MenuService) List(ctx context.Context) ([]dto.MenuListItem, error) {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
@@ -236,7 +236,7 @@ func (service *MenuService) List(ctx context.Context) ([]dto.MenuListItem, error
 	return buildMenuItems(rows), nil
 }
 
-// Export 导出选中的菜单树，不含维护字段。
+// 导出选中的菜单树，不含维护字段
 func (service *MenuService) Export(ctx context.Context, ids []uint64) ([]dto.MenuTree, error) {
 	if service == nil || service.Base == nil {
 		return nil, exception.Core("菜单服务未初始化")
@@ -266,7 +266,7 @@ func (service *MenuService) Export(ctx context.Context, ids []uint64) ([]dto.Men
 	return buildMenuTree(rows), nil
 }
 
-// Import 在调用方事务中插入菜单树，并用实际新 ID 重建父子关系。
+// 在调用方事务中插入菜单树，并用实际新 ID 重建父子关系
 func (service *MenuService) Import(ctx context.Context, menus []dto.MenuTree) error {
 	if service == nil || service.Base == nil {
 		return exception.Core("菜单服务未初始化")

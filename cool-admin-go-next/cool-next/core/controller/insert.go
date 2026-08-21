@@ -29,7 +29,7 @@ type typedInsertParam interface {
 	insertEntityType() reflect.Type
 }
 
-// Insert 创建强类型新增字段注入器
+// 强类型新增字段注入器
 func Insert[E any](apply func(context.Context, *service.Mutable[E]) error) InsertParam {
 	if apply == nil {
 		panicCore("InsertParam 函数不能为空")
@@ -42,7 +42,7 @@ func Insert[E any](apply func(context.Context, *service.Mutable[E]) error) Inser
 	return insertParamValue[E]{entityType: entityType, apply: apply}
 }
 
-// ApplyBefore 执行默认 CRUD 前置回调
+// 默认 CRUD 前置回调
 func ApplyBefore(ctx context.Context, value Definition) error {
 	if isNilValue(ctx) {
 		return exception.Core("Controller 上下文不能为空")
@@ -58,7 +58,7 @@ func ApplyBefore(ctx context.Context, value Definition) error {
 	return option.Before(ctx)
 }
 
-// ApplyInsertParam 按输入顺序执行新增字段注入
+// 顺序执行新增字段注入
 func ApplyInsertParam[E any](ctx context.Context, value Definition, inputs []*service.Mutable[E]) error {
 	if isNilValue(ctx) {
 		return exception.Core("Controller 上下文不能为空")

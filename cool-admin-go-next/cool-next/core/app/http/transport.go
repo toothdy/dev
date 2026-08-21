@@ -202,25 +202,25 @@ func newGoFrameRuntime() serverRuntime {
 	return &goFrameRuntime{server: ghttp.GetServer(name)}
 }
 
-// Configure 安装 Ready Gate 与路由中间件
+// Ready Gate 与路由中间件
 func (runtime *goFrameRuntime) Configure(readiness app.ReadyState, install Installer) error {
 	runtime.server.Use(readyGate(readiness))
 
 	return install(runtime.server)
 }
 
-// SetListener 注入外部监听器
+// 外部监听器
 func (runtime *goFrameRuntime) SetListener(listener net.Listener) error {
 	return runtime.server.SetListener(listener)
 }
 
-// Start 启动 HTTP 服务
+// HTTP 服务
 func (runtime *goFrameRuntime) Start() error { return runtime.server.Start() }
 
 // 底层服务状态码
 func (runtime *goFrameRuntime) Status() int { return runtime.server.Status() }
 
-// Shutdown 关闭 HTTP 服务并释放监听器
+// HTTP 服务并释放监听器
 func (runtime *goFrameRuntime) Shutdown() error { return runtime.server.Shutdown() }
 
 func readyGate(readiness app.ReadyState) ghttp.HandlerFunc {

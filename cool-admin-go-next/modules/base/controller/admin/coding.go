@@ -12,7 +12,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
-// CodingCreateRequest 是批量创建 Go 文件的请求。
+// 批量创建 Go 文件的请求
 type CodingCreateRequest struct {
 	Codes []codegen.CodeFile `json:"codes" v:"required"`
 }
@@ -21,16 +21,13 @@ type adminRoleChecker interface {
 	IsAdmin(context.Context, []uint64) (bool, error)
 }
 
-// ToolHandler 适配只允许平台管理员调用的通用代码生成工具（与具体实体无关，
-// 对应 Node 版 AdminCodingController/BaseCodingService）。菜单驱动的代码
-// 生成向导（解析/创建/导出/导入）与 Node 同源同表，挂在
-// controller/admin/sys/menu.go 的 MenuToolHandler 下，不在这里。
+// 平台管理员可调的实体无关代码生成工具，与 Node 版 AdminCodingController 对齐
 type ToolHandler struct {
 	scaffold   *codegen.Scaffold
 	permission adminRoleChecker
 }
 
-// NewToolHandler 创建通用代码生成工具适配器。
+// 通用代码生成工具适配器
 func NewToolHandler(config base.Config, permission *service.PermissionService) (*ToolHandler, error) {
 	if permission == nil {
 		return nil, exception.Core("Base 工具接口依赖无效")
@@ -43,7 +40,7 @@ func NewToolHandler(config base.Config, permission *service.PermissionService) (
 	return &ToolHandler{scaffold: scaffold, permission: permission}, nil
 }
 
-// GetModuleTree 返回允许生成代码的模块名称。
+// 允许生成代码的模块名称
 func (handler *ToolHandler) GetModuleTree(ctx context.Context) ([]string, error) {
 	if err := handler.requireAdmin(ctx); err != nil {
 		return nil, err
@@ -52,7 +49,7 @@ func (handler *ToolHandler) GetModuleTree(ctx context.Context) ([]string, error)
 	return handler.scaffold.GetModuleTree()
 }
 
-// CreateCode 批量创建经过校验的 Go 文件。
+// 批量创建经过校验的 Go 文件
 func (handler *ToolHandler) CreateCode(ctx context.Context, request *CodingCreateRequest) error {
 	if err := handler.requireAdmin(ctx); err != nil {
 		return err
@@ -83,7 +80,7 @@ func (handler *ToolHandler) requireAdmin(ctx context.Context) error {
 	return nil
 }
 
-// AdminCodingController 声明开发环境代码生成路由。
+// 开发环境代码生成路由
 func AdminCodingController(handler *ToolHandler) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{

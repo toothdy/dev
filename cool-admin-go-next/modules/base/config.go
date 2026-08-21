@@ -14,7 +14,7 @@ const (
 	defaultCleanupLimit = 30 * time.Minute
 )
 
-// Config 是 Base 模块运行配置。
+// Base 模块运行配置
 type Config struct {
 	JWT       JWTConfig     `json:"jwt"`
 	Upload    UploadConfig  `json:"upload"`
@@ -24,20 +24,20 @@ type Config struct {
 	Coding    CodingConfig  `json:"coding"`
 }
 
-// JWTConfig 定义 Base 登录令牌有效期。
+// Base 登录令牌有效期
 type JWTConfig struct {
 	AccessTTL  time.Duration `json:"accessTTL"`
 	RefreshTTL time.Duration `json:"refreshTTL"`
 }
 
-// UploadConfig 定义本地上传边界。
+// 本地上传边界
 type UploadConfig struct {
 	Root          string `json:"root"`
 	PublicBaseURL string `json:"publicBaseURL"`
 	MaxBytes      int64  `json:"maxBytes"`
 }
 
-// CaptchaConfig 定义验证码默认参数。
+// 验证码默认参数
 type CaptchaConfig struct {
 	TTL    time.Duration `json:"ttl"`
 	Width  int           `json:"width"`
@@ -45,18 +45,18 @@ type CaptchaConfig struct {
 	Color  string        `json:"color"`
 }
 
-// LogConfig 定义操作日志清理任务。
+// 操作日志清理任务
 type LogConfig struct {
 	CleanupPattern string        `json:"cleanupPattern"`
 	CleanupTimeout time.Duration `json:"cleanupTimeout"`
 }
 
-// CodingConfig 定义开发代码工具可访问的项目工作区。
+// 开发代码工具可访问的项目工作区
 type CodingConfig struct {
 	Workspace string `json:"workspace"`
 }
 
-// ModuleConfig 声明 Base 模块及其默认配置。
+// Base 模块及其默认配置
 func ModuleConfig() module.Declaration[Config] {
 	return module.Declaration[Config]{
 		Name:        "权限管理",

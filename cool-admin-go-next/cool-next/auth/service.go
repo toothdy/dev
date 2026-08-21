@@ -74,7 +74,7 @@ func (service *Service) Refresh(ctx context.Context, token string) (TokenPair, e
 	})
 }
 
-// RefreshWith 使用重新解析的权威身份原子轮换 Token 对。
+// 为 Refresh 提供身份重新解析钩子
 func (service *Service) RefreshWith(
 	ctx context.Context,
 	token string,

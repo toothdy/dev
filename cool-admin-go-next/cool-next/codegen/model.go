@@ -60,7 +60,6 @@ type entityField struct {
 	variable *types.Var // 字段对象
 }
 
-// Schema 声明
 type SchemaDeclaration struct {
 	entity   string        // 目标实体名称
 	name     string        // 函数名称
@@ -151,7 +150,6 @@ func (d GRPCRegistrarDeclaration) PackagePath() string { return d.packagePath }
 // 返回声明位置
 func (d GRPCRegistrarDeclaration) Position() Position { return d.position }
 
-// Service 动作模式
 type ServiceActionMode string
 
 const (
@@ -160,7 +158,6 @@ const (
 	ServiceActionDelegate ServiceActionMode = "delegate"
 )
 
-// Service 动作分析结果
 type ServiceAction struct {
 	mode     ServiceActionMode
 	name     string
@@ -268,7 +265,7 @@ func (d ControllerDeclaration) Middleware() []string {
 	return append([]string(nil), d.middleware...)
 }
 
-// DevelopmentOnly 是否仅在开发环境注册
+// 仅在开发环境注册
 func (d ControllerDeclaration) DevelopmentOnly() bool { return d.developmentOnly }
 
 // 返回静态路由副本
@@ -325,7 +322,7 @@ func (d RouteDeclaration) Middleware() []string {
 // 返回声明位置
 func (d RouteDeclaration) Position() Position { return d.position }
 
-// DevelopmentOnly 是否仅在开发环境注册
+// 仅在开发环境注册
 func (d RouteDeclaration) DevelopmentOnly() bool { return d.developmentOnly }
 
 // 静态组件引用

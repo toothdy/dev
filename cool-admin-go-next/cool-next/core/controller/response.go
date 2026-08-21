@@ -37,7 +37,7 @@ const (
 	FileDispositionAttachment FileDisposition = "attachment"
 )
 
-// FileContent 是由响应层负责关闭的可定位文件内容。
+// 响应层负责关闭的可定位文件内容
 type FileContent interface {
 	io.ReadSeekCloser
 	Stat() (fs.FileInfo, error)
@@ -182,7 +182,7 @@ func writeFileResponse(request *ghttp.Request, result FileResponse) error {
 	return nil
 }
 
-// 判断文件内容接口是否持有有效实例。
+// 判断文件内容接口是否持有有效实例
 func validFileContent(content FileContent) bool {
 	if content == nil {
 		return false
@@ -196,7 +196,7 @@ func validFileContent(content FileContent) bool {
 	}
 }
 
-// 关闭 Handler 交给响应层的文件句柄。
+// 关闭 Handler 交给响应层的文件句柄
 func closeFileResponse(response any) {
 	result, ok := response.(FileResponse)
 	if !ok || !validFileContent(result.Content) {

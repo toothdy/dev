@@ -39,7 +39,7 @@ var trustedUploadMedia = map[string]map[string]bool{
 	"video/webm": {".webm": true},
 }
 
-// UploadService 提供 Base 模块的本地上传和受控读取。
+// Base 模块的本地上传和受控读取
 type UploadService struct {
 	root          string
 	publicBaseURL string
@@ -48,7 +48,7 @@ type UploadService struct {
 	random        io.Reader
 }
 
-// NewUpload 按 Base 配置创建本地上传服务。
+// 按 Base 配置创建本地上传服务
 func NewUpload(config base.Config) (*UploadService, error) {
 	upload := config.Upload
 	if upload.Root == "" {
@@ -82,7 +82,7 @@ func NewUpload(config base.Config) (*UploadService, error) {
 	}, nil
 }
 
-// Save 保存 multipart 文件并返回公开 URL。
+// 保存 multipart 文件并返回公开 URL
 func (service *UploadService) Save(file *ghttp.UploadFile, key string) (string, error) {
 	if service == nil || file == nil || file.FileHeader == nil {
 		return "", exception.Validate("上传文件无效")
@@ -172,7 +172,7 @@ func (service *UploadService) Save(file *ghttp.UploadFile, key string) (string, 
 	return service.publicBaseURL + "/upload/" + date + "/" + url.PathEscape(name), nil
 }
 
-// Read 校验公开文件路径并构造受控文件响应。
+// 校验公开文件路径并构造受控文件响应
 func (service *UploadService) Read(date, name string) (controller.FileResponse, error) {
 	if service == nil || !validUploadDate(date) || !validUploadBasename(name) {
 		return controller.FileResponse{}, exception.Validate("上传文件不存在")

@@ -15,7 +15,7 @@ import (
 const adminRoleLabel = "admin"
 
 // 授权变更加锁用的表名。只在没有持有对应实体 Base 引用、拿不到
-// Descriptor().Table() 的 service 里使用；能拿到引用的地方一律用 Descriptor。
+// Descriptor().Table() 的 service 里使用；能拿到引用的地方一律用 Descriptor
 const (
 	userTable       = "base_sys_user"
 	menuTable       = "base_sys_menu"
@@ -38,7 +38,7 @@ type menuPermissionRow struct {
 	Perms *string `orm:"perms"`
 }
 
-// PermissionService 使用 Base 权威关系表执行后台授权。
+// Base 权威关系表执行后台授权
 type PermissionService struct {
 	userRole    *coreservice.Base[entity.UserRole, uint64]
 	role        *coreservice.Base[entity.Role, uint64]
@@ -47,7 +47,7 @@ type PermissionService struct {
 	menuService *MenuService
 }
 
-// NewPermission 创建后台权限服务。
+// 后台权限服务
 func NewPermission(
 	userRole *coreservice.Base[entity.UserRole, uint64],
 	role *coreservice.Base[entity.Role, uint64],
@@ -63,7 +63,7 @@ func NewPermission(
 	return &PermissionService{userRole: userRole, role: role, roleMenu: roleMenu, menu: menu, menuService: menuService}, nil
 }
 
-// Authorize 按权威角色和菜单关系判断后台权限。
+// 按权威角色和菜单关系判断后台权限
 func (service *PermissionService) Authorize(ctx context.Context, request auth.Authorization) (bool, error) {
 	if service == nil || service.userRole == nil || service.role == nil || service.roleMenu == nil || service.menu == nil {
 		return false, exception.Core("权限服务未初始化")
@@ -92,7 +92,7 @@ func (service *PermissionService) Authorize(ctx context.Context, request auth.Au
 	return allowed, nil
 }
 
-// RoleIDs 返回用户当前关联的角色 ID。
+// 用户当前关联的角色 ID
 func (service *PermissionService) RoleIDs(ctx context.Context, userID uint64) ([]uint64, error) {
 	if service == nil || service.userRole == nil || userID == 0 {
 		return nil, exception.Core("角色查询参数无效")
@@ -113,7 +113,7 @@ func (service *PermissionService) RoleIDs(ctx context.Context, userID uint64) ([
 	return roleIDs, nil
 }
 
-// IsAdmin 判断角色集合是否包含平台管理员角色。
+// 角色集合是否包含平台管理员角色
 func (service *PermissionService) IsAdmin(ctx context.Context, roleIDs []uint64) (bool, error) {
 	if service == nil || service.role == nil {
 		return false, exception.Core("角色服务未初始化")
@@ -138,7 +138,7 @@ func (service *PermissionService) IsAdmin(ctx context.Context, roleIDs []uint64)
 	return false, nil
 }
 
-// Permissions 返回角色集合当前关联的独立权限标识。
+// 角色集合当前关联的独立权限标识
 func (service *PermissionService) Permissions(ctx context.Context, roleIDs []uint64) (map[string]struct{}, error) {
 	permissions := make(map[string]struct{})
 	if service == nil || service.roleMenu == nil || service.menu == nil {
@@ -184,7 +184,7 @@ func (service *PermissionService) Permissions(ctx context.Context, roleIDs []uin
 	return permissions, nil
 }
 
-// PermissionMenu 返回当前管理员的权限标识与可见菜单树。
+// 当前管理员的权限标识与可见菜单树
 func (service *PermissionService) PermissionMenu(ctx context.Context) (dto.PermissionMenuResult, error) {
 	if service == nil || service.menuService == nil {
 		return dto.PermissionMenuResult{}, exception.Core("权限菜单服务未初始化")

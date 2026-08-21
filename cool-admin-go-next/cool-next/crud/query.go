@@ -184,14 +184,14 @@ func newFieldMatch(column ColumnRef, requestParam string) FieldMatch {
 	return FieldMatch{Column: column, RequestParam: requestParam}
 }
 
-// 校验查询构造器
+// 查询构造器
 func (query *QueryBuilder) require() {
 	if query == nil {
 		panicCore("查询构造器不能为空")
 	}
 }
 
-// 校验查询条件
+// 查询条件
 func requireConditions(conditions []Condition) {
 	for _, condition := range conditions {
 		if condition == nil {

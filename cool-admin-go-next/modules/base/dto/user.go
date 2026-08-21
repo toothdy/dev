@@ -7,18 +7,18 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 )
 
-// UserRoleInput 是用户新增或更新时提交的角色关系。
+// 用户新增或更新时提交的角色关系
 type UserRoleInput struct {
 	RoleIDList []uint64 `json:"roleIdList"`
 }
 
-// UserMoveReq 是批量移动用户部门的请求。
+// 批量移动用户部门的请求
 type UserMoveReq struct {
 	DepartmentID uint64   `json:"departmentId" v:"required"`
 	UserIDs      []uint64 `json:"userIds" v:"required"`
 }
 
-// UserPageReq 是用户分页固定筛选请求。
+// 用户分页固定筛选请求
 type UserPageReq struct {
 	Page          int      `json:"page"`
 	Size          int      `json:"size"`
@@ -27,7 +27,7 @@ type UserPageReq struct {
 	Status        *int32   `json:"status"`
 }
 
-// UserAddReq 是新增用户及其角色关系的请求。
+// 新增用户及其角色关系的请求
 type UserAddReq struct {
 	DepartmentID *uint64  `json:"departmentId"`
 	Name         *string  `json:"name"`
@@ -42,7 +42,7 @@ type UserAddReq struct {
 	RoleIDList   []uint64 `json:"roleIdList" v:"required"`
 }
 
-// UserUpdateReq 是更新用户及其角色关系的请求。
+// 更新用户及其角色关系的请求
 type UserUpdateReq struct {
 	ID           uint64    `json:"id" v:"required"`
 	DepartmentID *uint64   `json:"departmentId"`
@@ -59,7 +59,7 @@ type UserUpdateReq struct {
 	submitted    map[string]bool
 }
 
-// UnmarshalJSON 严格解码并记录更新字段是否提交。
+// 严格解码并记录更新字段是否提交
 func (request *UserUpdateReq) UnmarshalJSON(data []byte) error {
 	type plain UserUpdateReq
 	var value plain
@@ -81,12 +81,12 @@ func (request *UserUpdateReq) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// HasField 报告请求 JSON 是否显式提交了该字段。
+// 报告请求 JSON 是否显式提交了该字段
 func (request *UserUpdateReq) HasField(name string) bool {
 	return request != nil && request.submitted[name]
 }
 
-// PersonUpdateReq 是当前用户可修改的个人资料白名单。
+// 当前用户可修改的个人资料白名单
 type PersonUpdateReq struct {
 	Name        *string `json:"name"`
 	NickName    *string `json:"nickName"`
@@ -97,7 +97,7 @@ type PersonUpdateReq struct {
 	OldPassword *string `json:"oldPassword"`
 }
 
-// UserPageItem 是用户分页列表的稳定响应字段。
+// 用户分页列表的稳定响应字段
 type UserPageItem struct {
 	ID             uint64      `json:"id"`
 	CreateTime     *gtime.Time `json:"createTime"`
@@ -116,7 +116,7 @@ type UserPageItem struct {
 	RoleName       string      `json:"roleName"`
 }
 
-// UserInfoResult 是用户详情表单的稳定响应字段。
+// 用户详情表单的稳定响应字段
 type UserInfoResult struct {
 	ID             uint64      `json:"id"`
 	CreateTime     *gtime.Time `json:"createTime"`

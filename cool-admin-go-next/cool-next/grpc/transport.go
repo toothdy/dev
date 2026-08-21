@@ -54,7 +54,7 @@ const (
 	stateStopped
 )
 
-// 创建 gRPC Transport
+// 构造 Transport
 func New(
 	config Config,
 	registrar GRPCRegistrar,
@@ -73,10 +73,10 @@ func New(
 	}), nil
 }
 
-// 返回固定 Transport 名称
+// 固定 Transport 名称
 func (transport *Transport) Name() string { return "grpc" }
 
-// 返回 gRPC 是否启用
+// gRPC 是否启用
 func (transport *Transport) Enabled() bool {
 	return transport != nil && transport.config.Enabled
 }
@@ -117,7 +117,7 @@ func (transport *Transport) Prepare(ctx context.Context) error {
 	return nil
 }
 
-// 启动服务循环并返回可观察终止 Channel
+// 服务循环并返回可观察终止 Channel
 func (transport *Transport) Start(ctx context.Context) (<-chan error, error) {
 	if transport == nil {
 		return nil, exception.Core("gRPC Transport 未初始化")

@@ -144,14 +144,14 @@ type definition struct {
 
 func (*definition) definition() {}
 
-// Admin 创建后台 Controller Builder。省略 path 或传空字符串等价，
-// 都表示不指定显式前缀，由 cool generate 按源文件所在目录自动推导。
+// Admin 创建后台 Controller Builder 省略 path 或传空字符串等价
+// 都表示不指定显式前缀由 cool generate 按源文件所在目录自动推导
 func Admin(path ...string) Builder {
 	return newBuilder(areaAdmin, controllerPathArgument(path))
 }
 
-// App 创建应用端 Controller Builder。省略 path 或传空字符串等价，
-// 都表示不指定显式前缀，由 cool generate 按源文件所在目录自动推导。
+// App 创建应用端 Controller Builder 省略 path 或传空字符串等价
+// 都表示不指定显式前缀由 cool generate 按源文件所在目录自动推导
 func App(path ...string) Builder {
 	return newBuilder(areaApp, controllerPathArgument(path))
 }

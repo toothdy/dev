@@ -79,7 +79,7 @@ type Bundle struct {
 	OpenAPI OpenAPIDocument `json:"openapi"`
 }
 
-// Views 是前端按身份区域读取的 EPS 文档。
+// 前端按身份区域读取的 EPS 文档
 type Views struct {
 	Admin Document `json:"admin"`
 	App   Document `json:"app"`
@@ -343,7 +343,7 @@ func Compile(input Input) (*Bundle, error) {
 	}, nil
 }
 
-// CompileViews 编译并按后台、App 及运行环境投影 EPS。
+// CompileViews 编译并按后台、App 及运行环境投影 EPS
 func CompileViews(input Input, includeDevelopment bool) (*Views, error) {
 	bundle, err := Compile(input)
 	if err != nil {

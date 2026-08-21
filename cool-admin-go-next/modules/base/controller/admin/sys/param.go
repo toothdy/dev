@@ -9,27 +9,27 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
-// ParamHTMLQuery 是按参数键读取富文本的查询请求。
+// 按参数键读取富文本的查询请求
 type ParamHTMLQuery struct {
 	Key string `json:"key" in:"query" v:"required"`
 }
 
-// ParamHTMLHandler 适配后台参数富文本接口。
+// 适配后台参数富文本接口
 type ParamHTMLHandler struct {
 	param *service.ParamService
 }
 
-// NewParamHTMLHandler 创建参数富文本接口适配器。
+// 参数富文本接口适配器
 func NewParamHTMLHandler(param *service.ParamService) *ParamHTMLHandler {
 	return &ParamHTMLHandler{param: param}
 }
 
-// HTML 按参数键返回原始 HTML。
+// 按参数键返回原始 HTML
 func (handler *ParamHTMLHandler) HTML(ctx context.Context, request *ParamHTMLQuery) (controller.HTMLResponse, error) {
 	return handler.param.HTMLByKey(ctx, request.Key)
 }
 
-// AdminSysParamController 声明系统参数管理路由。
+// 系统参数管理路由
 func AdminSysParamController(param *service.ParamService, handler *ParamHTMLHandler) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{Description: "参数配置", TagName: "参数配置"}).
