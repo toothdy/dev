@@ -1,7 +1,7 @@
 # 权限自动推导设计
 
 > 日期：2026-08-21
-> 状态：设计已批准，待实现
+> 状态：已实现（commit 492b21b）
 > 范围：后台权限标识的来源；不改变鉴权判定逻辑、不改变超管判定、不动 App 侧鉴权
 
 ## 1. 结论
@@ -270,3 +270,46 @@ apphttp.NewContextMiddleware(authenticator Authenticator, requestPath string, ig
 EPS 对齐设计（`2026-08-21-node-eps-alignment-design.md`）第 12 节将权限自动推导记为独立后续改动，并要求单独提交、单独验证。本设计遵守该约定：本次不修改 EPS 契约形状，仅删除 `eps.go:576` 一行 `Permission` 输出。
 
 两份改动的实施顺序不构成依赖。本设计先行落地时，EPS 重构后续无需再处理 `Route.Permission`。
+
+## 15. 实施结果
+
+实现见 commit `492b21b`。第 8 节删除清单全部执行，第 6 节推导规则以 `cool-next/auth/permission.go` 的 `DerivePermission` 落地，HTTP 入口按第 9 节改为 `NewContextMiddleware(authenticator, requestPath, ignoreToken)`。
+
+### 15.1 实施中修正的设计错误
+
+第 6 节规则 4 原写"任一段不是合法 Go 标识符"。按字面使用 `go/token.IsIdentifier` 实现会使当前仓库启动失败——该函数拒绝 Go 关键字，而 `/admin/base/sys/menu/import` 的 `import` 段正是关键字，Node 全量集中 `/admin/dict/type/*` 与 `/admin/space/type/*` 的 `type` 段同理，共 13 条。规则已改为字符形状校验并在第 6 节写明禁用 `token.IsIdentifier`。
+
+第 7.2 节的 118 条验证使用正则 `[A-Za-z_][A-Za-z0-9_]*`，结论本身正确；错误仅存在于第 6 节的措辞。
+
+### 15.2 验证执行情况
+
+第 12 节五项全部完成：
+
+| 项 | 覆盖 |
+| --- | --- |
+| 1 `DerivePermission` 表驱动 | 23 例，含关键字段、comm 各位置、路径参数、非法字符 |
+| 2 全路由回归 | 57 条，推导值与改动前快照逐条相同；快照不依赖已删除的 `Route.Permission()` |
+| 3 鉴权行为 — 传递链 | 真实 `ghttp` server 端到端，确认推导值送达认证内核；comm、ignoreToken、App 三类均得到空权限标识 |
+| 3 鉴权行为 — 判定结果 | sqlite 临时库上验证 `PermissionService.Authorize`：超管旁路未授权接口、普通角色命中菜单权限、未命中被拒、无角色被拒、App 身份被拒 |
+| 4 codegen 断言 | `modules_gen.go` 零个 `Permission:` 字面量、零个 `auth.Rule` |
+| 5 工具链 | `go build`、`go vet`、`go test ./...`、`gofmt` 全通过 |
+
+第 3 项后半直接验证了第 7.1 节的核心主张：运维角色被授予 `base:coding:createCode` 后可以调用该接口——这是 `requireAdmin` 时代无法做到的；未获授权时仍被拒绝，与改动前一致。
+
+### 15.3 测试不入库
+
+仓库 `.gitignore:14` 排除 `*_test.go`，本次新增的四个测试文件均无法提交：
+
+- `cool-next/auth/permission_test.go`
+- `cool-next/core/app/http/permission_wiring_test.go`
+- `modules/permission_regression_test.go`
+- `modules/base/service/permission_authorize_test.go`
+
+上述验证在本地全部通过，但不进入仓库，评审者无法查看或重跑，后续也不构成回归保护。是否调整该忽略规则属仓库约定变更，不在本设计范围内。
+
+### 15.4 与本次改动无关的既有问题
+
+以下两项在改动前即存在，`go.mod` 与 `go.sum` 本次未修改：
+
+- `go mod tidy -diff` 报告 `google.golang.org/protobuf` 应为 indirect 依赖；
+- `Makefile` 的 `check-architecture` 与 `test-integration` 指向的 `test/architecture`、`test/integration` 目录不存在。
