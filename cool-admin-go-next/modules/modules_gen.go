@@ -1155,8 +1155,8 @@ func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller
 	return app2.AppCommController(dependency0)
 }
 
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha(dependency0 base.Config) (*service.CaptchaService, error) {
-	return service.NewCaptcha(dependency0)
+func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha() (*service.CaptchaService, error) {
+	return service.NewCaptcha()
 }
 
 func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf(dependency0 *coreservice.Base[entity.Conf, uint64]) (*service.ConfService, error) {
@@ -1211,8 +1211,8 @@ func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admi
 	return sys.NewMenuToolHandler(dependency0, dependency1, dependency2)
 }
 
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.User, uint64], dependency2 *service.CaptchaService, dependency3 *authbcrypt.Verifier, dependency4 *auth.Service, dependency5 *service.PermissionService, dependency6 auth.SessionStore, dependency7 base.Config) (*service.LoginService, error) {
-	return service.NewLogin(dependency0, dependency1, dependency2, dependency3, dependency4, dependency5, dependency6, dependency7)
+func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.User, uint64], dependency2 *service.CaptchaService, dependency3 *authbcrypt.Verifier, dependency4 *auth.Service, dependency5 *service.PermissionService, dependency6 auth.SessionStore) (*service.LoginService, error) {
+	return service.NewLogin(dependency0, dependency1, dependency2, dependency3, dependency4, dependency5, dependency6)
 }
 
 func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler(dependency0 *service.LoginService, dependency1 *service.CaptchaService, dependency2 *service.ParamService) (*admin.OpenHandler, error) {
@@ -1466,7 +1466,6 @@ func generatedGraph() module.Graph {
 			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New"},
 		},
 		Dependencies: []module.DependencyDefinition{
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCaptcha"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindConfig, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base", Name: "Config", Type: "github.com/toothdy/cool-admin-go-next/modules/base.Config"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewConf"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf", Type: "*service.Base[entity.Conf, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/db", Name: "Runtime", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/db.Runtime"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment", Type: "*service.Base[entity.Department, uint64]"}},
@@ -1509,7 +1508,6 @@ func generatedGraph() module.Graph {
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLogin"}, ParameterIndex: 4, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/auth", Name: "Service", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/auth.Service"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLogin"}, ParameterIndex: 5, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewPermission", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.PermissionService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLogin"}, ParameterIndex: 6, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/auth", Name: "SessionStore", Type: "github.com/toothdy/cool-admin-go-next/cool-next/auth.SessionStore"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLogin"}, ParameterIndex: 7, Provider: module.ProviderDefinition{Kind: module.ProviderKindConfig, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base", Name: "Config", Type: "github.com/toothdy/cool-admin-go-next/modules/base.Config"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewOpenHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLogin", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.LoginService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewOpenHandler"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCaptcha", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.CaptchaService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewOpenHandler"}, ParameterIndex: 2, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewParam", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService"}},
@@ -1557,7 +1555,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	if err != nil {
 		return assembly, err
 	}
-	config0, err := module.Compile(ctx, identity0, base.ModuleConfig(), input.ModuleSource(identity0))
+	config0, err := module.Compile(ctx, identity0, base.ModuleConfig(), input.ModuleDefaultsSource())
 	if err != nil {
 		return assembly, err
 	}
@@ -1656,7 +1654,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 bcrypt 验证器失败")
 	}
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha(config0.Config())
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha()
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewCaptcha 失败")
 	}
@@ -1730,7 +1728,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewMenuToolHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, bcryptVerifier, authService, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermission, sessionAdapter, config0.Config())
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, bcryptVerifier, authService, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermission, sessionAdapter)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewLogin 失败")
 	}

@@ -1016,7 +1016,7 @@ func writeGeneratedFunction(
 
 	for index, current := range modules {
 		configAlias := imports.alias(current.config.packagePath)
-		fmt.Fprintf(source, "\tconfig%d, err := module.Compile(ctx, identity%d, %s.ModuleConfig(), input.ModuleSource(identity%d))\n", index, index, configAlias, index)
+		fmt.Fprintf(source, "\tconfig%d, err := module.Compile(ctx, identity%d, %s.ModuleConfig(), input.ModuleDefaultsSource())\n", index, index, configAlias)
 		source.WriteString("\tif err != nil {\n\t\treturn assembly, err\n\t}\n")
 		configUsed := false
 		for _, dependency := range dependencies {

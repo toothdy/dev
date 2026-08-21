@@ -269,7 +269,7 @@ func (service *DepartmentService) Delete(ctx context.Context, request dto.Depart
 		if _, err = model.WhereIn("departmentId", allIDs).Delete(); err != nil {
 			return exception.WrapCore(err, "清理部门角色关系失败")
 		}
-		deleteInput, err := coreservice.NewDeleteInput[entity.Department, uint64](service.Descriptor(), allIDs)
+		deleteInput, err := coreservice.NewDeleteInput[entity.Department](service.Descriptor(), allIDs)
 		if err != nil {
 			return err
 		}

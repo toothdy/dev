@@ -7,27 +7,16 @@ import (
 )
 
 const (
-	defaultAccessTTL    = 2 * time.Hour
-	defaultRefreshTTL   = 15 * 24 * time.Hour
 	defaultUploadBytes  = 10 << 20
-	defaultCaptchaTTL   = 30 * time.Minute
 	defaultCleanupLimit = 30 * time.Minute
 )
 
 // Base 模块运行配置
 type Config struct {
-	JWT       JWTConfig     `json:"jwt"`
-	Upload    UploadConfig  `json:"upload"`
-	AllowKeys []string      `json:"allowKeys"`
-	Captcha   CaptchaConfig `json:"captcha"`
-	Log       LogConfig     `json:"log"`
-	Coding    CodingConfig  `json:"coding"`
-}
-
-// Base 登录令牌有效期
-type JWTConfig struct {
-	AccessTTL  time.Duration `json:"accessTTL"`
-	RefreshTTL time.Duration `json:"refreshTTL"`
+	Upload    UploadConfig `json:"upload"`
+	AllowKeys []string     `json:"allowKeys"`
+	Log       LogConfig    `json:"log"`
+	Coding    CodingConfig `json:"coding"`
 }
 
 // 本地上传边界
@@ -35,14 +24,6 @@ type UploadConfig struct {
 	Root          string `json:"root"`
 	PublicBaseURL string `json:"publicBaseURL"`
 	MaxBytes      int64  `json:"maxBytes"`
-}
-
-// 验证码默认参数
-type CaptchaConfig struct {
-	TTL    time.Duration `json:"ttl"`
-	Width  int           `json:"width"`
-	Height int           `json:"height"`
-	Color  string        `json:"color"`
 }
 
 // 操作日志清理任务
@@ -67,22 +48,12 @@ func ModuleConfig() module.Declaration[Config] {
 			module.Ref("middleware.global.NewTranslateHandler"),
 		},
 		Defaults: Config{
-			JWT: JWTConfig{
-				AccessTTL:  defaultAccessTTL,
-				RefreshTTL: defaultRefreshTTL,
-			},
 			Upload: UploadConfig{
 				Root:          "resource/public/uploads",
 				PublicBaseURL: "http://127.0.0.1:8001",
 				MaxBytes:      defaultUploadBytes,
 			},
 			AllowKeys: []string{},
-			Captcha: CaptchaConfig{
-				TTL:    defaultCaptchaTTL,
-				Width:  150,
-				Height: 50,
-				Color:  "#fff",
-			},
 			Log: LogConfig{
 				CleanupPattern: "@daily",
 				CleanupTimeout: defaultCleanupLimit,

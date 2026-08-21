@@ -13,7 +13,6 @@ import (
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
 	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
-	base "github.com/toothdy/cool-admin-go-next/modules/base"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
@@ -45,8 +44,6 @@ type LoginService struct {
 	auth       *auth.Service
 	permission *PermissionService
 	sessions   auth.SessionStore
-	accessTTL  time.Duration
-	refreshTTL time.Duration
 }
 
 // 后台登录服务
@@ -58,17 +55,15 @@ func NewLogin(
 	authService *auth.Service,
 	permission *PermissionService,
 	sessions auth.SessionStore,
-	config base.Config,
 ) (*LoginService, error) {
 	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(user) || captcha == nil || password == nil ||
-		authService == nil || permission == nil || sessions == nil || !validTokenTTL(config.JWT.AccessTTL, config.JWT.RefreshTTL) {
+		authService == nil || permission == nil || sessions == nil {
 		return nil, exception.Core("登录服务依赖或配置无效")
 	}
 
 	return &LoginService{
 		runtime: runtime, user: user, captcha: captcha, password: password, auth: authService,
 		permission: permission, sessions: sessions,
-		accessTTL: config.JWT.AccessTTL, refreshTTL: config.JWT.RefreshTTL,
 	}, nil
 }
 
@@ -196,7 +191,7 @@ func (service *LoginService) Logout(ctx context.Context) error {
 func (service *LoginService) validateReady() error {
 	if service == nil || service.runtime == nil || service.runtime.Runner() == nil || service.user == nil ||
 		service.captcha == nil || service.password == nil || service.auth == nil || service.permission == nil ||
-		service.sessions == nil || !validTokenTTL(service.accessTTL, service.refreshTTL) {
+		service.sessions == nil {
 		return exception.Core("登录服务未初始化")
 	}
 
@@ -290,14 +285,18 @@ func (service *LoginService) rehashPassword(ctx context.Context, userID uint64, 
 
 func (service *LoginService) tokenResult(pair auth.TokenPair) dto.TokenResult {
 	return dto.TokenResult{
-		Token: pair.AccessToken, Expire: int64(service.accessTTL / time.Second),
-		RefreshToken: pair.RefreshToken, RefreshExpire: int64(service.refreshTTL / time.Second),
+		Token: pair.AccessToken, Expire: remainingTokenSeconds(pair.AccessExpiresAt),
+		RefreshToken: pair.RefreshToken, RefreshExpire: remainingTokenSeconds(pair.ExpiresAt),
 	}
 }
 
-func validTokenTTL(accessTTL, refreshTTL time.Duration) bool {
-	return accessTTL >= time.Second && refreshTTL > accessTTL &&
-		accessTTL%time.Second == 0 && refreshTTL%time.Second == 0
+func remainingTokenSeconds(expiresAt time.Time) int64 {
+	remaining := time.Until(expiresAt)
+	if remaining <= 0 {
+		return 0
+	}
+
+	return int64((remaining + time.Second - 1) / time.Second)
 }
 
 func loginCredentialError() error {

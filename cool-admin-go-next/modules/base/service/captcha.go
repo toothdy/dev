@@ -14,23 +14,22 @@ import (
 
 	"github.com/gogf/gf/v2/os/gcache"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	"github.com/toothdy/cool-admin-go-next/modules/base"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 )
 
 const (
-	captchaCodeLength    = 4
-	captchaIDBytes       = 16
-	captchaTTL           = 30 * time.Minute
-	captchaDefaultWidth  = 150
-	captchaDefaultHeight = 50
-	captchaDefaultColor  = "#fff"
-	captchaMinWidth      = 30
-	captchaMaxWidth      = 1000
-	captchaMinHeight     = 20
-	captchaMaxHeight     = 500
-	captchaCachePrefix   = "captcha:"
-	captchaCharacters    = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	captchaCodeLength    = 4                                                                // 验证码长度
+	captchaIDBytes       = 16                                                               // 验证码标识字节数
+	captchaTTL           = 30 * time.Minute                                                 // 验证码有效期
+	captchaDefaultWidth  = 150                                                              // 默认宽度
+	captchaDefaultHeight = 50                                                               // 默认高度
+	captchaDefaultColor  = "#fff"                                                           // 默认文字颜色
+	captchaMinWidth      = 30                                                               // 最小宽度
+	captchaMaxWidth      = 1000                                                             // 最大宽度
+	captchaMinHeight     = 20                                                               // 最小高度
+	captchaMaxHeight     = 500                                                              // 最大高度
+	captchaCachePrefix   = "captcha:"                                                       // 缓存键缀
+	captchaCharacters    = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" // 验证码字符集
 )
 
 // Base 模块的进程内验证码
@@ -44,21 +43,15 @@ type CaptchaService struct {
 	width  int
 }
 
-// 按 Base 配置使用私有内存缓存的验证码服务
-func NewCaptcha(config base.Config) (*CaptchaService, error) {
-	captcha := config.Captcha
-	if captcha.TTL <= 0 || captcha.Width < captchaMinWidth || captcha.Width > captchaMaxWidth ||
-		captcha.Height < captchaMinHeight || captcha.Height > captchaMaxHeight || !isCaptchaColor(captcha.Color) {
-		return nil, exception.Core("验证码配置无效")
-	}
-
+// 使用固定默认参数创建私有内存验证码服务
+func NewCaptcha() (*CaptchaService, error) {
 	return &CaptchaService{
 		cache:  gcache.New(),
-		color:  captcha.Color,
-		height: captcha.Height,
+		color:  captchaDefaultColor,
+		height: captchaDefaultHeight,
 		random: rand.Reader,
-		ttl:    captcha.TTL,
-		width:  captcha.Width,
+		ttl:    captchaTTL,
+		width:  captchaDefaultWidth,
 	}, nil
 }
 

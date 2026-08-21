@@ -10,8 +10,7 @@ import (
 
 // 装配函数的只读配置视图
 type AssembleInput struct {
-	root    configuration.Source
-	modules map[string]configuration.Source
+	root configuration.Source
 }
 
 type assembleInputKey struct{}
@@ -23,13 +22,8 @@ func withAssembleInput(ctx context.Context, input AssembleInput) context.Context
 	return context.WithValue(ctx, assembleInputKey{}, input)
 }
 
-func newAssembleInput(root configuration.Source, modules map[string]configuration.Source) AssembleInput {
-	clonedModules := make(map[string]configuration.Source, len(modules))
-	for key, source := range modules {
-		clonedModules[key] = cloneSource(source)
-	}
-
-	return AssembleInput{root: cloneSource(root), modules: clonedModules}
+func newAssembleInput(root configuration.Source) AssembleInput {
+	return AssembleInput{root: cloneSource(root)}
 }
 
 // 根配置来源副本
@@ -37,9 +31,9 @@ func (input AssembleInput) RootSource() configuration.Source {
 	return cloneSource(input.root)
 }
 
-// 模块配置来源副本
-func (input AssembleInput) ModuleSource(identity module.Identity) configuration.Source {
-	return cloneSource(input.modules[identity.Key()])
+// 模块默认配置来源
+func (input AssembleInput) ModuleDefaultsSource() configuration.Source {
+	return configuration.Source{LookupEnv: input.root.LookupEnv}
 }
 
 // AssembleFunc 负责按静态拓扑构造一次应用实例

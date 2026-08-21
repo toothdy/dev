@@ -178,7 +178,7 @@ func (service *MenuService) Delete(ctx context.Context, input coreservice.Delete
 		if _, err = model.WhereIn("menuId", ids).Delete(); err != nil {
 			return exception.WrapCore(err, "清理菜单角色关系失败")
 		}
-		deleteInput, err := coreservice.NewDeleteInput[entity.Menu, uint64](service.Descriptor(), ids)
+		deleteInput, err := coreservice.NewDeleteInput[entity.Menu](service.Descriptor(), ids)
 		if err != nil {
 			return err
 		}

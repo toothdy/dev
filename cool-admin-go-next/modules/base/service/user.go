@@ -163,11 +163,11 @@ func userUpdateInput(
 	if err != nil {
 		return coreservice.UpdateInput[entity.User, uint64]{}, nil, err
 	}
-	item, err := coreservice.NewUpdateItem[entity.User, uint64](descriptor, request.ID, mutable)
+	item, err := coreservice.NewUpdateItem(descriptor, request.ID, mutable)
 	if err != nil {
 		return coreservice.UpdateInput[entity.User, uint64]{}, nil, err
 	}
-	input, err := coreservice.NewUpdateObject[entity.User, uint64](descriptor, item)
+	input, err := coreservice.NewUpdateObject(descriptor, item)
 	if err != nil {
 		return coreservice.UpdateInput[entity.User, uint64]{}, nil, err
 	}
