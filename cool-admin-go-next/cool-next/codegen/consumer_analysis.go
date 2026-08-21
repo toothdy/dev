@@ -54,7 +54,7 @@ func (a *analysis) consumerMetadata(
 		a.add("CG105", "Consumer Name、Topic、Message Type 和版本必须是生成期常量", a.position(pkg, call.Pos()))
 		return consumerMetadata{}, false
 	}
-	definition, err := outbox.Consume[struct{}](
+	definition, err := outbox.Consume(
 		name,
 		topic,
 		messageType,

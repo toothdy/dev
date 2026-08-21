@@ -77,8 +77,8 @@ func AdminEPS(context.Context) (eps.Document, error) {
 	return eps.AdminView()
 }
 
-// OpenController 声明 Base 后台公开路由。
-func OpenController(handler *OpenHandler) controller.Definition {
+// AdminOpenController 声明 Base 后台公开路由。
+func AdminOpenController(handler *OpenHandler) controller.Definition {
 	public := []controller.URLTag{{Name: controller.TagIgnoreToken}}
 
 	return controller.Admin().

@@ -87,6 +87,158 @@ func NewUser(
 	return &UserService{Base: user, runtime: runtime, userRole: userRole, role: role, department: department, password: password, boundary: boundary}, nil
 }
 
+// Add 新增用户并写入角色关系。
+func (service *UserService) Add(ctx context.Context, request dto.UserAddReq, operatorID uint64) (coreservice.AddResult[uint64], error) {
+	input, err := userAddInput(service.Descriptor(), request, operatorID)
+	if err != nil {
+		return coreservice.AddResult[uint64]{}, err
+	}
+
+	return service.AddWithRoles(ctx, input, request.RoleIDList)
+}
+
+// Update 更新用户并按提交状态替换角色关系。
+func (service *UserService) Update(ctx context.Context, request *dto.UserUpdateReq) error {
+	input, roleIDs, err := userUpdateInput(service.Descriptor(), request)
+	if err != nil {
+		return err
+	}
+
+	return service.UpdateWithRoles(ctx, input, roleIDs)
+}
+
+func userAddInput(
+	descriptor coreentity.Descriptor[entity.User, uint64],
+	request dto.UserAddReq,
+	userID uint64,
+) (coreservice.AddInput[entity.User], error) {
+	fields := []coreservice.FieldValue{
+		coreservice.Value("userId", userID),
+		coreservice.Value("username", request.Username),
+		coreservice.Value("password", request.Password),
+	}
+	fields = appendPresentUserFields(fields, map[string]bool{
+		"departmentId": request.DepartmentID != nil,
+		"name":         request.Name != nil,
+		"nickName":     request.NickName != nil,
+		"headImg":      request.HeadImg != nil,
+		"phone":        request.Phone != nil,
+		"email":        request.Email != nil,
+		"remark":       request.Remark != nil,
+		"status":       request.Status != nil,
+	}, request.DepartmentID, request.Name, request.NickName, request.HeadImg, request.Phone, request.Email, request.Remark, request.Status)
+	mutable, err := coreservice.NewMutable[entity.User, uint64](descriptor, fields)
+	if err != nil {
+		return coreservice.AddInput[entity.User]{}, err
+	}
+
+	return coreservice.NewAddObject[entity.User, uint64](descriptor, mutable)
+}
+
+func userUpdateInput(
+	descriptor coreentity.Descriptor[entity.User, uint64],
+	request *dto.UserUpdateReq,
+) (coreservice.UpdateInput[entity.User, uint64], *[]uint64, error) {
+	if request == nil {
+		return coreservice.UpdateInput[entity.User, uint64]{}, nil, exception.Validate("用户更新请求不能为空")
+	}
+	fields := make([]coreservice.FieldValue, 0, 10)
+	fields = appendPresentUserFields(fields, map[string]bool{
+		"departmentId": request.HasField("departmentId"),
+		"name":         request.HasField("name"),
+		"nickName":     request.HasField("nickName"),
+		"headImg":      request.HasField("headImg"),
+		"phone":        request.HasField("phone"),
+		"email":        request.HasField("email"),
+		"remark":       request.HasField("remark"),
+		"status":       request.HasField("status"),
+	}, request.DepartmentID, request.Name, request.NickName, request.HeadImg, request.Phone, request.Email, request.Remark, request.Status)
+	if request.HasField("username") {
+		fields = appendUserField(fields, "username", request.Username)
+	}
+	if request.HasField("password") && request.Password != nil && strings.TrimSpace(*request.Password) != "" {
+		fields = append(fields, coreservice.Value("password", *request.Password))
+	}
+	mutable, err := coreservice.NewMutable[entity.User, uint64](descriptor, fields)
+	if err != nil {
+		return coreservice.UpdateInput[entity.User, uint64]{}, nil, err
+	}
+	item, err := coreservice.NewUpdateItem[entity.User, uint64](descriptor, request.ID, mutable)
+	if err != nil {
+		return coreservice.UpdateInput[entity.User, uint64]{}, nil, err
+	}
+	input, err := coreservice.NewUpdateObject[entity.User, uint64](descriptor, item)
+	if err != nil {
+		return coreservice.UpdateInput[entity.User, uint64]{}, nil, err
+	}
+	var roleIDs *[]uint64
+	if request.HasField("roleIdList") {
+		values := []uint64{}
+		if request.RoleIDList != nil {
+			values = append(values, (*request.RoleIDList)...)
+		}
+		roleIDs = &values
+	}
+
+	return input, roleIDs, nil
+}
+
+func appendPresentUserFields(
+	fields []coreservice.FieldValue,
+	submitted map[string]bool,
+	departmentID *uint64,
+	name *string,
+	nickName *string,
+	headImg *string,
+	phone *string,
+	email *string,
+	remark *string,
+	status *int32,
+) []coreservice.FieldValue {
+	values := []struct {
+		name  string
+		value any
+	}{
+		{"departmentId", departmentID},
+		{"name", name},
+		{"nickName", nickName},
+		{"headImg", headImg},
+		{"phone", phone},
+		{"email", email},
+		{"remark", remark},
+		{"status", status},
+	}
+	for _, value := range values {
+		if submitted[value.name] {
+			fields = appendUserField(fields, value.name, value.value)
+		}
+	}
+
+	return fields
+}
+
+func appendUserField(fields []coreservice.FieldValue, name string, value any) []coreservice.FieldValue {
+	switch current := value.(type) {
+	case *uint64:
+		if current == nil {
+			return append(fields, coreservice.Null(name))
+		}
+		return append(fields, coreservice.Value(name, *current))
+	case *int32:
+		if current == nil {
+			return append(fields, coreservice.Null(name))
+		}
+		return append(fields, coreservice.Value(name, *current))
+	case *string:
+		if current == nil {
+			return append(fields, coreservice.Null(name))
+		}
+		return append(fields, coreservice.Value(name, *current))
+	default:
+		return fields
+	}
+}
+
 // AddWithRoles 在同一事务中新建用户并写入角色关系。
 func (service *UserService) AddWithRoles(ctx context.Context, input coreservice.AddInput[entity.User], roleIDs []uint64) (coreservice.AddResult[uint64], error) {
 	if service == nil || service.runtime == nil {

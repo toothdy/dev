@@ -63,8 +63,8 @@ func AppEPS(context.Context) (eps.Document, error) {
 	return eps.AppView()
 }
 
-// CommController 声明 Base App 通用路由。
-func CommController(handler *CommHandler) controller.Definition {
+// AppCommController 声明 Base App 通用路由。
+func AppCommController(handler *CommHandler) controller.Definition {
 	public := []controller.URLTag{{Name: controller.TagIgnoreToken}}
 
 	return controller.App().

@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
 
@@ -38,10 +40,11 @@ type menuPermissionRow struct {
 
 // PermissionService 使用 Base 权威关系表执行后台授权。
 type PermissionService struct {
-	userRole *coreservice.Base[entity.UserRole, uint64]
-	role     *coreservice.Base[entity.Role, uint64]
-	roleMenu *coreservice.Base[entity.RoleMenu, uint64]
-	menu     *coreservice.Base[entity.Menu, uint64]
+	userRole    *coreservice.Base[entity.UserRole, uint64]
+	role        *coreservice.Base[entity.Role, uint64]
+	roleMenu    *coreservice.Base[entity.RoleMenu, uint64]
+	menu        *coreservice.Base[entity.Menu, uint64]
+	menuService *MenuService
 }
 
 // NewPermission 创建后台权限服务。
@@ -50,13 +53,14 @@ func NewPermission(
 	role *coreservice.Base[entity.Role, uint64],
 	roleMenu *coreservice.Base[entity.RoleMenu, uint64],
 	menu *coreservice.Base[entity.Menu, uint64],
+	menuService *MenuService,
 ) (*PermissionService, error) {
 	if !validPermissionBase(userRole) || !validPermissionBase(role) ||
-		!validPermissionBase(roleMenu) || !validPermissionBase(menu) {
+		!validPermissionBase(roleMenu) || !validPermissionBase(menu) || menuService == nil {
 		return nil, exception.Core("权限服务依赖无效")
 	}
 
-	return &PermissionService{userRole: userRole, role: role, roleMenu: roleMenu, menu: menu}, nil
+	return &PermissionService{userRole: userRole, role: role, roleMenu: roleMenu, menu: menu, menuService: menuService}, nil
 }
 
 // Authorize 按权威角色和菜单关系判断后台权限。
@@ -178,6 +182,36 @@ func (service *PermissionService) Permissions(ctx context.Context, roleIDs []uin
 	}
 
 	return permissions, nil
+}
+
+// PermissionMenu 返回当前管理员的权限标识与可见菜单树。
+func (service *PermissionService) PermissionMenu(ctx context.Context) (dto.PermissionMenuResult, error) {
+	if service == nil || service.menuService == nil {
+		return dto.PermissionMenuResult{}, exception.Core("权限菜单服务未初始化")
+	}
+	identity, err := auth.Admin(ctx)
+	if err != nil {
+		return dto.PermissionMenuResult{}, err
+	}
+	roleIDs, err := service.RoleIDs(ctx, identity.UserID)
+	if err != nil {
+		return dto.PermissionMenuResult{}, err
+	}
+	permissions, err := service.Permissions(ctx, roleIDs)
+	if err != nil {
+		return dto.PermissionMenuResult{}, err
+	}
+	perms := make([]string, 0, len(permissions))
+	for permission := range permissions {
+		perms = append(perms, permission)
+	}
+	sort.Strings(perms)
+	menus, err := service.menuService.List(ctx)
+	if err != nil {
+		return dto.PermissionMenuResult{}, err
+	}
+
+	return dto.PermissionMenuResult{Perms: perms, Menus: menus}, nil
 }
 
 func validPermissionBase[E any](service *coreservice.Base[E, uint64]) bool {

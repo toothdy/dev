@@ -100,8 +100,8 @@ func localUploadMode() UploadModeResult {
 	return UploadModeResult{Mode: "local", Type: "local"}
 }
 
-// UploadController 声明不带全局前缀的公开文件路由。
-func UploadController(handler *UploadHandler) controller.Definition {
+// AdminUploadController 声明不带全局前缀的公开文件路由。
+func AdminUploadController(handler *UploadHandler) controller.Definition {
 	return controller.Admin("upload").
 		Options(controller.RouterOptions{
 			Description:        "公开文件",

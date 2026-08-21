@@ -83,8 +83,8 @@ func (handler *ToolHandler) requireAdmin(ctx context.Context) error {
 	return nil
 }
 
-// CodingController 声明开发环境代码生成路由。
-func CodingController(handler *ToolHandler) controller.Definition {
+// AdminCodingController 声明开发环境代码生成路由。
+func AdminCodingController(handler *ToolHandler) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{
 			Description:     "AI 编码",

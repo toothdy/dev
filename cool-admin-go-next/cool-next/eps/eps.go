@@ -995,7 +995,7 @@ func epsFieldSchema(field Field) Schema {
 	}
 	setSchemaFormat(&result, coreentity.LogicalType(field.DatabaseType))
 	if field.HasDefault {
-		result.Default = pointer[any](field.Default)
+		result.Default = pointer(field.Default)
 	}
 
 	return result

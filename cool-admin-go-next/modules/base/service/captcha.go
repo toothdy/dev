@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	cryptorand "crypto/rand"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -14,7 +14,7 @@ import (
 
 	"github.com/gogf/gf/v2/os/gcache"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	base "github.com/toothdy/cool-admin-go-next/modules/base"
+	"github.com/toothdy/cool-admin-go-next/modules/base"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 )
 
@@ -56,13 +56,13 @@ func NewCaptcha(config base.Config) (*CaptchaService, error) {
 		cache:  gcache.New(),
 		color:  captcha.Color,
 		height: captcha.Height,
-		random: cryptorand.Reader,
+		random: rand.Reader,
 		ttl:    captcha.TTL,
 		width:  captcha.Width,
 	}, nil
 }
 
-// Generate 生成图片验证码并缓存答案。
+// 生成图片验证码并缓存答案
 func (service *CaptchaService) Generate(ctx context.Context, query dto.CaptchaQuery) (dto.CaptchaResult, error) {
 	if service == nil || service.cache == nil || service.random == nil {
 		return dto.CaptchaResult{}, exception.Core("验证码服务未初始化")
@@ -87,7 +87,7 @@ func (service *CaptchaService) Generate(ctx context.Context, query dto.CaptchaQu
 	}, nil
 }
 
-// Verify 校验验证码，成功后立即消费。
+// 校验验证码
 func (service *CaptchaService) Verify(ctx context.Context, captchaID, verifyCode string) (bool, error) {
 	if captchaID == "" || verifyCode == "" {
 		return false, nil
@@ -113,12 +113,13 @@ func (service *CaptchaService) Verify(ctx context.Context, captchaID, verifyCode
 	return true, nil
 }
 
+// 生成随机字符串验证码
 func (service *CaptchaService) randomString(length int, characters string) (string, error) {
 	var builder strings.Builder
 	builder.Grow(length)
 	limit := big.NewInt(int64(len(characters)))
 	for index := 0; index < length; index++ {
-		value, err := cryptorand.Int(service.random, limit)
+		value, err := rand.Int(service.random, limit)
 		if err != nil {
 			return "", err
 		}
@@ -128,6 +129,7 @@ func (service *CaptchaService) randomString(length int, characters string) (stri
 	return builder.String(), nil
 }
 
+// 生成随机十六进制字符串验证码
 func (service *CaptchaService) randomHex(size int) (string, error) {
 	value := make([]byte, size)
 	if _, err := io.ReadFull(service.random, value); err != nil {
@@ -137,6 +139,7 @@ func (service *CaptchaService) randomHex(size int) (string, error) {
 	return hex.EncodeToString(value), nil
 }
 
+// 归一化验证码选项
 func (service *CaptchaService) normalizeOptions(query dto.CaptchaQuery) (int, int, string) {
 	width := query.Width
 	if width < captchaMinWidth || width > captchaMaxWidth {
@@ -154,6 +157,7 @@ func (service *CaptchaService) normalizeOptions(query dto.CaptchaQuery) (int, in
 	return width, height, color
 }
 
+// 校验验证码颜色是否有效
 func isCaptchaColor(color string) bool {
 	if (len(color) != 4 && len(color) != 7) || color[0] != '#' {
 		return false
@@ -170,6 +174,7 @@ func isCaptchaColor(color string) bool {
 	return true
 }
 
+// 生成验证码 SVG 图片
 func buildCaptchaSVG(code string, width, height int, color string) string {
 	fontSize := height * 3 / 5
 	return fmt.Sprintf(
@@ -184,6 +189,7 @@ func buildCaptchaSVG(code string, width, height int, color string) string {
 	)
 }
 
+// 生成验证码缓存键
 func captchaCacheKey(captchaID string) string {
 	return captchaCachePrefix + captchaID
 }

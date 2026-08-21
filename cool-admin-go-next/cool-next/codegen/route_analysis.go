@@ -139,7 +139,7 @@ func (a *analysis) analyzeDefaultRoutes(
 	}
 	apis, valid := controllerAPIs(pkg, function, expression)
 	if !valid {
-		a.add("CG101", "Curd API 必须使用 APIs、AllAPIs 或常量列表", a.position(pkg, expression.Pos()))
+		a.add("CG101", "Curd API 必须使用 API、AllAPI 或常量列表", a.position(pkg, expression.Pos()))
 		return nil, false
 	}
 	tagName, tagAPIs, valid := controllerCurdTag(pkg, function, literal)
@@ -343,10 +343,10 @@ func controllerAPIs(pkg *loadedPackage, function *ast.FuncDecl, expression ast.E
 	expression = localControllerValue(pkg, function, expression)
 	if call, matches := unparenControllerExpr(expression).(*ast.CallExpr); matches {
 		called := queryCalledFunction(pkg.packageInfo.TypesInfo, call.Fun)
-		if isPackageFunction(called, controllerPackagePath, "AllAPIs") && len(call.Args) == 0 {
+		if isPackageFunction(called, controllerPackagePath, "AllAPI") && len(call.Args) == 0 {
 			return []string{"add", "delete", "update", "info", "list", "page"}, true
 		}
-		if isPackageFunction(called, controllerPackagePath, "APIs") {
+		if isPackageFunction(called, controllerPackagePath, "API") {
 			result := make([]string, len(call.Args))
 			for index, argument := range call.Args {
 				value, valid := constantControllerString(pkg, argument)

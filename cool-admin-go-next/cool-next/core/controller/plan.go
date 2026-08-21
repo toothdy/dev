@@ -64,17 +64,17 @@ func CompilePlan(
 func actionAPI(action crud.Action) (APIType, bool) {
 	switch action {
 	case crud.ActionAdd:
-		return APIAdd, true
+		return Add, true
 	case crud.ActionDelete:
-		return APIDelete, true
+		return Delete, true
 	case crud.ActionUpdate:
-		return APIUpdate, true
+		return Update, true
 	case crud.ActionInfo:
-		return APIInfo, true
+		return Info, true
 	case crud.ActionList:
-		return APIList, true
+		return List, true
 	case crud.ActionPage:
-		return APIPage, true
+		return Page, true
 	default:
 		return "", false
 	}

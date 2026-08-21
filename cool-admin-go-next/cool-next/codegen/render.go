@@ -2096,10 +2096,6 @@ func componentFunctionName(component Component, constructor Constructor) string 
 	return "build" + generatedIdentifier(component.module, constructor.packagePath, constructor.name)
 }
 
-func lifecycleFunctionName(component renderComponent) string {
-	return "lifecycle" + generatedIdentifier(component.component.module, component.constructor.packagePath, component.constructor.name)
-}
-
 func serviceActionModeName(service renderService, action string) string {
 	return "mode" + generatedIdentifier(service.module, service.declaration.packagePath, service.declaration.name, action)
 }

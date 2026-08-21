@@ -46,3 +46,9 @@ type MenuTree struct {
 	IsShow     bool       `json:"isShow"`
 	ChildMenus []MenuTree `json:"childMenus"`
 }
+
+// PermissionMenuResult 是当前用户的权限标识与菜单树。
+type PermissionMenuResult struct {
+	Perms []string       `json:"perms"`
+	Menus []MenuListItem `json:"menus"`
+}

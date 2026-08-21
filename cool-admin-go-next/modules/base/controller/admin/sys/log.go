@@ -41,12 +41,12 @@ func (handler *LogHandler) GetKeep(ctx context.Context) (int, error) {
 	return handler.log.GetKeep(ctx)
 }
 
-// LogController 声明系统操作日志路由。
-func LogController(log *service.LogService, handler *LogHandler) controller.Definition {
+// AdminSysLogController 声明系统操作日志路由。
+func AdminSysLogController(log *service.LogService, handler *LogHandler) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{Description: "系统操作日志", TagName: "系统操作日志"}).
 		Curd(controller.CurdOption{
-			API:     controller.APIs(controller.APIPage),
+			API:     controller.API(controller.Page),
 			Entity:  entity.Log{},
 			Service: log,
 		}).

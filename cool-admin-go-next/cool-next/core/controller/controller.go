@@ -80,12 +80,12 @@ type Route struct {
 type APIType string
 
 const (
-	APIAdd    APIType = "add"
-	APIDelete APIType = "delete"
-	APIUpdate APIType = "update"
-	APIInfo   APIType = "info"
-	APIList   APIType = "list"
-	APIPage   APIType = "page"
+	Add    APIType = "add"
+	Delete APIType = "delete"
+	Update APIType = "update"
+	Info   APIType = "info"
+	List   APIType = "list"
+	Page   APIType = "page"
 
 	TagIgnoreToken = "ignoreToken"
 )
@@ -188,17 +188,17 @@ func NonTransactional() TransactionPolicy {
 	return coreroute.NonTransactional()
 }
 
-// APIs CRUD API 列表副本
-func APIs(values ...APIType) []APIType {
+// API CRUD API 列表副本
+func API(values ...APIType) []APIType {
 	result := append([]APIType(nil), values...)
 	validateAPIs(result)
 
 	return result
 }
 
-// AllAPIs 全部默认 CRUD API
-func AllAPIs() []APIType {
-	return APIs(APIAdd, APIDelete, APIUpdate, APIInfo, APIList, APIPage)
+// AllAPI 全部默认 CRUD API
+func AllAPI() []APIType {
+	return API(Add, Delete, Update, Info, List, Page)
 }
 
 // 配置 Controller 路由选项
@@ -551,7 +551,7 @@ func requireCurd(value Definition) (CurdOption, error) {
 
 func isAPI(value APIType) bool {
 	switch value {
-	case APIAdd, APIDelete, APIUpdate, APIInfo, APIList, APIPage:
+	case Add, Delete, Update, Info, List, Page:
 		return true
 	default:
 		return false

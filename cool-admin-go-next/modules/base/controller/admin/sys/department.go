@@ -43,15 +43,15 @@ func (handler *DepartmentHandler) Order(ctx context.Context, request *Department
 	return handler.department.Order(ctx, request.Items)
 }
 
-// DepartmentController 声明系统部门管理路由。
-func DepartmentController(department *service.DepartmentService, handler *DepartmentHandler) controller.Definition {
+// AdminSysDepartmentController 声明系统部门管理路由。
+func AdminSysDepartmentController(department *service.DepartmentService, handler *DepartmentHandler) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{Description: "系统部门", TagName: "系统部门"}).
 		Curd(controller.CurdOption{
-			API:     controller.APIs(controller.APIAdd, controller.APIUpdate),
+			API:     controller.API(controller.Add, controller.Update),
 			Entity:  entity.Department{},
 			Service: department,
-			InsertParam: controller.Insert[entity.Department](func(ctx context.Context, input *coreservice.Mutable[entity.Department]) error {
+			InsertParam: controller.Insert(func(ctx context.Context, input *coreservice.Mutable[entity.Department]) error {
 				identity, err := auth.Admin(ctx)
 				if err != nil {
 					return err

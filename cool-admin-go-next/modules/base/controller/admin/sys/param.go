@@ -29,12 +29,12 @@ func (handler *ParamHTMLHandler) HTML(ctx context.Context, request *ParamHTMLQue
 	return handler.param.HTMLByKey(ctx, request.Key)
 }
 
-// ParamController 声明系统参数管理路由。
-func ParamController(param *service.ParamService, handler *ParamHTMLHandler) controller.Definition {
+// AdminSysParamController 声明系统参数管理路由。
+func AdminSysParamController(param *service.ParamService, handler *ParamHTMLHandler) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{Description: "参数配置", TagName: "参数配置"}).
 		Curd(controller.CurdOption{
-			API:     controller.APIs(controller.APIAdd, controller.APIDelete, controller.APIUpdate, controller.APIInfo, controller.APIPage),
+			API:     controller.API(controller.Add, controller.Delete, controller.Update, controller.Info, controller.Page),
 			Entity:  entity.Param{},
 			Service: param,
 		}).

@@ -4,12 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"sort"
 
+	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
 	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/seed"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
@@ -28,6 +31,20 @@ type menuRow struct {
 	ViewPath   *string     `orm:"viewPath"`
 	KeepAlive  bool        `orm:"keepAlive"`
 	IsShow     bool        `orm:"isShow"`
+}
+
+type menuExportRow struct {
+	ID        uint64  `orm:"id"`
+	ParentID  *uint64 `orm:"parentId"`
+	Name      string  `orm:"name"`
+	Router    *string `orm:"router"`
+	Perms     *string `orm:"perms"`
+	Type      int32   `orm:"type"`
+	Icon      *string `orm:"icon"`
+	OrderNum  int32   `orm:"orderNum"`
+	ViewPath  *string `orm:"viewPath"`
+	KeepAlive bool    `orm:"keepAlive"`
+	IsShow    bool    `orm:"isShow"`
 }
 
 // MenuService 管理菜单树及角色菜单关系。
@@ -217,6 +234,133 @@ func (service *MenuService) List(ctx context.Context) ([]dto.MenuListItem, error
 		return nil, exception.WrapCore(err, "查询菜单列表失败")
 	}
 	return buildMenuItems(rows), nil
+}
+
+// Export 导出选中的菜单树，不含维护字段。
+func (service *MenuService) Export(ctx context.Context, ids []uint64) ([]dto.MenuTree, error) {
+	if service == nil || service.Base == nil {
+		return nil, exception.Core("菜单服务未初始化")
+	}
+	if len(ids) == 0 {
+		return []dto.MenuTree{}, nil
+	}
+	model, err := service.Base.Model(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var rows []menuExportRow
+	if err = model.
+		Fields("id", "parentId", "name", "router", "perms", "type", "icon", "orderNum", "viewPath", "keepAlive", "isShow").
+		WhereIn("id", ids).
+		Scan(&rows); err != nil {
+		return nil, exception.WrapCore(err, "查询导出菜单失败")
+	}
+	sort.Slice(rows, func(left, right int) bool {
+		if rows[left].OrderNum != rows[right].OrderNum {
+			return rows[left].OrderNum < rows[right].OrderNum
+		}
+
+		return rows[left].ID < rows[right].ID
+	})
+
+	return buildMenuTree(rows), nil
+}
+
+// Import 在调用方事务中插入菜单树，并用实际新 ID 重建父子关系。
+func (service *MenuService) Import(ctx context.Context, menus []dto.MenuTree) error {
+	if service == nil || service.Base == nil {
+		return exception.Core("菜单服务未初始化")
+	}
+	if _, err := service.Tx(ctx); err != nil {
+		return err
+	}
+	model, err := service.Base.Model(ctx)
+	if err != nil {
+		return err
+	}
+
+	return service.importMenuTree(model, menus, nil)
+}
+
+func buildMenuTree(rows []menuExportRow) []dto.MenuTree {
+	children := make(map[uint64][]menuExportRow)
+	roots := make([]menuExportRow, 0)
+	for _, row := range rows {
+		if row.ParentID == nil {
+			roots = append(roots, row)
+			continue
+		}
+		children[*row.ParentID] = append(children[*row.ParentID], row)
+	}
+	var walk func(menuExportRow, map[uint64]bool) dto.MenuTree
+	walk = func(row menuExportRow, ancestors map[uint64]bool) dto.MenuTree {
+		if ancestors[row.ID] {
+			return menuTreeNode(row, nil)
+		}
+		ancestors[row.ID] = true
+		nested := children[row.ID]
+		items := make([]dto.MenuTree, 0, len(nested))
+		for _, child := range nested {
+			items = append(items, walk(child, ancestors))
+		}
+		delete(ancestors, row.ID)
+
+		return menuTreeNode(row, items)
+	}
+	result := make([]dto.MenuTree, 0, len(roots))
+	for _, root := range roots {
+		result = append(result, walk(root, make(map[uint64]bool)))
+	}
+
+	return result
+}
+
+func menuTreeNode(row menuExportRow, children []dto.MenuTree) dto.MenuTree {
+	return dto.MenuTree{
+		Name: row.Name, Router: row.Router, Perms: row.Perms, Type: row.Type, Icon: row.Icon,
+		OrderNum: row.OrderNum, ViewPath: row.ViewPath, KeepAlive: row.KeepAlive, IsShow: row.IsShow,
+		ChildMenus: children,
+	}
+}
+
+func (service *MenuService) importMenuTree(model *gdb.Model, menus []dto.MenuTree, parentID *uint64) error {
+	for _, menu := range menus {
+		fields := map[string]any{
+			"name": menu.Name, "router": stringValue(menu.Router), "perms": stringValue(menu.Perms),
+			"type": menu.Type, "icon": stringValue(menu.Icon), "orderNum": menu.OrderNum,
+			"viewPath": stringValue(menu.ViewPath), "keepAlive": menu.KeepAlive, "isShow": menu.IsShow,
+		}
+		if parentID == nil {
+			fields["parentId"] = nil
+		} else {
+			fields["parentId"] = *parentID
+		}
+		do, err := seed.NewDO(service.Descriptor(), fields, true)
+		if err != nil {
+			return exception.WrapCore(err, "构造导入节点失败")
+		}
+		insertedID, err := model.Data(do.DBData()).InsertAndGetId()
+		if err != nil {
+			return exception.WrapCore(err, "导入节点失败")
+		}
+		if insertedID <= 0 {
+			return exception.Core("导入节点未返回有效 ID")
+		}
+		id := uint64(insertedID)
+		if err = service.importMenuTree(model, menu.ChildMenus, &id); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func stringValue(value *string) any {
+	if value == nil {
+		return nil
+	}
+
+	return *value
 }
 
 func (service *MenuService) lockMenus(ctx context.Context, ids []uint64) error {

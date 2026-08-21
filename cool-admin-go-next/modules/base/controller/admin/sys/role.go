@@ -12,15 +12,15 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
-// RoleController 声明系统角色管理路由。
-func RoleController(role *service.RoleService) controller.Definition {
+// AdminSysRoleController 声明系统角色管理路由。
+func AdminSysRoleController(role *service.RoleService) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{Description: "系统角色", TagName: "系统角色"}).
 		Curd(controller.CurdOption{
-			API:     controller.APIs(controller.APIAdd, controller.APIDelete, controller.APIUpdate, controller.APIInfo, controller.APIPage),
+			API:     controller.API(controller.Add, controller.Delete, controller.Update, controller.Info, controller.Page),
 			Entity:  entity.Role{},
 			Service: role,
-			InsertParam: controller.Insert[entity.Role](func(ctx context.Context, input *coreservice.Mutable[entity.Role]) error {
+			InsertParam: controller.Insert(func(ctx context.Context, input *coreservice.Mutable[entity.Role]) error {
 				identity, err := auth.Admin(ctx)
 				if err != nil {
 					return err

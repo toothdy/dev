@@ -3,39 +3,29 @@ package admin
 import (
 	"context"
 	"net/http"
-	"sort"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
-// PermissionMenuResult 是当前用户的权限与菜单响应。
-type PermissionMenuResult struct {
-	Perms []string           `json:"perms"`
-	Menus []dto.MenuListItem `json:"menus"`
-}
-
 // CommHandler 适配后台通用业务接口。
 type CommHandler struct {
 	user       *service.UserService
 	permission *service.PermissionService
-	menu       *service.MenuService
 }
 
 // NewCommHandler 创建后台通用接口适配器。
 func NewCommHandler(
 	user *service.UserService,
 	permission *service.PermissionService,
-	menu *service.MenuService,
 ) (*CommHandler, error) {
-	if user == nil || permission == nil || menu == nil {
+	if user == nil || permission == nil {
 		return nil, exception.Core("Base 后台通用接口依赖无效")
 	}
 
-	return &CommHandler{user: user, permission: permission, menu: menu}, nil
+	return &CommHandler{user: user, permission: permission}, nil
 }
 
 // Person 返回当前管理员个人信息。
@@ -57,33 +47,12 @@ func (handler *CommHandler) PersonUpdate(ctx context.Context, request *dto.Perso
 }
 
 // PermissionMenu 返回当前管理员的权限与菜单树。
-func (handler *CommHandler) PermissionMenu(ctx context.Context) (PermissionMenuResult, error) {
-	if handler == nil || handler.permission == nil || handler.menu == nil {
-		return PermissionMenuResult{}, exception.Core("Base 权限菜单接口未初始化")
-	}
-	identity, err := auth.Admin(ctx)
-	if err != nil {
-		return PermissionMenuResult{}, err
-	}
-	roleIDs, err := handler.permission.RoleIDs(ctx, identity.UserID)
-	if err != nil {
-		return PermissionMenuResult{}, err
-	}
-	permissions, err := handler.permission.Permissions(ctx, roleIDs)
-	if err != nil {
-		return PermissionMenuResult{}, err
-	}
-	perms := make([]string, 0, len(permissions))
-	for permission := range permissions {
-		perms = append(perms, permission)
-	}
-	sort.Strings(perms)
-	menus, err := handler.menu.List(ctx)
-	if err != nil {
-		return PermissionMenuResult{}, err
+func (handler *CommHandler) PermissionMenu(ctx context.Context) (dto.PermissionMenuResult, error) {
+	if handler == nil || handler.permission == nil {
+		return dto.PermissionMenuResult{}, exception.Core("Base 权限菜单接口未初始化")
 	}
 
-	return PermissionMenuResult{Perms: perms, Menus: menus}, nil
+	return handler.permission.PermissionMenu(ctx)
 }
 
 // Program 返回当前后端实现语言。
@@ -91,8 +60,8 @@ func Program(context.Context) (string, error) {
 	return "Go", nil
 }
 
-// CommController 声明已有依赖可执行的后台通用路由。
-func CommController(handler *CommHandler, login *service.LoginService, upload *UploadHandler) controller.Definition {
+// AdminCommController 声明已有依赖可执行的后台通用路由。
+func AdminCommController(handler *CommHandler, login *service.LoginService, upload *UploadHandler) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{Description: "Base 通用接口", TagName: "Base 通用接口"}).
 		Route(
