@@ -25,6 +25,7 @@ const epsPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/eps"
 const grpcPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/grpc"
 const ghttpPackagePath = "github.com/gogf/gf/v2/net/ghttp"
 const gmodePackagePath = "github.com/gogf/gf/v2/util/gmode"
+const gredisPackagePath = "github.com/gogf/gf/v2/database/gredis"
 const outboxStorePackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/outbox/store"
 const schemaPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/db/schema"
 
@@ -84,6 +85,7 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 	imports.add(grpcxPackagePath, "grpcx")
 	imports.add(ghttpPackagePath, "ghttp")
 	imports.add(gdbPackagePath, "gdb")
+	imports.add(gredisPackagePath, "gredis")
 	imports.add(queryPackagePath, "crud")
 	imports.add(outboxPackagePath, "outbox")
 	for _, current := range modules {
@@ -109,9 +111,11 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 		imports.add(databasePackagePath, "coredb")
 		imports.add(recyclePackagePath, "corerecycle")
 	}
+	if len(fragments) > 0 || hasOutbox {
+		imports.add(schemaPackagePath, "dbschema")
+	}
 	if hasOutbox {
 		imports.add(outboxStorePackagePath, "outboxstore")
-		imports.add(schemaPackagePath, "dbschema")
 	}
 	imports.add("context", "context")
 	if len(services) > 0 {
@@ -689,6 +693,7 @@ func writeInfrastructureDeclarations(source *strings.Builder, fragments []Descri
 	}
 	source.WriteString("\t} `json:\"cool\"`\n")
 	source.WriteString("\tDatabase map[string]gdb.ConfigGroup `json:\"database\"`\n")
+	source.WriteString("\tRedis map[string]gredis.Config `json:\"redis\"`\n")
 	source.WriteString("}\n\n")
 	source.WriteString("func generatedInfrastructureConfig(ctx context.Context, source configuration.Source) (infrastructureConfig, error) {\n")
 	source.WriteString("\tdefaults := infrastructureConfig{}\n")
@@ -703,6 +708,9 @@ func writeInfrastructureDeclarations(source *strings.Builder, fragments []Descri
 	source.WriteString("\tresult, err := configuration.Load(ctx, defaults, source)\n")
 	source.WriteString("\tif err != nil {\n\t\treturn infrastructureConfig{}, exception.WrapCore(err, \"基础设施配置无效\")\n\t}\n")
 	source.WriteString("\tconfig := result.Value()\n")
+	source.WriteString("\tfor group, node := range config.Redis {\n")
+	source.WriteString("\t\tgredis.SetConfig(&node, group)\n")
+	source.WriteString("\t}\n")
 	source.WriteString("\tif err = config.Cool.Outbox.Validate(); err != nil {\n\t\treturn infrastructureConfig{}, exception.WrapCore(err, \"Outbox 配置无效\")\n\t}\n")
 	source.WriteString("\tif config.Cool.Outbox.Enabled && len(config.Database[config.Cool.Outbox.DatabaseGroup]) == 0 {\n")
 	source.WriteString("\t\treturn infrastructureConfig{}, exception.Core(\"Outbox Database Group 不存在\")\n\t}\n")
@@ -719,6 +727,20 @@ func writeInfrastructureDeclarations(source *strings.Builder, fragments []Descri
 	if hasOutbox {
 		source.WriteString("\ttables = append(tables, dbschema.OutboxTableName, dbschema.InboxTableName)\n")
 	}
+	source.WriteString("\tbootstrap, err := coredb.New(ctx, coredb.Config{Group: group, Nodes: config.Database[group]})\n")
+	source.WriteString("\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n")
+	source.WriteString("\tif len(descriptors) > 0 {\n")
+	source.WriteString("\t\tmanager, err := dbschema.New(bootstrap.DB(), bootstrap.Dialect())\n")
+	source.WriteString("\t\tif err != nil {\n\t\t\treturn nil, nil, exception.WrapCore(err, \"创建 Schema 管理器失败\")\n\t\t}\n")
+	source.WriteString("\t\tmetadata := make([]coreentity.Metadata, len(descriptors))\n")
+	source.WriteString("\t\tfor index, descriptor := range descriptors {\n\t\t\tmetadata[index] = descriptor\n\t\t}\n")
+	source.WriteString("\t\tif _, err = manager.Apply(ctx, dbschema.Sync, metadata...); err != nil {\n\t\t\treturn nil, nil, exception.WrapCore(err, \"同步业务表结构失败\")\n\t\t}\n")
+	source.WriteString("\t}\n")
+	source.WriteString("\tif len(descriptors) > 0 && config.Cool.CRUD.SoftDelete {\n")
+	source.WriteString("\t\tbootstrapRecycler, err := corerecycle.New(bootstrap, config.Cool.CRUD, descriptors...)\n")
+	source.WriteString("\t\tif err != nil {\n\t\t\treturn nil, nil, err\n\t\t}\n")
+	source.WriteString("\t\tif err = bootstrapRecycler.Prepare(ctx, dbschema.Sync); err != nil {\n\t\t\treturn nil, nil, err\n\t\t}\n")
+	source.WriteString("\t}\n")
 	source.WriteString("\truntime, err := coredb.New(ctx, coredb.Config{Group: group, Nodes: config.Database[group], TransactionTables: tables})\n")
 	source.WriteString("\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n")
 	source.WriteString("\tvar store *corerecycle.Store\n")
@@ -887,15 +909,42 @@ func writeGeneratedFunction(
 	constructorsByComponent := make(map[string]Constructor, len(components))
 	for _, current := range components {
 		key := componentKey(current.component.module, current.component.packagePath, current.component.name)
+		constructorsByComponent[key] = current.constructor
+	}
+	assemblyComponents := append([]renderComponent(nil), components...)
+	if authorizer, exists := authorizerComponent(components); exists {
+		assemblyComponents = authorizerPrerequisites(authorizer, components, dependencies)
+		for _, current := range components {
+			if !authorizerDependency(authorizer, current, components, dependencies) {
+				assemblyComponents = append(assemblyComponents, current)
+			}
+		}
+	}
+	for _, provider := range graphProviders {
+		if provider.kind != ProviderKindComponent && provider.kind != ProviderKindConsumerDefinition {
+			continue
+		}
+		if provider.packagePath == appHTTPPackagePath || provider.packagePath == grpcPackagePath {
+			continue
+		}
+		definition := Component{module: provider.module, packagePath: provider.packagePath, name: provider.name}
+		key := componentKey(definition.module, definition.packagePath, definition.name)
+		if definedComponents[key] || constructorsByComponent[key].name != "" {
+			continue
+		}
+		componentDefinitions = append(componentDefinitions, definition)
+		definedComponents[key] = true
+	}
+	for _, current := range assemblyComponents {
+		key := componentKey(current.component.module, current.component.packagePath, current.component.name)
 		if definedComponents[key] {
 			continue
 		}
 		componentDefinitions = append(componentDefinitions, current.component)
-		constructorsByComponent[key] = current.constructor
 		definedComponents[key] = true
 	}
 	for _, provider := range graphProviders {
-		if provider.kind != ProviderKindComponent && provider.kind != ProviderKindConsumerDefinition {
+		if (provider.packagePath != appHTTPPackagePath && provider.packagePath != grpcPackagePath) || provider.name != "New" {
 			continue
 		}
 		definition := Component{module: provider.module, packagePath: provider.packagePath, name: provider.name}
@@ -1045,6 +1094,14 @@ func writeGeneratedFunction(
 		source.WriteString(")\n")
 		source.WriteString("\tif err != nil {\n\t\treturn assembly, err\n\t}\n")
 		source.WriteString("\t_ = runtime\n\t_ = recycler\n")
+		if hasAuthProviders(graph.Providers()) {
+			fmt.Fprintf(source, "\tassembly.AddComponent(module.ComponentDefinition{Module: %q, PackagePath: %q, Name: %q}, app.Hooks{})\n", frameworkModuleKey, authPackagePath, "Service")
+			fmt.Fprintf(source, "\tassembly.AddComponent(module.ComponentDefinition{Module: %q, PackagePath: %q, Name: %q}, app.Hooks{})\n", frameworkModuleKey, authPackagePath, "SessionStore")
+		}
+		if hasFrameworkProvider(graph.Providers(), authBcryptPackagePath, "Verifier") {
+			fmt.Fprintf(source, "\tassembly.AddComponent(module.ComponentDefinition{Module: %q, PackagePath: %q, Name: %q}, app.Hooks{})\n", frameworkModuleKey, authBcryptPackagePath, "Verifier")
+		}
+		fmt.Fprintf(source, "\tassembly.AddComponent(module.ComponentDefinition{Module: %q, PackagePath: %q, Name: %q}, app.Hooks{})\n", frameworkModuleKey, databasePackagePath, "Runtime")
 	}
 	if hasSeedModules(modules) {
 		source.WriteString("\tseedRuntime, err := seed.NewRuntime(runtime,\n")

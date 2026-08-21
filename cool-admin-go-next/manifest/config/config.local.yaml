@@ -1,0 +1,45 @@
+cool:
+  auth:
+    jwt:
+      issuer: cool-admin-go-next
+      audience: cool-admin
+      algorithm: HS256
+      currentKeyId: primary
+      accessTTL: 2h
+      refreshTTL: 360h
+      clockSkew: 30s
+      keys:
+        primary: ${COOL_AUTH_JWT_SECRET}
+    session:
+      type: redis
+      group: default
+      prefix: "cool:session:"
+  outbox:
+    enabled: false
+    databaseGroup: default
+  transports:
+    http:
+      enabled: true
+      address: 0.0.0.0
+      port: 8001
+      startTimeout: 5s
+    grpc:
+      enabled: false
+      address: 0.0.0.0
+      port: 8002
+      name: cool
+      registry: false
+
+database:
+  default:
+    - type: mysql
+      link: "mysql:root:123456@tcp(127.0.0.1:3306)/cool-go?loc=Local&parseTime=true&charset=utf8mb4"
+      createdAt: createTime
+      updatedAt: updateTime
+
+redis:
+  default:
+    address: "127.0.0.1:6379"
+    db: 0
+    user: ""
+    pass: ""
