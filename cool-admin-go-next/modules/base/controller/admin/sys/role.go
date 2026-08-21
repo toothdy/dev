@@ -14,7 +14,7 @@ import (
 
 // RoleController 声明系统角色管理路由。
 func RoleController(role *service.RoleService) controller.Definition {
-	return controller.Admin("").
+	return controller.Admin().
 		Options(controller.RouterOptions{Description: "系统角色", TagName: "系统角色"}).
 		Curd(controller.CurdOption{
 			API:     controller.APIs(controller.APIAdd, controller.APIDelete, controller.APIUpdate, controller.APIInfo, controller.APIPage),

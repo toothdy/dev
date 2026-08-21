@@ -144,14 +144,27 @@ type definition struct {
 
 func (*definition) definition() {}
 
-// Admin 创建后台 Controller Builder
-func Admin(path string) Builder {
-	return newBuilder(areaAdmin, path)
+// Admin 创建后台 Controller Builder。省略 path 或传空字符串等价，
+// 都表示不指定显式前缀，由 cool generate 按源文件所在目录自动推导。
+func Admin(path ...string) Builder {
+	return newBuilder(areaAdmin, controllerPathArgument(path))
 }
 
-// App 创建应用端 Controller Builder
-func App(path string) Builder {
-	return newBuilder(areaApp, path)
+// App 创建应用端 Controller Builder。省略 path 或传空字符串等价，
+// 都表示不指定显式前缀，由 cool generate 按源文件所在目录自动推导。
+func App(path ...string) Builder {
+	return newBuilder(areaApp, controllerPathArgument(path))
+}
+
+func controllerPathArgument(path []string) string {
+	if len(path) > 1 {
+		panicCore("Controller 路径最多只能传一个")
+	}
+	if len(path) == 0 {
+		return ""
+	}
+
+	return path[0]
 }
 
 // Bool 创建可区分未配置状态的布尔值

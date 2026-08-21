@@ -67,7 +67,7 @@ func AppEPS(context.Context) (eps.Document, error) {
 func CommController(handler *CommHandler) controller.Definition {
 	public := []controller.URLTag{{Name: controller.TagIgnoreToken}}
 
-	return controller.App("").
+	return controller.App().
 		Options(controller.RouterOptions{Description: "App 通用接口", TagName: "App 通用接口"}).
 		Route(
 			controller.Route{

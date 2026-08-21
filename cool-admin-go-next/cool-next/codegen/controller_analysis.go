@@ -112,10 +112,14 @@ func (a *analysis) analyzeControllerFactory(
 		a.add("CG024", "Controller 声明区域与源码目录不一致", a.position(pkg, chain.factory.Pos()))
 		return ControllerDeclaration{}, false
 	}
-	explicitPath, exists := constantControllerString(pkg, chain.path)
-	if !exists || !validControllerRelativePath(explicitPath) {
-		a.add("CG024", "Controller 路径必须是合法常量相对路径", a.position(pkg, chain.path.Pos()))
-		return ControllerDeclaration{}, false
+	explicitPath := ""
+	if chain.path != nil {
+		var exists bool
+		explicitPath, exists = constantControllerString(pkg, chain.path)
+		if !exists || !validControllerRelativePath(explicitPath) {
+			a.add("CG024", "Controller 路径必须是合法常量相对路径", a.position(pkg, chain.path.Pos()))
+			return ControllerDeclaration{}, false
+		}
 	}
 	controllerPath := explicitControllerPath(sourceArea, explicitPath)
 	if explicitPath == "" {
@@ -209,7 +213,7 @@ type controllerChain struct {
 	factory      *ast.CallExpr
 	options      *ast.CallExpr
 	optionsCount int
-	path         ast.Expr
+	path         ast.Expr // nil 表示 Admin()/App() 零参数调用，等价于显式传空字符串
 	routes       []*ast.CallExpr
 }
 
@@ -268,11 +272,13 @@ func parseControllerChain(pkg *loadedPackage, expression ast.Expr) (controllerCh
 			current = unparenControllerExpr(method.X)
 			continue
 		}
-		if !isPackageFunction(function, controllerPackagePath, "Admin") && !isPackageFunction(function, controllerPackagePath, "App") || len(call.Args) != 1 {
+		if !isPackageFunction(function, controllerPackagePath, "Admin") && !isPackageFunction(function, controllerPackagePath, "App") || len(call.Args) > 1 {
 			return controllerChain{}, false
 		}
 		chain.factory = call
-		chain.path = call.Args[0]
+		if len(call.Args) == 1 {
+			chain.path = call.Args[0]
+		}
 		if function.Name() == "Admin" {
 			chain.area = ControllerAdmin
 		} else {

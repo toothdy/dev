@@ -31,7 +31,7 @@ func (handler *ParamHTMLHandler) HTML(ctx context.Context, request *ParamHTMLQue
 
 // ParamController 声明系统参数管理路由。
 func ParamController(param *service.ParamService, handler *ParamHTMLHandler) controller.Definition {
-	return controller.Admin("").
+	return controller.Admin().
 		Options(controller.RouterOptions{Description: "参数配置", TagName: "参数配置"}).
 		Curd(controller.CurdOption{
 			API:     controller.APIs(controller.APIAdd, controller.APIDelete, controller.APIUpdate, controller.APIInfo, controller.APIPage),

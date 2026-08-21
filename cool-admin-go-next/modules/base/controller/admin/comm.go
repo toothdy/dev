@@ -93,7 +93,7 @@ func Program(context.Context) (string, error) {
 
 // CommController 声明已有依赖可执行的后台通用路由。
 func CommController(handler *CommHandler, login *service.LoginService, upload *UploadHandler) controller.Definition {
-	return controller.Admin("").
+	return controller.Admin().
 		Options(controller.RouterOptions{Description: "Base 通用接口", TagName: "Base 通用接口"}).
 		Route(
 			controller.Route{

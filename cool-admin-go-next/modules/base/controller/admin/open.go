@@ -81,7 +81,7 @@ func AdminEPS(context.Context) (eps.Document, error) {
 func OpenController(handler *OpenHandler) controller.Definition {
 	public := []controller.URLTag{{Name: controller.TagIgnoreToken}}
 
-	return controller.Admin("").
+	return controller.Admin().
 		Options(controller.RouterOptions{Description: "开放接口", TagName: "开放接口"}).
 		Route(
 			controller.Route{

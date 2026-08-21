@@ -43,7 +43,7 @@ func (handler *LogHandler) GetKeep(ctx context.Context) (int, error) {
 
 // LogController 声明系统操作日志路由。
 func LogController(log *service.LogService, handler *LogHandler) controller.Definition {
-	return controller.Admin("").
+	return controller.Admin().
 		Options(controller.RouterOptions{Description: "系统操作日志", TagName: "系统操作日志"}).
 		Curd(controller.CurdOption{
 			API:     controller.APIs(controller.APIPage),

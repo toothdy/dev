@@ -257,7 +257,7 @@ func appendUserField(fields []coreservice.FieldValue, name string, value any) []
 
 // UserController 声明系统用户管理路由。
 func UserController(user *service.UserService, handler *UserHandler) controller.Definition {
-	return controller.Admin("").
+	return controller.Admin().
 		Options(controller.RouterOptions{Description: "系统用户", TagName: "系统用户"}).
 		Curd(controller.CurdOption{
 			API:            controller.APIs(controller.APIDelete, controller.APIInfo, controller.APIList),

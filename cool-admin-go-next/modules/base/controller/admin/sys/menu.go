@@ -21,7 +21,7 @@ import (
 // 因此和菜单 CRUD 挂在同一个 Controller 下，而不是放进通用的 coding.go
 // （那里只留与具体实体无关的 getModuleTree/createCode）。
 func MenuController(menu *service.MenuService, tool *MenuToolHandler) controller.Definition {
-	return controller.Admin("").
+	return controller.Admin().
 		Options(controller.RouterOptions{Description: "系统菜单", TagName: "系统菜单"}).
 		Curd(controller.CurdOption{
 			API:            controller.APIs(controller.APIAdd, controller.APIDelete, controller.APIUpdate, controller.APIInfo, controller.APIPage),
