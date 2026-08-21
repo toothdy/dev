@@ -58,9 +58,14 @@ func (handler *CommHandler) UploadMode(ctx context.Context) (admin.UploadModeRes
 	return handler.upload.AppMode(ctx)
 }
 
-// 已发布的 App EPS 视图
-func AppEPS(context.Context) (eps.Document, error) {
-	return eps.AppView()
+// 已发布的 App EPS 视图（按模块分组的扁平 Controller 数组，兼容 cool-admin-vue 客户端契约）
+func AppEPS(context.Context) (map[string][]eps.LegacyController, error) {
+	document, err := eps.AppView()
+	if err != nil {
+		return nil, err
+	}
+
+	return eps.LegacyView(document), nil
 }
 
 // Base App 通用路由
