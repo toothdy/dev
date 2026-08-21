@@ -51,7 +51,7 @@ Go v1 与当前 Go next 只对 CRUD 路由自动生成权限（`codegen/route_an
 ## 4. 非目标
 
 1. 不引入权限缓存。Node 有 `admin:perms:${userId}`（`cool-admin-midway` 的 `service/sys/login.ts:94` 写、`service/sys/perms.ts:44` 写、`login.ts:159` 删），Go 每请求查库。加缓存需连带处理授权变更的失效点，属独立改动。
-2. 不实现 Node 的 `/admin/dict/info/data` 硬编码特例，dict 模块尚未迁移。
+2. 不实现 Node 的 `/admin/dict/info/data` 硬编码特例，dict 模块尚未迁移。需要记录其后果：Node 中间件把该 URL 硬编码为只校验登录，而 `modules/base/menu.json` 中同时存在 `dict:info:data` 权限码。本设计的推导会得出 `dict:info:data` 并实际比对该权限码，因此 dict 模块迁移后，未被授予该菜单的角色会收到 403，而 Node 放行。这是一处**已知的、迁移时必须重新决策**的行为差异，不是遗漏。
 3. 不改超管判定。Go 使用 `role.label == "admin"`（`service/permission.go:15`），比 Node 硬编码 `username == 'admin'` 与 `getPerms` 里的 `roleIds.includes(1)` 干净，保持不变。
 4. 不改 App 侧鉴权。
 5. 不改 gRPC 鉴权。
@@ -102,7 +102,9 @@ func DerivePermission(fullPath string, ignoreToken bool) (string, error)
 
 ### 6.1 与 Node 的一处有意偏离
 
-含路径参数的 `/admin/` 路由，Node 会静默永久 403（字面比对不可能匹配 `{date}`），本设计第 4 条改为启动失败。当前仓库无此类路由。启动期报错优于静默 403。
+含路径参数的 `/admin/` 路由，Node 会静默永久 403（字面比对不可能匹配 `{date}`），本设计第 4 条改为启动失败。启动期报错优于静默 403。
+
+该规则不会误伤：对 Node 完整 `/admin` EPS 的 118 条路由执行推导，失败 0 条（见 7.2）。这一验证覆盖了 dict、plugin、recycle、space、task、user、demo 等 Go 尚未迁移的模块，因此后续模块迁移也不会触发此路径。
 
 ### 6.2 顺带修正的潜在分歧
 
@@ -129,6 +131,39 @@ func DerivePermission(fullPath string, ignoreToken bool) (string, error)
 | `/admin/base/sys/menu/import` | `base:sys:menu:import` | `""` + `requireAdmin` | 见 7.1 |
 
 13 处手写值与全部 CRUD 路由推导结果逐条相同，确认为可删除的重复信息。
+
+### 7.2 Node 全量路由集验证
+
+以 Node 后端 `/admin/base/open/eps` 的实际返回（118 条 `/admin` 路由，覆盖 base、demo、dict、plugin、recycle、space、task、user 全部模块）执行推导：
+
+| 项 | 数量 |
+| --- | --- |
+| 路由总数 | 118 |
+| 推导失败 | 0 |
+| 权限码为空 | 14（comm 豁免 7、ignoreToken 7） |
+| 推导出权限码 | 104 |
+| 与 `modules/base/menu.json` 逐字符命中 | 82 |
+
+82 条独立权限码的路径推导值与管理员手填的菜单权限码完全相同，是推导规则正确性的直接证据。
+
+### 7.3 两个差集
+
+**`menu.json` 中存在、Node 无对应路由的 4 条**：
+
+| 权限码 | 原因 |
+| --- | --- |
+| `base:sys:param:list` | param 控制器无 `/list` 接口 |
+| `space:info:getConfig` | 无对应路由 |
+| `task:info:list` | task 控制器无 `/list` 接口 |
+| `plugin:info:install` | 路由存在但标记 `ignoreToken: true`，永不进入权限比对 |
+
+这四条权限码永远不生效，Node 不产生任何报错。这是第 2 节所述"缺少编译期导致静默失效"的实证。本设计不改变这一点——菜单侧权限码仍由管理员自由填写，推导只作用于路由侧。
+
+**Node 有路由、`menu.json` 无权限码的 22 条**，分三类：
+
+- `base:coding:*`（2 条）与 `base:sys:menu:{create,export,import,parse}`（4 条）：与 7.1 所列六条工具路由完全吻合；
+- `base:sys:param:html`（1 条）：Go 现有手写值与推导值相同，Node 菜单侧同样缺失，两边均只有超管可用，改动后行为一致；
+- `demo:*`（9 条）与 `user:address:*`（6 条）：示例模块与 Go 尚未迁移的模块。
 
 ### 7.1 六条工具路由
 
