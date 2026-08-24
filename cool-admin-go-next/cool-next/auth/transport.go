@@ -5,16 +5,6 @@ import (
 	"strings"
 )
 
-// 从 Authorization 值提取 Bearer Token
-func BearerToken(authorization string) (string, error) {
-	parts := strings.Fields(authorization)
-	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-		return "", invalidCredentialError()
-	}
-
-	return parts[1], nil
-}
-
 // 按 HTTP 路由元数据执行认证和授权
 func (service *Service) AuthenticateHTTP(
 	ctx context.Context,
@@ -27,19 +17,19 @@ func (service *Service) AuthenticateHTTP(
 	if ignoreToken {
 		return ctx, nil
 	}
-	token, err := BearerToken(authorization)
-	if err != nil {
-		return ctx, err
+	if authorization == "" {
+		return ctx, invalidCredentialError()
 	}
 	resource := ""
 	if strings.TrimSpace(permission) != "" {
+		var err error
 		resource, err = HTTPResource(method, requestPath)
 		if err != nil {
 			return ctx, err
 		}
 	}
 
-	return service.Authenticate(ctx, token, Rule{Permission: permission, Resource: resource})
+	return service.Authenticate(ctx, authorization, Rule{Permission: permission, Resource: resource})
 }
 
 // 按 gRPC 方法元数据执行认证和授权
@@ -53,17 +43,17 @@ func (service *Service) AuthenticateGRPC(
 	if ignoreToken {
 		return ctx, nil
 	}
-	token, err := BearerToken(authorization)
-	if err != nil {
-		return ctx, err
+	if authorization == "" {
+		return ctx, invalidCredentialError()
 	}
 	resource := ""
 	if strings.TrimSpace(permission) != "" {
+		var err error
 		resource, err = GRPCResource(fullMethod)
 		if err != nil {
 			return ctx, err
 		}
 	}
 
-	return service.Authenticate(ctx, token, Rule{Permission: permission, Resource: resource})
+	return service.Authenticate(ctx, authorization, Rule{Permission: permission, Resource: resource})
 }

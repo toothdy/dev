@@ -83,7 +83,7 @@ func (service *PermissionService) Authorize(ctx context.Context, request auth.Au
 	if err != nil || isAdmin {
 		return isAdmin, err
 	}
-	permissions, err := service.Permissions(ctx, roleIDs)
+	permissions, err := service.permissions(ctx, roleIDs, false)
 	if err != nil {
 		return false, err
 	}
@@ -139,7 +139,7 @@ func (service *PermissionService) IsAdmin(ctx context.Context, roleIDs []uint64)
 }
 
 // 角色集合当前关联的独立权限标识
-func (service *PermissionService) Permissions(ctx context.Context, roleIDs []uint64) (map[string]struct{}, error) {
+func (service *PermissionService) permissions(ctx context.Context, roleIDs []uint64, isAdmin bool) (map[string]struct{}, error) {
 	permissions := make(map[string]struct{})
 	if service == nil || service.roleMenu == nil || service.menu == nil {
 		return nil, exception.Core("菜单权限服务未初始化")
@@ -147,27 +147,34 @@ func (service *PermissionService) Permissions(ctx context.Context, roleIDs []uin
 	if len(roleIDs) == 0 {
 		return permissions, nil
 	}
-	roleMenuModel, err := service.roleMenu.Model(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var menuRows []menuIDRow
-	if err = roleMenuModel.Fields("menuId").WhereIn("roleId", roleIDs).Scan(&menuRows); err != nil {
-		return nil, exception.WrapCore(err, "查询角色菜单失败")
-	}
-	if len(menuRows) == 0 {
-		return permissions, nil
-	}
-	menuIDs := make([]uint64, len(menuRows))
-	for index, row := range menuRows {
-		menuIDs[index] = row.MenuID
+	var menuIDs []uint64
+	if !isAdmin {
+		roleMenuModel, err := service.roleMenu.Model(ctx)
+		if err != nil {
+			return nil, err
+		}
+		var menuRows []menuIDRow
+		if err = roleMenuModel.Fields("menuId").WhereIn("roleId", roleIDs).Scan(&menuRows); err != nil {
+			return nil, exception.WrapCore(err, "查询角色菜单失败")
+		}
+		if len(menuRows) == 0 {
+			return permissions, nil
+		}
+		menuIDs = make([]uint64, len(menuRows))
+		for index, row := range menuRows {
+			menuIDs[index] = row.MenuID
+		}
 	}
 	menuModel, err := service.menu.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
+	query := menuModel.Fields("perms")
+	if !isAdmin {
+		query = query.WhereIn("id", menuIDs)
+	}
 	var rows []menuPermissionRow
-	if err = menuModel.Fields("perms").WhereIn("id", menuIDs).Scan(&rows); err != nil {
+	if err = query.Scan(&rows); err != nil {
 		return nil, exception.WrapCore(err, "查询菜单权限失败")
 	}
 	for _, row := range rows {
@@ -197,7 +204,11 @@ func (service *PermissionService) PermissionMenu(ctx context.Context) (dto.Permi
 	if err != nil {
 		return dto.PermissionMenuResult{}, err
 	}
-	permissions, err := service.Permissions(ctx, roleIDs)
+	isAdmin, err := service.IsAdmin(ctx, roleIDs)
+	if err != nil {
+		return dto.PermissionMenuResult{}, err
+	}
+	permissions, err := service.permissions(ctx, roleIDs, isAdmin)
 	if err != nil {
 		return dto.PermissionMenuResult{}, err
 	}

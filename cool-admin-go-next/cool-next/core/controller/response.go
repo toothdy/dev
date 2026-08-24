@@ -84,6 +84,10 @@ func handleResponse(request *ghttp.Request, logger ErrorLogger) {
 			writeErrorResponse(request, logger, err, true)
 		}
 	}()
+	if err := request.GetError(); err != nil {
+		writeErrorResponse(request, logger, err, false)
+		return
+	}
 
 	request.Middleware.Next()
 	if err := request.GetError(); err != nil {

@@ -32,6 +32,7 @@ func NewContextMiddleware(authenticator Authenticator, requestPath string, ignor
 	return func(request *ghttp.Request) {
 		if err := authenticateRequest(request, authenticator, requestPath, rule); err != nil {
 			request.SetError(err)
+			request.Middleware.Next()
 			return
 		}
 		request.Middleware.Next()
