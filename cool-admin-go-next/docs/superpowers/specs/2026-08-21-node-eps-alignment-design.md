@@ -173,7 +173,7 @@ type QueryField struct {
 - `QueryField` 是 Go 内部只读值，通过受控 JSON 编码产生上述联合格式，不把通用 `interface{}` 切片扩散到编译逻辑；
 - 本次只对齐后端返回格式，不修改前端如何消费这两种形式。
 
-字段 JSON 名称与现有 Vue EPS 契约一致。`DTS` 当前保持空对象，`Tag` 保持空字符串；没有真实数据来源的 `Dict` 保持 `null`，不为这些字段建立新的推导系统。所有集合必须输出 `[]`，不能输出 `null`。
+字段 JSON 名称与现有 Vue EPS 契约一致。`DTS` 当前保持空对象，`Tag` 保持空字符串；Node 中值为 `undefined` 的 `name`、`defaultValue` 和 `dict` 会被 JSON 序列化省略，Go 使用 `omitempty` 保持相同结构。所有集合必须输出 `[]`，不能输出 `null`。
 
 ## 7. 数据来源与生成规则
 
@@ -199,7 +199,7 @@ type QueryField struct {
 - 相同 Prefix 的 CRUD 和自定义 API 合并；
 - 不同 Prefix 自动拆成多个 EPS Controller；
 - CRUD 桶携带 Entity、Columns、PageQueryOp 和 PageColumns；
-- 纯自定义桶的 `name` 为空，`columns`、`pageColumns` 和查询集合为空；
+- 纯自定义桶不输出 `name`，`columns`、`pageColumns` 和查询集合为空；
 - 过滤后没有 API 的桶不输出；
 - 最终结果按模块 Key 分组。
 
@@ -222,7 +222,7 @@ type QueryField struct {
 
 ### 7.4 API
 
-- `method`、`summary` 和 `ignoreToken` 来自已校验 Graph Route；
+- `method` 使用小写 HTTP 方法，`summary` 和 `ignoreToken` 来自已校验 Graph Route；
 - `path` 是相对当前桶 Prefix 的路径，例如 `/page`；
 - `prefix` 等于当前桶的完整 Prefix；
 - 含 `{`、`}` 或 `:` 路径参数的路由不进入 EPS，因为当前 Vue service 生成器不具备路径参数替换能力；
@@ -232,13 +232,14 @@ type QueryField struct {
 ### 7.5 Columns
 
 - CRUD 桶使用 Descriptor 的持久化字段；
-- 排除 `tenantId`；
 - 排除 CurdOption `HiddenFields` 中的根实体字段；
 - Readonly 但非 Hidden 的字段仍输出，因为它可能存在于查询响应；
 - 不在前端 Column 中增加 Hidden、Readonly、Sortable 等内部策略字段；
 - `createTime`、`updateTime` 保持原顺序并移动到末尾；
 - `source` 固定为 `a.<jsonName>`；
-- 类型映射沿用 Node/v1 前端可识别名称；
+- 实体 `name` 按表名生成 PascalCase 并追加 `Entity`，例如 `base_sys_user` 生成 `BaseSysUserEntity`；
+- 类型映射使用 Node/Vue 可识别名称：整数为 `number`，布尔为 `boolean`，定长字符串为 `string`，文本为 `text`，JSON 为 `json`，系统时间为 `varchar`；
+- Go Descriptor 没有 TypeORM 的原始声明类型，因此类型映射以 Go 字段逻辑类型和约束为准，不增加业务 EPS 配置；
 - 长度、描述、可空、默认值直接来自 Descriptor。
 
 密码、`seedKey` 等字段只要已经由业务 CRUD 策略声明为 Hidden，EPS 就自动排除。EPS 不要求业务重复声明安全策略，也不按字段名称猜测业务敏感性。本规则取代 Base 迁移设计中“`seedKey` 作为 hidden/readonly EPS 字段出现”的旧要求：最终 Vue 契约没有 Hidden 标记，因此 Hidden 字段必须完全不出现。
@@ -258,12 +259,12 @@ type QueryField struct {
 静态 PageQueryOp 的 Select 决定分页响应的额外字段：
 
 - `All(alias)` 展开对应实体的全部字段；
-- 根实体 `All("a")` 同样排除 `tenantId` 和 HiddenFields；
+- 根实体 `All("a")` 同样排除 HiddenFields；
 - `As(column, alias)` 使用输出别名作为 `propertyName`；
 - `source` 保留真实查询来源；
 - 不按 `source` 去重，同一来源的不同输出别名全部保留；
 - 重复 `propertyName` 由现有 Query 编译规则拒绝；
-- `createTime`、`updateTime` 移到末尾。
+- 最终 `propertyName` 为 `createTime`、`updateTime` 的列移到末尾。
 
 Query AST 的具体节点属于 `crud`。EPS 不使用反射读取私有字段，也不复制查询编译器。`crud` 只暴露生成 EPS 所需的最小只读查询投影，复用现有字段、Join、Select 和 Descriptor 解析规则。
 
@@ -271,7 +272,7 @@ Query AST 的具体节点属于 `crud`。EPS 不使用反射读取私有字段�
 
 `StaticQuery` 有稳定结构，完整生成 `pageQueryOp` 和 `pageColumns`。
 
-`DynamicQuery` 可能依赖请求身份、租户或其他 Context 数据，不能在启动时用空 Context 执行。动态查询保持运行时行为不变，EPS 为其输出空 `pageQueryOp` 和 `pageColumns`。
+`DynamicQuery` 可能依赖请求身份或其他 Context 数据，不能在启动时用空 Context 执行。动态查询保持运行时行为不变，EPS 为其输出空 `pageQueryOp` 和 `pageColumns`。
 
 这是相对 Node 启动期执行函数型 PageQueryOp 的有意安全差异。框架不要求业务为 DynamicQuery 再写一套静态 EPS 描述；未来只有出现真实业务需求时才单独设计。
 
@@ -340,7 +341,7 @@ Graph 已经保证的模块重复、路由冲突和 HTTP Method 合法性不在 
 
 1. 契约测试：固定 Admin/App 分组、API 相对路径、列顺序、JSON 字段名和空切片；
 2. Prefix 测试：覆盖 CurdOption Prefix 与 Controller Path 不同、自定义路由同桶与跨桶、IgnoreGlobalPrefix；
-3. 字段测试：覆盖 tenantId、Hidden、Readonly、createTime 和 updateTime；
+3. 字段测试：覆盖 Hidden、Readonly、类型映射、可选 JSON 字段、createTime 和 updateTime；
 4. 查询测试：覆盖关键词、Eq、Like、EqFrom、LikeFrom、Join、All、As、同源不同别名和 DynamicQuery 空投影；
 5. codegen 测试：确认生成代码传入运行时 Controller Definition 与 Descriptor；
 6. HTTP 契约测试：两个 EPS 路由返回最终 map，不再调用 LegacyView；

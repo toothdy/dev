@@ -39,7 +39,7 @@ type Views struct {
 // Controller 是 cool-admin-vue 消费的 EPS Controller
 type Controller struct {
 	Module      string      `json:"module"`
-	Name        string      `json:"name"`
+	Name        string      `json:"name,omitempty"`
 	Prefix      string      `json:"prefix"`
 	Info        Info        `json:"info"`
 	API         []API       `json:"api"`
@@ -73,8 +73,8 @@ type Column struct {
 	Length       string `json:"length"`
 	Comment      string `json:"comment"`
 	Nullable     bool   `json:"nullable"`
-	DefaultValue any    `json:"defaultValue"`
-	Dict         any    `json:"dict"`
+	DefaultValue any    `json:"defaultValue,omitempty"`
+	Dict         any    `json:"dict,omitempty"`
 	Source       string `json:"source"`
 }
 
@@ -334,7 +334,7 @@ func compileAPI(route coreroute.Route, prefix string) API {
 	}
 
 	return API{
-		Method:      route.Method(),
+		Method:      strings.ToLower(route.Method()),
 		Path:        relative,
 		Summary:     route.Summary(),
 		DTS:         make(map[string]any),
@@ -356,8 +356,8 @@ func (current *compiler) compileCRUD(target *Controller, option controller.CurdO
 	for _, column := range hiddenColumns {
 		hidden[column.Field.Name()] = true
 	}
-	target.Name = descriptor.EntityType().Name()
-	target.Columns = compileColumns(descriptor.Fields(), "a", hidden, true)
+	target.Name = entityName(descriptor.Table())
+	target.Columns = compileColumns(descriptor.Fields(), hidden)
 
 	projection, static, err := controller.ProjectQuery(option.PageQueryOp, current.descriptors, option.Entity)
 	if err != nil {
@@ -372,14 +372,14 @@ func (current *compiler) compileCRUD(target *Controller, option controller.CurdO
 	return nil
 }
 
-func compileColumns(fields []coreentity.Field, alias string, hidden map[string]bool, isRoot bool) []Column {
+func compileColumns(fields []coreentity.Field, hidden map[string]bool) []Column {
 	columns := make([]Column, 0, len(fields))
 	trailing := make([]Column, 0, 2)
 	for _, field := range fields {
-		if isRoot && (field.JSONName() == "tenantId" || hidden[field.Name()]) {
+		if hidden[field.Name()] {
 			continue
 		}
-		column := compileColumn(field, field.JSONName(), alias+"."+field.JSONName())
+		column := compileColumn(field, field.JSONName(), "a."+field.JSONName())
 		if isTimeField(field) {
 			trailing = append(trailing, column)
 			continue
@@ -394,7 +394,7 @@ func compileColumn(field coreentity.Field, propertyName, source string) Column {
 	constraints := field.Constraints()
 	result := Column{
 		PropertyName: propertyName,
-		Type:         columnType(field.LogicalType()),
+		Type:         columnType(field),
 		Comment:      field.Description(),
 		Nullable:     field.Nullable(),
 		Source:       source,
@@ -438,7 +438,7 @@ func compilePageColumns(selects []crud.QuerySelect, root coreentity.RuntimeDescr
 			continue
 		}
 		column := compileColumn(selected.Column.Field, selected.Name, selected.Column.Source)
-		if isTimeField(selected.Column.Field) {
+		if isTimeProperty(column.PropertyName) {
 			trailing = append(trailing, column)
 			continue
 		}
@@ -453,7 +453,7 @@ func visibleQueryColumn(column crud.QueryColumn, root coreentity.RuntimeDescript
 		return true
 	}
 
-	return column.Field.JSONName() != "tenantId" && !hidden[column.Field.Name()]
+	return !hidden[column.Field.Name()]
 }
 
 func emptyPageQueryOp() PageQueryOp {
@@ -464,25 +464,48 @@ func emptyPageQueryOp() PageQueryOp {
 	}
 }
 
-func columnType(logicalType coreentity.LogicalType) string {
-	switch logicalType {
+func columnType(field coreentity.Field) string {
+	switch field.LogicalType() {
 	case coreentity.LogicalBool:
 		return "boolean"
 	case coreentity.LogicalInt, coreentity.LogicalUint:
-		return "int"
+		return "number"
 	case coreentity.LogicalFloat:
+		if !field.Constraints().HasPrecision {
+			return "number"
+		}
 		return "decimal"
 	case coreentity.LogicalString:
-		return "varchar"
+		if !field.Constraints().HasSize {
+			return "text"
+		}
+		return "string"
 	case coreentity.LogicalBytes:
 		return "text"
 	case coreentity.LogicalTime:
-		return "datetime"
+		if field.SystemMaintained() {
+			return "varchar"
+		}
+		return "date"
 	case coreentity.LogicalJSON:
 		return "json"
 	default:
-		return string(logicalType)
+		return string(field.LogicalType())
 	}
+}
+
+func entityName(table string) string {
+	var result strings.Builder
+	for _, part := range strings.Split(table, "_") {
+		if part == "" {
+			continue
+		}
+		result.WriteString(strings.ToUpper(part[:1]))
+		result.WriteString(part[1:])
+	}
+	result.WriteString("Entity")
+
+	return result.String()
 }
 
 func parseDefault(logicalType coreentity.LogicalType, value string) any {
@@ -518,7 +541,11 @@ func controllerTypeName(prefix string) string {
 }
 
 func isTimeField(field coreentity.Field) bool {
-	return field.JSONName() == "createTime" || field.JSONName() == "updateTime"
+	return isTimeProperty(field.JSONName())
+}
+
+func isTimeProperty(name string) bool {
+	return name == "createTime" || name == "updateTime"
 }
 
 func contains(values []string, target string) bool {
