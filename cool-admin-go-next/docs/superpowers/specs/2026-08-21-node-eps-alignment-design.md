@@ -1,8 +1,8 @@
 # Node EPS 契约对齐设计
 
 > 日期：2026-08-21
-> 状态：设计已批准，待实现
-> 范围：EPS 自动投影与 Vue 消费兼容；权限自动推导仅记录为独立后续改动
+> 状态：已实现
+> 范围：Go EPS 自动投影与 Node 返回契约对齐；前端和权限自动推导不在本次改动范围
 
 ## 1. 结论
 
@@ -55,7 +55,7 @@ Go v1 同样直接从 Controller Definition 生成最终契约。Go next 曾同�
 
 本次实现必须：
 
-1. EPS HTTP 响应兼容当前 `cool-admin-vue` 的稳定消费契约；
+1. EPS HTTP 响应与 Node `CoolEps` 的返回契约一致；
 2. 业务 Controller 不增加任何 EPS 专用配置；
 3. 自动生成 Admin/App 两份按模块分组的数据；
 4. 按路由有效 Prefix 自动拆分或合并 EPS Controller；
@@ -78,17 +78,18 @@ Go v1 同样直接从 Controller Definition 生成最终契约。Go next 曾同�
 - 为未来未知消费方保留中间文档；
 - 请求时重新编译 EPS；
 - 执行依赖请求上下文的 DynamicQuery；
+- 修改 `cool-admin-vue` 或其他后端实现；
 - 修改权限校验行为。
 
 权限自动推导在第 13 节记录，但必须作为独立改动实现和验证。
 
 ## 5. 方案比较
 
-### 5.1 框架自动投影并补齐 Vue 查询兼容，采用
+### 5.1 框架自动投影并对齐 Node 契约，采用
 
-EPS 从运行时 Definition 和 Descriptor 读取现有业务语义，按有效 Prefix 生成最终契约。Vue EPS 插件同时兼容 Node 已有的字符串和 `{ column, requestParam }` 两种查询字段格式。
+EPS 从运行时 Definition 和 Descriptor 读取现有业务语义，按有效 Prefix 生成最终契约。`fieldEq`、`fieldLike` 原样对齐 Node 已有的字符串和 `{ column, requestParam }` 两种格式，不修改前端消费代码。
 
-优点：业务零新增配置；数据流最短；保留现有 DSL 能力；所有项目一次获得兼容能力；删除中间模型。
+优点：业务零新增配置；数据流最短；保留现有 DSL 能力；Go 与 Node 返回格式一致；删除中间模型。
 
 ### 5.2 Go 后端丢弃无法表达的查询信息，拒绝
 
@@ -170,8 +171,7 @@ type QueryField struct {
 - 请求参数名等于字段名时输出字符串，例如 `"a.status"`；
 - 请求参数名不同时输出 `{ "column": "a.status", "requestParam": "state" }`；
 - `QueryField` 是 Go 内部只读值，通过受控 JSON 编码产生上述联合格式，不把通用 `interface{}` 切片扩散到编译逻辑；
-- Vue 插件同时接受两种形式，查找原字段 Column 后为搜索元数据复制一份，并将副本的 `propertyName` 改为 `requestParam`；
-- 该副本只用于 `service.search`，不写入 `columns` 或 `pageColumns`，不会伪造响应字段。
+- 本次只对齐后端返回格式，不修改前端如何消费这两种形式。
 
 字段 JSON 名称与现有 Vue EPS 契约一致。`DTS` 当前保持空对象，`Tag` 保持空字符串；没有真实数据来源的 `Dict` 保持 `null`，不为这些字段建立新的推导系统。所有集合必须输出 `[]`，不能输出 `null`。
 
@@ -253,8 +253,6 @@ type QueryField struct {
 - 字段引用、实体、别名和请求参数由现有 Query 编译规则校验；
 - 所有切片必须输出 `[]`，不能输出 `null`。
 
-Vue 插件对对象形式只改变生成的搜索字段参数名，不改变 Entity 或分页响应字段类型。
-
 ### 7.7 PageColumns
 
 静态 PageQueryOp 的 Select 决定分页响应的额外字段：
@@ -304,26 +302,9 @@ controller.Admin().
 
 已有 Hidden、Readonly、PageQueryOp、Prefix 和 Route 都是业务运行时语义，EPS 只读取并复用，不建立第二事实来源。
 
-## 10. Vue 插件兼容
+## 10. 前端边界
 
-`cool-admin-vue` 的 EPS 插件将查询字段类型从 `string[]` 扩展为：
-
-```ts
-type QueryField = string | {
-   column: string;
-   requestParam: string;
-};
-```
-
-`findColumns` 保持兼容旧字符串响应。遇到对象时：
-
-1. 将不含 `.` 的 `column` 规范化为 `a.<column>`，已有实体别名的来源保持不变；
-2. 按规范化后的 `column` 查找 `columns + pageColumns` 中的原字段；
-3. 复制字段，不能修改原 EPS Column；
-4. 将副本 `propertyName` 设置为 `requestParam`；
-5. 把副本放入 `service.search`。
-
-该修改同时兼容 Node 已有的对象型 `fieldEq`、`fieldLike`，不增加依赖，不改变已有字符串型 EPS 行为。
+`cool-admin-vue`、Node 和 Java 均保持原样。本次只让 Go EPS 返回 Node `CoolEps` 已有的契约，不在前端增加 Go 专用兼容、后端识别或版本分支。
 
 ## 11. 文件边界
 
@@ -336,7 +317,6 @@ type QueryField = string | {
 - `cool-next/crud`：增加静态 Query 的最小只读投影入口；
 - codegen：只把现有 Controller Definition 和 Descriptor 传入 EPS；
 - 两个 EPS HTTP 入口：直接返回最终 map；
-- `cool-admin-vue/packages/vite-plugin`：兼容对象型 QueryField，并更新类型与测试。
 
 不创建业务 Provider、Registry、工厂、插件机制、配置开关或 EPS DSL。
 
@@ -364,8 +344,7 @@ Graph 已经保证的模块重复、路由冲突和 HTTP Method 合法性不在 
 4. 查询测试：覆盖关键词、Eq、Like、EqFrom、LikeFrom、Join、All、As、同源不同别名和 DynamicQuery 空投影；
 5. codegen 测试：确认生成代码传入运行时 Controller Definition 与 Descriptor；
 6. HTTP 契约测试：两个 EPS 路由返回最终 map，不再调用 LegacyView；
-7. Vue 插件测试：字符串、无别名对象和带别名对象 QueryField 都生成正确 `service.search`，且不修改 Entity Column；
-8. Go 全量 `go test ./...` 与 `go vet ./...`；Vue 插件使用 `pnpm` 执行现有测试与类型检查。
+7. Go 全量 `go test ./...` 与 `go vet ./...`。
 
 不恢复无人消费的 OpenAPI 哈希基线，不为简单字段映射建立大型 golden 框架。
 

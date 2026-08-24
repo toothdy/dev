@@ -129,6 +129,7 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 	if len(controllers) > 0 {
 		imports.add(authPackagePath, "auth")
 		imports.add(controllerPackagePath, "corecontroller")
+		imports.add(entityPackagePath, "coreentity")
 		imports.add(epsPackagePath, "eps")
 		imports.add(gmodePackagePath, "gmode")
 		imports.add(routePackagePath, "coreroute")
@@ -1175,9 +1176,6 @@ func writeGeneratedFunction(
 		writeComponentConstruction(source, current, dependencies, modules, fragments, descriptorProviders, components, componentResultRequired(current, graph, dependencies, modules, controllers, components))
 	}
 	for _, current := range controllers {
-		if !controllerInstanceRequired(current) {
-			continue
-		}
 		arguments := make([]string, len(current.declaration.parameterTypes))
 		for index, parameter := range current.declaration.parameterTypes {
 			arguments[index], _ = componentExpressionForType(parameter, components)
@@ -1240,37 +1238,32 @@ func componentExpressionForType(parameter types.Type, components []renderCompone
 	return expression, expression != ""
 }
 
-func controllerInstanceRequired(controller renderController) bool {
-	for _, route := range controller.declaration.routes {
-		if route.kind == coreroute.KindCRUD {
-			return true
-		}
-	}
-
-	return false
-}
-
 func writeEPSPublish(source *strings.Builder, controllers []renderController, fragments []DescriptorFragment) {
 	if len(controllers) == 0 {
 		return
 	}
-	source.WriteString("\tepsViews, err := eps.CompileViews(eps.Input{Graph: generatedGraph(), Controllers: []eps.ControllerSpec{\n")
+	source.WriteString("\tepsViews, err := eps.CompileViews(eps.Input{\n")
+	source.WriteString("\t\tGraph: generatedGraph(),\n")
+	source.WriteString("\t\tControllers: []eps.ControllerInput{\n")
 	for _, controller := range controllers {
-		if !controller.declaration.hasCurd {
-			continue
-		}
-		fragment, exists := descriptorForType(controller.declaration.entityType, fragments)
-		if !exists {
-			continue
-		}
 		fmt.Fprintf(
 			source,
-			"\t\t{Key: %q, Descriptor: descriptor_%s},\n",
+			"\t\t\t{Key: %q, Definition: controller_%s},\n",
 			controllerKey(controller),
+			generatedIdentifier(controller.module, controller.declaration.packagePath, controller.declaration.name),
+		)
+	}
+	source.WriteString("\t\t},\n")
+	source.WriteString("\t\tDescriptors: []coreentity.RuntimeDescriptor{\n")
+	for _, fragment := range fragments {
+		fmt.Fprintf(
+			source,
+			"\t\t\tdescriptor_%s,\n",
 			generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity),
 		)
 	}
-	source.WriteString("\t}}, gmode.IsDevelop())\n")
+	source.WriteString("\t\t},\n")
+	source.WriteString("\t}, gmode.IsDevelop())\n")
 	source.WriteString("\tif err != nil { return assembly, exception.WrapCore(err, \"编译 EPS 视图失败\") }\n")
 	source.WriteString("\tif err = eps.PublishViews(epsViews); err != nil { return assembly, exception.WrapCore(err, \"发布 EPS 视图失败\") }\n")
 }
@@ -1338,11 +1331,9 @@ func componentResultRequired(current renderComponent, graph *Graph, dependencies
 		return true
 	}
 	for _, controller := range controllers {
-		if controllerInstanceRequired(controller) {
-			for _, parameter := range controller.declaration.parameterTypes {
-				if types.AssignableTo(constructor.resultType, parameter) {
-					return true
-				}
+		for _, parameter := range controller.declaration.parameterTypes {
+			if types.AssignableTo(constructor.resultType, parameter) {
+				return true
 			}
 		}
 		for _, reference := range modulesReferences(controller.module, modules) {

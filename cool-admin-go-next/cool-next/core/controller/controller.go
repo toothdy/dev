@@ -115,15 +115,16 @@ type CurdOption struct {
 	DefaultOrder   Direction
 }
 
-type area string
+// Controller 所属区域
+type Area string
 
 const (
-	areaAdmin area = "admin"
-	areaApp   area = "app"
+	AreaAdmin Area = "admin"
+	AreaApp   Area = "app"
 )
 
 type builder struct {
-	area       area
+	area       Area
 	curd       *CurdOption
 	hasCurd    bool
 	hasOptions bool
@@ -133,7 +134,7 @@ type builder struct {
 }
 
 type definition struct {
-	area    area
+	area    Area
 	curd    *CurdOption
 	options RouterOptions
 	path    string
@@ -145,13 +146,13 @@ func (*definition) definition() {}
 // Admin 创建后台 Controller Builder 省略 path 或传空字符串等价
 // 都表示不指定显式前缀由 cool generate 按源文件所在目录自动推导
 func Admin(path ...string) Builder {
-	return newBuilder(areaAdmin, controllerPathArgument(path))
+	return newBuilder(AreaAdmin, controllerPathArgument(path))
 }
 
 // App 创建应用端 Controller Builder 省略 path 或传空字符串等价
 // 都表示不指定显式前缀由 cool generate 按源文件所在目录自动推导
 func App(path ...string) Builder {
-	return newBuilder(areaApp, controllerPathArgument(path))
+	return newBuilder(AreaApp, controllerPathArgument(path))
 }
 
 func controllerPathArgument(path []string) string {
@@ -262,7 +263,7 @@ func (current *builder) Build() Definition {
 	return result
 }
 
-func newBuilder(controllerArea area, path string) Builder {
+func newBuilder(controllerArea Area, path string) Builder {
 	validateRelativePath(path, "Controller 路径")
 
 	return &builder{area: controllerArea, path: path}

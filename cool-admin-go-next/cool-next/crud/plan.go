@@ -102,23 +102,10 @@ func compileQueryPlan(
 	if isNilPlanValue(ctx) {
 		return nil, exception.Core("查询上下文不能为空")
 	}
-	if isNilPlanValue(resolver) {
-		return nil, exception.Core("Descriptor 解析器不能为空")
-	}
-	if isNilPlanValue(rootEntity) {
-		return nil, exception.Core("根实体不能为空")
-	}
-
-	compiler := &queryPlanCompiler{
-		resolver: resolver,
-		aliases:  make(map[string]resolvedPlanEntity),
-	}
-	root, err := compiler.resolveEntity(rootEntity, rootQueryAlias)
+	compiler, err := newQueryPlanCompiler(resolver, rootEntity)
 	if err != nil {
 		return nil, err
 	}
-	compiler.plan.root = root.planEntity
-	compiler.aliases[rootQueryAlias] = root
 
 	builder := &QueryBuilder{}
 	if op.Extend != nil {
@@ -178,6 +165,28 @@ func compileQueryPlan(
 	}
 
 	return &compiler.plan, nil
+}
+
+func newQueryPlanCompiler(resolver DescriptorResolver, rootEntity any) (*queryPlanCompiler, error) {
+	if isNilPlanValue(resolver) {
+		return nil, exception.Core("Descriptor 解析器不能为空")
+	}
+	if isNilPlanValue(rootEntity) {
+		return nil, exception.Core("根实体不能为空")
+	}
+
+	compiler := &queryPlanCompiler{
+		resolver: resolver,
+		aliases:  make(map[string]resolvedPlanEntity),
+	}
+	root, err := compiler.resolveEntity(rootEntity, rootQueryAlias)
+	if err != nil {
+		return nil, err
+	}
+	compiler.plan.root = root.planEntity
+	compiler.aliases[rootQueryAlias] = root
+
+	return compiler, nil
 }
 
 func mergeQuerySelects(op QueryOp, dynamic []SelectField) ([]SelectField, error) {

@@ -73,13 +73,8 @@ func (handler *OpenHandler) Refresh(ctx context.Context, request *dto.RefreshReq
 }
 
 // 已发布的后台 EPS 视图（按模块分组的扁平 Controller 数组，兼容 cool-admin-vue 客户端契约）
-func AdminEPS(context.Context) (map[string][]eps.LegacyController, error) {
-	document, err := eps.AdminView()
-	if err != nil {
-		return nil, err
-	}
-
-	return eps.LegacyView(document), nil
+func AdminEPS(context.Context) (map[string][]eps.Controller, error) {
+	return eps.AdminView()
 }
 
 // Base 后台公开路由
