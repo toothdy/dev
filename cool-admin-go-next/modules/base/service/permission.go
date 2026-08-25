@@ -191,9 +191,9 @@ func (service *PermissionService) permissions(ctx context.Context, roleIDs []uin
 	return permissions, nil
 }
 
-// 当前管理员的权限标识与可见菜单树
+// 当前管理员的权限标识与可见菜单列表
 func (service *PermissionService) PermissionMenu(ctx context.Context) (dto.PermissionMenuResult, error) {
-	if service == nil || service.menuService == nil {
+	if service == nil || service.menu == nil || service.menuService == nil {
 		return dto.PermissionMenuResult{}, exception.Core("权限菜单服务未初始化")
 	}
 	identity, err := auth.Admin(ctx)
@@ -217,12 +217,43 @@ func (service *PermissionService) PermissionMenu(ctx context.Context) (dto.Permi
 		perms = append(perms, permission)
 	}
 	sort.Strings(perms)
-	menus, err := service.menuService.List(ctx)
+	menus, err := service.flatVisibleMenus(ctx, roleIDs, isAdmin)
 	if err != nil {
 		return dto.PermissionMenuResult{}, err
 	}
 
 	return dto.PermissionMenuResult{Perms: perms, Menus: menus}, nil
+}
+
+// 当前角色可见的扁平菜单列表
+func (service *PermissionService) flatVisibleMenus(ctx context.Context, roleIDs []uint64, isAdmin bool) ([]dto.MenuListItem, error) {
+	if !isAdmin && len(roleIDs) == 0 {
+		return []dto.MenuListItem{}, nil
+	}
+	model, err := service.menu.Model(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !isAdmin {
+		menuIDs, idErr := service.menuService.menuIDsByRoles(ctx, roleIDs)
+		if idErr != nil {
+			return nil, idErr
+		}
+		if len(menuIDs) == 0 {
+			return []dto.MenuListItem{}, nil
+		}
+		model = model.WhereIn("id", menuIDs)
+	}
+	var rows []menuRow
+	if err = model.OrderAsc("orderNum").OrderAsc("id").Scan(&rows); err != nil {
+		return nil, exception.WrapCore(err, "查询菜单列表失败")
+	}
+	items := make([]dto.MenuListItem, len(rows))
+	for index, row := range rows {
+		items[index] = menuListItem(row)
+	}
+
+	return items, nil
 }
 
 func validPermissionBase[E any](service *coreservice.Base[E, uint64]) bool {
