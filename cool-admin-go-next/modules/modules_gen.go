@@ -41,6 +41,12 @@ import (
 	global "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global"
 	schedule "github.com/toothdy/cool-admin-go-next/modules/base/schedule"
 	service "github.com/toothdy/cool-admin-go-next/modules/base/service"
+	dict "github.com/toothdy/cool-admin-go-next/modules/dict"
+	admin2 "github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin"
+	app3 "github.com/toothdy/cool-admin-go-next/modules/dict/controller/app"
+	dto3 "github.com/toothdy/cool-admin-go-next/modules/dict/dto"
+	entity2 "github.com/toothdy/cool-admin-go-next/modules/dict/entity"
+	service2 "github.com/toothdy/cool-admin-go-next/modules/dict/service"
 )
 
 //go:embed base/db.json
@@ -48,6 +54,9 @@ var seedDB_base []byte
 
 //go:embed base/menu.json
 var seedMenu_base []byte
+
+//go:embed dict/db.json
+var seedDB_dict []byte
 
 type dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf struct {
 	g.Meta     `orm:"table:base_sys_conf,do:true"`
@@ -788,6 +797,146 @@ func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser
 	return compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole{Descriptor: descriptor}
 }
 
+type dodictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo struct {
+	g.Meta     `orm:"table:dict_info,do:true"`
+	ID         any `orm:"id"`
+	CreateTime any `orm:"createTime"`
+	UpdateTime any `orm:"updateTime"`
+	TypeID     any `orm:"typeId"`
+	Name       any `orm:"name"`
+	Value      any `orm:"value"`
+	OrderNum   any `orm:"orderNum"`
+	Remark     any `orm:"remark"`
+	ParentID   any `orm:"parentId"`
+}
+
+type doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo struct {
+	state coreentity.DOValue
+	data  dodictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo
+}
+
+func (value *doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo) Has(field string) bool {
+	return value.state.Has(field)
+}
+
+func (value *doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo) IsNull(field string) bool {
+	return value.state.IsNull(field)
+}
+
+func (value *doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo) SetColumn(field string, input any) error {
+	if err := value.state.SetColumn(field, input); err != nil {
+		return err
+	}
+	if value.state.IsNull(field) {
+		input = gdb.Raw("NULL")
+	}
+	switch field {
+	case "id":
+		value.data.ID = input
+	case "createTime":
+		value.data.CreateTime = input
+	case "updateTime":
+		value.data.UpdateTime = input
+	case "typeId":
+		value.data.TypeID = input
+	case "name":
+		value.data.Name = input
+	case "value":
+		value.data.Value = input
+	case "orderNum":
+		value.data.OrderNum = input
+	case "remark":
+		value.data.Remark = input
+	case "parentId":
+		value.data.ParentID = input
+	}
+	return nil
+}
+
+func (value *doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo) DBData() any {
+	return value.data
+}
+
+type compiledDescriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo struct {
+	coreentity.Descriptor[entity2.Info, uint64]
+}
+
+func (descriptor compiledDescriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo) NewDO() coreentity.DOValue {
+	return &doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo{state: descriptor.Descriptor.NewDO()}
+}
+
+func descriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo() coreentity.Descriptor[entity2.Info, uint64] {
+	descriptor, err := coreentity.Compile[entity2.Info, uint64](entity2.InfoSchema())
+	if err != nil {
+		panic(err)
+	}
+	return compiledDescriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo{Descriptor: descriptor}
+}
+
+type dodictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType struct {
+	g.Meta     `orm:"table:dict_type,do:true"`
+	ID         any `orm:"id"`
+	CreateTime any `orm:"createTime"`
+	UpdateTime any `orm:"updateTime"`
+	Name       any `orm:"name"`
+	Key        any `orm:"key"`
+}
+
+type doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType struct {
+	state coreentity.DOValue
+	data  dodictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType
+}
+
+func (value *doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType) Has(field string) bool {
+	return value.state.Has(field)
+}
+
+func (value *doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType) IsNull(field string) bool {
+	return value.state.IsNull(field)
+}
+
+func (value *doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType) SetColumn(field string, input any) error {
+	if err := value.state.SetColumn(field, input); err != nil {
+		return err
+	}
+	if value.state.IsNull(field) {
+		input = gdb.Raw("NULL")
+	}
+	switch field {
+	case "id":
+		value.data.ID = input
+	case "createTime":
+		value.data.CreateTime = input
+	case "updateTime":
+		value.data.UpdateTime = input
+	case "name":
+		value.data.Name = input
+	case "key":
+		value.data.Key = input
+	}
+	return nil
+}
+
+func (value *doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType) DBData() any {
+	return value.data
+}
+
+type compiledDescriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType struct {
+	coreentity.Descriptor[entity2.Type, uint64]
+}
+
+func (descriptor compiledDescriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType) NewDO() coreentity.DOValue {
+	return &doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType{state: descriptor.Descriptor.NewDO()}
+}
+
+func descriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType() coreentity.Descriptor[entity2.Type, uint64] {
+	descriptor, err := coreentity.Compile[entity2.Type, uint64](entity2.TypeSchema())
+	if err != nil {
+		panic(err)
+	}
+	return compiledDescriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType{Descriptor: descriptor}
+}
+
 type infrastructureConfig struct {
 	Cool struct {
 		CRUD       crud.Config   `json:"crud"`
@@ -917,6 +1066,14 @@ func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser(descr
 
 func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole(descriptor coreentity.Descriptor[entity.UserRole, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity.UserRole, uint64], error) {
 	return coreservice.NewBase[entity.UserRole, uint64](descriptor, runtime, recycler)
+}
+
+func basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo(descriptor coreentity.Descriptor[entity2.Info, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity2.Info, uint64], error) {
+	return coreservice.NewBase[entity2.Info, uint64](descriptor, runtime, recycler)
+}
+
+func basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType(descriptor coreentity.Descriptor[entity2.Type, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity2.Type, uint64], error) {
+	return coreservice.NewBase[entity2.Type, uint64](descriptor, runtime, recycler)
 }
 
 const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceAdd coreservice.ActionMode = coreservice.ActionModeBase
@@ -1143,6 +1300,70 @@ func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserSe
 	return nil
 }
 
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceAdd coreservice.ActionMode = coreservice.ActionModeBase
+
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceDelete coreservice.ActionMode = coreservice.ActionModeDelegate
+
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceUpdate coreservice.ActionMode = coreservice.ActionModeBase
+
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceInfo coreservice.ActionMode = coreservice.ActionModeBase
+
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceList coreservice.ActionMode = coreservice.ActionModeBase
+
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServicePage coreservice.ActionMode = coreservice.ActionModeBase
+
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceAdd(ctx context.Context, instance *service2.InfoService, input coreservice.AddInput[entity2.Info]) (coreservice.AddResult[uint64], error) {
+	return instance.Base.Add(ctx, input)
+}
+
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceDelete(ctx context.Context, instance *service2.InfoService, input coreservice.DeleteInput[uint64]) error {
+	return instance.Delete(ctx, input)
+}
+
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceUpdate(ctx context.Context, instance *service2.InfoService, input coreservice.UpdateInput[entity2.Info, uint64]) error {
+	return instance.Base.Update(ctx, input)
+}
+
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceModifyBefore(ctx context.Context, instance *service2.InfoService, mutation *coreservice.Mutation[entity2.Info, uint64]) error {
+	return nil
+}
+
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceModifyAfter(ctx context.Context, instance *service2.InfoService, mutation *coreservice.Mutation[entity2.Info, uint64]) error {
+	return nil
+}
+
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceAdd coreservice.ActionMode = coreservice.ActionModeBase
+
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceDelete coreservice.ActionMode = coreservice.ActionModeDelegate
+
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceUpdate coreservice.ActionMode = coreservice.ActionModeBase
+
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceInfo coreservice.ActionMode = coreservice.ActionModeBase
+
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceList coreservice.ActionMode = coreservice.ActionModeBase
+
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServicePage coreservice.ActionMode = coreservice.ActionModeBase
+
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceAdd(ctx context.Context, instance *service2.TypeService, input coreservice.AddInput[entity2.Type]) (coreservice.AddResult[uint64], error) {
+	return instance.Base.Add(ctx, input)
+}
+
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceDelete(ctx context.Context, instance *service2.TypeService, input coreservice.DeleteInput[uint64]) error {
+	return instance.Delete(ctx, input)
+}
+
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceUpdate(ctx context.Context, instance *service2.TypeService, input coreservice.UpdateInput[entity2.Type, uint64]) error {
+	return instance.Base.Update(ctx, input)
+}
+
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceModifyBefore(ctx context.Context, instance *service2.TypeService, mutation *coreservice.Mutation[entity2.Type, uint64]) error {
+	return nil
+}
+
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceModifyAfter(ctx context.Context, instance *service2.TypeService, mutation *coreservice.Mutation[entity2.Type, uint64]) error {
+	return nil
+}
+
 func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCodingController(dependency0 *admin.ToolHandler) corecontroller.Definition {
 	return admin.AdminCodingController(dependency0)
 }
@@ -1185,6 +1406,18 @@ func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller
 
 func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appAppCommController(dependency0 *app2.CommHandler) corecontroller.Definition {
 	return app2.AppCommController(dependency0)
+}
+
+func controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController(dependency0 *service2.InfoService) corecontroller.Definition {
+	return admin2.AdminDictInfoController(dependency0)
+}
+
+func controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController(dependency0 *service2.TypeService) corecontroller.Definition {
+	return admin2.AdminDictTypeController(dependency0)
+}
+
+func controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_appAppDictInfoController(dependency0 *service2.InfoService) corecontroller.Definition {
+	return app3.AppDictInfoController(dependency0)
 }
 
 func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler(dependency0 base.Config) (*admin.ToolHandler, error) {
@@ -1287,6 +1520,14 @@ func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admi
 	return sys.NewUserHandler(dependency0)
 }
 
+func builddictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo(dependency0 *coreservice.Base[entity2.Info, uint64], dependency1 *coreservice.Base[entity2.Type, uint64]) (*service2.InfoService, error) {
+	return service2.NewInfo(dependency0, dependency1)
+}
+
+func builddictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType(dependency0 *coreservice.Base[entity2.Type, uint64], dependency1 *coreservice.Base[entity2.Info, uint64]) (*service2.TypeService, error) {
+	return service2.NewType(dependency0, dependency1)
+}
+
 type generatedGRPCRegistrar struct{}
 
 func (generatedGRPCRegistrar) Register(server *grpcx.GrpcServer) error {
@@ -1299,6 +1540,7 @@ func generatedGraph() module.Graph {
 	return module.MustBuildGraph(module.GraphInput{
 		Modules: []module.ModuleDefinition{
 			{Key: "base", Name: "权限管理", Description: "基础的权限管理功能，包括登录，权限校验", Order: 10, GlobalMiddlewares: []module.ComponentRef{"middleware.global.NewLogHandler", "middleware.global.NewTranslateHandler"}},
+			{Key: "dict", Name: "字典管理", Description: "数据字典等", Order: 0},
 			{Key: ".framework", Name: "Cool Framework", Description: "应用基础设施"},
 		},
 		Controllers: []coreroute.ControllerDefinition{
@@ -1313,6 +1555,9 @@ func generatedGraph() module.Graph {
 			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Module: "base", Path: "/admin/base/sys/role", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "系统角色", TagName: "系统角色", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysRoleController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
 			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Module: "base", Path: "/admin/base/sys/user", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "系统用户", TagName: "系统用户", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysUserController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService, *github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.UserHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
 			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Module: "base", Path: "/app/base/comm", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "App 通用接口", TagName: "App 通用接口", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "AppCommController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/controller/app.CommHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Module: "dict", Path: "/admin/dict/info", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "字典信息", TagName: "字典信息", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin", Symbol: "AdminDictInfoController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Module: "dict", Path: "/admin/dict/type", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "字典类型", TagName: "字典类型", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin", Symbol: "AdminDictTypeController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Module: "dict", Path: "/app/dict/info", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "字典信息", TagName: "字典信息", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/controller/app", Symbol: "AppDictInfoController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
 		},
 		Routes: []coreroute.Definition{
 			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCodingController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/coding/getModuleTree", Summary: "获取模块目录结构", Description: "", DevelopmentOnly: true, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "ToolHandler", Method: "GetModuleTree", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
@@ -1372,6 +1617,22 @@ func generatedGraph() module.Graph {
 			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Kind: coreroute.KindCustom, Method: "GET", Path: "/app/base/comm/eps", Summary: "实体信息与路径", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "AppEPS", Method: "AppEPS", Type: "func(context.Context) (map[string][]github.com/toothdy/cool-admin-go-next/cool-next/eps.Controller, error)", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
 			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Kind: coreroute.KindCustom, Method: "POST", Path: "/app/base/comm/upload", Summary: "文件上传", Description: "", DevelopmentOnly: false, Bind: coreroute.BindFile, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "CommHandler", Method: "Upload", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/app.CommHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", RequestType: "UploadRequest", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
 			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Kind: coreroute.KindCustom, Method: "GET", Path: "/app/base/comm/uploadMode", Summary: "文件上传模式", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "CommHandler", Method: "UploadMode", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/app.CommHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/info/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/info/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/info/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCRUD, Method: "GET", Path: "/admin/dict/info/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/info/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/info/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/dict/info/data", Summary: "获得字典数据", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Data", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/dto", RequestType: "DataRequest", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/dict/info/types", Summary: "获得所有字典类型", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Types", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/type/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/type/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/type/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: coreroute.KindCRUD, Method: "GET", Path: "/admin/dict/type/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/type/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/type/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Kind: coreroute.KindCustom, Method: "POST", Path: "/app/dict/info/data", Summary: "获得字典数据", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Data", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/dto", RequestType: "DataRequest", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Kind: coreroute.KindCustom, Method: "GET", Path: "/app/dict/info/types", Summary: "获得所有字典类型", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Types", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
 		},
 		Providers: []module.ProviderDefinition{
 			{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/auth", Name: "Service", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/auth.Service"},
@@ -1424,6 +1685,13 @@ func generatedGraph() module.Graph {
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewTranslate", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.TranslateService"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUpload", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UploadService"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUser", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService"},
+			{Kind: module.ProviderKindConfig, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict", Name: "Config", Type: "github.com/toothdy/cool-admin-go-next/modules/dict.Config"},
+			{Kind: module.ProviderKindBase, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/entity", Name: "basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo", Type: "*service.Base[entity.Info, uint64]"},
+			{Kind: module.ProviderKindBase, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/entity", Name: "basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType", Type: "*service.Base[entity.Type, uint64]"},
+			{Kind: module.ProviderKindDescriptor, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/entity", Name: "descriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo", Type: "entity.Descriptor[entity.Info, uint64]"},
+			{Kind: module.ProviderKindDescriptor, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/entity", Name: "descriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType", Type: "entity.Descriptor[entity.Type, uint64]"},
+			{Kind: module.ProviderKindComponent, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewInfo", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService"},
+			{Kind: module.ProviderKindComponent, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewType", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService"},
 			{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/app/http", Name: "New", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/core/app/http.Transport"},
 			{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/grpc.Transport"},
 		},
@@ -1457,6 +1725,8 @@ func generatedGraph() module.Graph {
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUser"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewCommHandler"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewUserHandler"},
+			{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewInfo"},
+			{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewType"},
 			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/app/http", Name: "New"},
 			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New"},
 		},
@@ -1490,6 +1760,8 @@ func generatedGraph() module.Graph {
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUser"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewCommHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewUserHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
+			{Component: module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewInfo"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
+			{Component: module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewType"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/app/http", Name: "New"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 		},
@@ -1562,6 +1834,10 @@ func generatedGraph() module.Graph {
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewCommHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUser", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewCommHandler"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewPermission", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.PermissionService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewUserHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUser", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService"}},
+			{Consumer: module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewInfo"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/entity", Name: "basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo", Type: "*service.Base[entity.Info, uint64]"}},
+			{Consumer: module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewInfo"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/entity", Name: "basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType", Type: "*service.Base[entity.Type, uint64]"}},
+			{Consumer: module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewType"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/entity", Name: "basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType", Type: "*service.Base[entity.Type, uint64]"}},
+			{Consumer: module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewType"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/entity", Name: "basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo", Type: "*service.Base[entity.Info, uint64]"}},
 		},
 		Descriptors: []module.DescriptorDefinition{
 			{Module: "base", Table: "base_sys_conf", Provider: module.ProviderDefinition{Kind: module.ProviderKindDescriptor, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf", Type: "entity.Descriptor[entity.Conf, uint64]"}},
@@ -1574,12 +1850,14 @@ func generatedGraph() module.Graph {
 			{Module: "base", Table: "base_sys_role_menu", Provider: module.ProviderDefinition{Kind: module.ProviderKindDescriptor, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu", Type: "entity.Descriptor[entity.RoleMenu, uint64]"}},
 			{Module: "base", Table: "base_sys_user", Provider: module.ProviderDefinition{Kind: module.ProviderKindDescriptor, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser", Type: "entity.Descriptor[entity.User, uint64]"}},
 			{Module: "base", Table: "base_sys_user_role", Provider: module.ProviderDefinition{Kind: module.ProviderKindDescriptor, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole", Type: "entity.Descriptor[entity.UserRole, uint64]"}},
+			{Module: "dict", Table: "dict_info", Provider: module.ProviderDefinition{Kind: module.ProviderKindDescriptor, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/entity", Name: "descriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo", Type: "entity.Descriptor[entity.Info, uint64]"}},
+			{Module: "dict", Table: "dict_type", Provider: module.ProviderDefinition{Kind: module.ProviderKindDescriptor, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/entity", Name: "descriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType", Type: "entity.Descriptor[entity.Type, uint64]"}},
 		},
 		Outbox: module.OutboxDefinition{},
 	})
 }
 
-func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Identity) (*app.Assembly, error) {
+func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Identity, identity1 module.Identity) (*app.Assembly, error) {
 	assembly := app.NewAssembly()
 	infrastructure, err := generatedInfrastructureConfig(ctx, input.RootSource())
 	if err != nil {
@@ -1589,6 +1867,11 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	if err != nil {
 		return assembly, err
 	}
+	config1, err := module.Compile(ctx, identity1, dict.ModuleConfig(), input.ModuleDefaultsSource())
+	if err != nil {
+		return assembly, err
+	}
+	_ = config1
 	descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf := descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf()
 	descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment := descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment()
 	descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog := descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog()
@@ -1599,7 +1882,9 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu := descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu()
 	descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser := descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser()
 	descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole := descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole()
-	runtime, recycler, err := generatedDataRuntime(ctx, infrastructure, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole)
+	descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo := descriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo()
+	descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType := descriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType()
+	runtime, recycler, err := generatedDataRuntime(ctx, infrastructure, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType)
 	if err != nil {
 		return assembly, err
 	}
@@ -1611,6 +1896,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	assembly.AddComponent(module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/db", Name: "Runtime"}, app.Hooks{})
 	seedRuntime, err := seed.NewRuntime(runtime,
 		seed.NewDefinition("base", seed.NewData(seedDB_base, seedMenu_base), descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole),
+		seed.NewDefinition("dict", seed.NewData(seedDB_dict, nil), descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType),
 	)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造种子运行时失败")
@@ -1655,6 +1941,14 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 		return assembly, err
 	}
 	base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, err := basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole(descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, runtime, recycler)
+	if err != nil {
+		return assembly, err
+	}
+	base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, err := basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo(descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, runtime, recycler)
+	if err != nil {
+		return assembly, err
+	}
+	base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, err := basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType(descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, runtime, recycler)
 	if err != nil {
 		return assembly, err
 	}
@@ -1830,6 +2124,20 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewUserHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler)
+	component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo, err := builddictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo(base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType)
+	if err != nil {
+		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/dict/service.NewInfo 失败")
+	}
+	hooks_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo := app.Hooks{}
+	definition_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo := module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewInfo"}
+	assembly.AddComponent(definition_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo, hooks_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo)
+	component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType, err := builddictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType(base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo)
+	if err != nil {
+		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/dict/service.NewType 失败")
+	}
+	hooks_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType := app.Hooks{}
+	definition_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType := module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewType"}
+	assembly.AddComponent(definition_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType, hooks_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType)
 	controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCodingController := controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCodingController(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler)
 	controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCommController := controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCommController(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler)
 	controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminOpenController := controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminOpenController(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler)
@@ -1841,6 +2149,9 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController := controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole)
 	controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController := controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler)
 	controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appAppCommController := controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appAppCommController(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler)
+	controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController := controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController(component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo)
+	controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController := controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController(component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType)
+	controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_appAppDictInfoController := controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_appAppDictInfoController(component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo)
 	epsViews, err := eps.CompileViews(eps.Input{
 		Graph: generatedGraph(),
 		Controllers: []eps.ControllerInput{
@@ -1855,6 +2166,9 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController},
 			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController},
 			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appAppCommController},
+			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Definition: controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController},
+			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Definition: controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController},
+			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Definition: controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_appAppDictInfoController},
 		},
 		Descriptors: []coreentity.RuntimeDescriptor{
 			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf,
@@ -1867,6 +2181,8 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu,
 			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser,
 			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole,
+			descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo,
+			descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType,
 		},
 	}, gmode.IsDevelop())
 	if err != nil {
@@ -1905,6 +2221,10 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 			return descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, true
 		case entity.UserRole:
 			return descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, true
+		case entity2.Info:
+			return descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, true
+		case entity2.Type:
+			return descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, true
 		default:
 			return nil, false
 		}
@@ -2481,6 +2801,154 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler.UploadMode(scopeCtx)
 			})
 		})
+		contextMiddleware_dictPOST_admin_dict_info_add, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/add", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/info/add")
+		}
+		server.BindMiddleware("POST:/admin/dict/info/add", contextMiddleware_dictPOST_admin_dict_info_add)
+		server.BindHandler("POST:/admin/dict/info/add", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleAdd[entity2.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceAdd, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Add)
+		})
+		contextMiddleware_dictPOST_admin_dict_info_delete, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/delete", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/info/delete")
+		}
+		server.BindMiddleware("POST:/admin/dict/info/delete", contextMiddleware_dictPOST_admin_dict_info_delete)
+		server.BindHandler("POST:/admin/dict/info/delete", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleDelete[entity2.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceDelete, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Delete)
+		})
+		contextMiddleware_dictPOST_admin_dict_info_update, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/update", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/info/update")
+		}
+		server.BindMiddleware("POST:/admin/dict/info/update", contextMiddleware_dictPOST_admin_dict_info_update)
+		server.BindHandler("POST:/admin/dict/info/update", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleUpdate[entity2.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceUpdate, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Update)
+		})
+		contextMiddleware_dictGET_admin_dict_info_info, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/info", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/dict/info/info")
+		}
+		server.BindMiddleware("GET:/admin/dict/info/info", contextMiddleware_dictGET_admin_dict_info_info)
+		server.BindHandler("GET:/admin/dict/info/info", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
+				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Info(scopeCtx, input)
+			})
+		})
+		contextMiddleware_dictPOST_admin_dict_info_list, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/list", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/info/list")
+		}
+		server.BindMiddleware("POST:/admin/dict/info/list", contextMiddleware_dictPOST_admin_dict_info_list)
+		server.BindHandler("POST:/admin/dict/info/list", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, crud.ActionList, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceList, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.List(scopeCtx, input)
+			})
+		})
+		contextMiddleware_dictPOST_admin_dict_info_page, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/page", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/info/page")
+		}
+		server.BindMiddleware("POST:/admin/dict/info/page", contextMiddleware_dictPOST_admin_dict_info_page)
+		server.BindHandler("POST:/admin/dict/info/page", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, crud.ActionPage, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServicePage, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Page(scopeCtx, input)
+			})
+		})
+		contextMiddleware_dictPOST_admin_dict_info_data, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/data", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/info/data")
+		}
+		server.BindMiddleware("POST:/admin/dict/info/data", contextMiddleware_dictPOST_admin_dict_info_data)
+		server.BindHandler("POST:/admin/dict/info/data", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleDTO[dto3.DataRequest](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto3.DataRequest) (any, error) {
+				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Data(scopeCtx, input)
+			})
+		})
+		contextMiddleware_dictGET_admin_dict_info_types, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/types", true)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/dict/info/types")
+		}
+		server.BindMiddleware("GET:/admin/dict/info/types", contextMiddleware_dictGET_admin_dict_info_types)
+		server.BindHandler("GET:/admin/dict/info/types", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Types(scopeCtx)
+			})
+		})
+		contextMiddleware_dictPOST_admin_dict_type_add, err := apphttp.NewContextMiddleware(authService, "/admin/dict/type/add", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/type/add")
+		}
+		server.BindMiddleware("POST:/admin/dict/type/add", contextMiddleware_dictPOST_admin_dict_type_add)
+		server.BindHandler("POST:/admin/dict/type/add", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleAdd[entity2.Type, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceAdd, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType.Add)
+		})
+		contextMiddleware_dictPOST_admin_dict_type_delete, err := apphttp.NewContextMiddleware(authService, "/admin/dict/type/delete", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/type/delete")
+		}
+		server.BindMiddleware("POST:/admin/dict/type/delete", contextMiddleware_dictPOST_admin_dict_type_delete)
+		server.BindHandler("POST:/admin/dict/type/delete", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleDelete[entity2.Type, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceDelete, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType.Delete)
+		})
+		contextMiddleware_dictPOST_admin_dict_type_update, err := apphttp.NewContextMiddleware(authService, "/admin/dict/type/update", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/type/update")
+		}
+		server.BindMiddleware("POST:/admin/dict/type/update", contextMiddleware_dictPOST_admin_dict_type_update)
+		server.BindHandler("POST:/admin/dict/type/update", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleUpdate[entity2.Type, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceUpdate, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType.Update)
+		})
+		contextMiddleware_dictGET_admin_dict_type_info, err := apphttp.NewContextMiddleware(authService, "/admin/dict/type/info", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/dict/type/info")
+		}
+		server.BindMiddleware("GET:/admin/dict/type/info", contextMiddleware_dictGET_admin_dict_type_info)
+		server.BindHandler("GET:/admin/dict/type/info", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
+				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType.Info(scopeCtx, input)
+			})
+		})
+		contextMiddleware_dictPOST_admin_dict_type_list, err := apphttp.NewContextMiddleware(authService, "/admin/dict/type/list", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/type/list")
+		}
+		server.BindMiddleware("POST:/admin/dict/type/list", contextMiddleware_dictPOST_admin_dict_type_list)
+		server.BindHandler("POST:/admin/dict/type/list", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, crud.ActionList, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceList, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType.List(scopeCtx, input)
+			})
+		})
+		contextMiddleware_dictPOST_admin_dict_type_page, err := apphttp.NewContextMiddleware(authService, "/admin/dict/type/page", false)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/type/page")
+		}
+		server.BindMiddleware("POST:/admin/dict/type/page", contextMiddleware_dictPOST_admin_dict_type_page)
+		server.BindHandler("POST:/admin/dict/type/page", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, crud.ActionPage, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServicePage, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType.Page(scopeCtx, input)
+			})
+		})
+		contextMiddleware_dictPOST_app_dict_info_data, err := apphttp.NewContextMiddleware(authService, "/app/dict/info/data", true)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /app/dict/info/data")
+		}
+		server.BindMiddleware("POST:/app/dict/info/data", contextMiddleware_dictPOST_app_dict_info_data)
+		server.BindHandler("POST:/app/dict/info/data", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleDTO[dto3.DataRequest](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto3.DataRequest) (any, error) {
+				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Data(scopeCtx, input)
+			})
+		})
+		contextMiddleware_dictGET_app_dict_info_types, err := apphttp.NewContextMiddleware(authService, "/app/dict/info/types", true)
+		if err != nil {
+			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /app/dict/info/types")
+		}
+		server.BindMiddleware("GET:/app/dict/info/types", contextMiddleware_dictGET_app_dict_info_types)
+		server.BindHandler("GET:/app/dict/info/types", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
+			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Types(scopeCtx)
+			})
+		})
 		return nil
 	}
 	httpTransport, err := apphttp.New(infrastructure.Cool.Transports.HTTP, generatedHTTPInstaller)
@@ -2499,6 +2967,6 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 func Generated() app.Definition {
 	graph := generatedGraph()
 	return app.Define(graph, func(ctx context.Context, input app.AssembleInput) (*app.Assembly, error) {
-		return assemble(ctx, input, graph.Modules()[0].Identity())
+		return assemble(ctx, input, graph.Modules()[0].Identity(), graph.Modules()[1].Identity())
 	})
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
@@ -597,13 +598,14 @@ func (compiler *queryPlanCompiler) compileFieldEqs(matches []FieldEq, request *Q
 				condition.operator = operatorIn
 				condition.value = values
 			} else {
-				if !isAssignablePlanValue(value, column.goType) {
+				normalized, valid := normalizeRequestPlanValue(value, column.goType)
+				if !valid {
 					return exception.Validate(fmt.Sprintf("请求参数 %s 的类型无效", match.RequestParam))
 				}
 				if err = compiler.addBindings(1, true); err != nil {
 					return err
 				}
-				condition.value = clonePlanValue(value)
+				condition.value = normalized
 			}
 		}
 		if err = compiler.addNodes(1); err != nil {
@@ -710,13 +712,104 @@ func normalizePlanCollection(value any, target reflect.Type) ([]any, error) {
 	values := make([]any, reflected.Len())
 	for index := 0; index < reflected.Len(); index++ {
 		item := reflected.Index(index).Interface()
-		if isNilPlanValue(item) || !isAssignablePlanValue(item, target) {
+		normalized, valid := normalizeRequestPlanValue(item, target)
+		if !valid {
 			return nil, errors.New("集合元素类型无效")
 		}
-		values[index] = clonePlanValue(item)
+		values[index] = normalized
 	}
 
 	return values, nil
+}
+
+func normalizeRequestPlanValue(value any, target reflect.Type) (any, bool) {
+	if isNilPlanValue(value) || target == nil {
+		return nil, false
+	}
+	target = planValueType(target)
+	source := reflect.ValueOf(value)
+	if source.Type().AssignableTo(target) {
+		return clonePlanValue(value), true
+	}
+	result := reflect.New(target).Elem()
+	switch target.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		number, valid := requestInt64(source)
+		if !valid || result.OverflowInt(number) {
+			return nil, false
+		}
+		result.SetInt(number)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		number, valid := requestUint64(source)
+		if !valid || result.OverflowUint(number) {
+			return nil, false
+		}
+		result.SetUint(number)
+	case reflect.Float32, reflect.Float64:
+		number, valid := requestFloat64(source)
+		if !valid || result.OverflowFloat(number) {
+			return nil, false
+		}
+		result.SetFloat(number)
+	default:
+		return nil, false
+	}
+
+	return result.Interface(), true
+}
+
+func requestInt64(value reflect.Value) (int64, bool) {
+	switch value.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return value.Int(), true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		if value.Uint() > math.MaxInt64 {
+			return 0, false
+		}
+		return int64(value.Uint()), true
+	case reflect.Float32, reflect.Float64:
+		number := value.Float()
+		if math.IsNaN(number) || math.IsInf(number, 0) || number != math.Trunc(number) || number < math.MinInt64 || number >= -float64(math.MinInt64) {
+			return 0, false
+		}
+		return int64(number), true
+	default:
+		return 0, false
+	}
+}
+
+func requestUint64(value reflect.Value) (uint64, bool) {
+	switch value.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if value.Int() < 0 {
+			return 0, false
+		}
+		return uint64(value.Int()), true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return value.Uint(), true
+	case reflect.Float32, reflect.Float64:
+		number := value.Float()
+		if math.IsNaN(number) || math.IsInf(number, 0) || number < 0 || number != math.Trunc(number) || number >= math.Exp2(64) {
+			return 0, false
+		}
+		return uint64(number), true
+	default:
+		return 0, false
+	}
+}
+
+func requestFloat64(value reflect.Value) (float64, bool) {
+	switch value.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return float64(value.Int()), true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return float64(value.Uint()), true
+	case reflect.Float32, reflect.Float64:
+		number := value.Float()
+		return number, !math.IsNaN(number) && !math.IsInf(number, 0)
+	default:
+		return 0, false
+	}
 }
 
 func isAssignablePlanValue(value any, target reflect.Type) bool {
