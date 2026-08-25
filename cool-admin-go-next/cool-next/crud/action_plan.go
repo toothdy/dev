@@ -75,7 +75,11 @@ func CompilePlan(
 	if !isAction(input.Action) {
 		return nil, exception.Core("CRUD 动作无效")
 	}
-	fields, err := compileFieldPolicy(resolver, input.Entity, input.Fields)
+	autoSortFields := (input.Action == ActionList || input.Action == ActionPage) &&
+		len(input.Fields.SortFields) == 0 &&
+		!hasColumnRef(input.Fields.DefaultSort) &&
+		input.Fields.DefaultOrder == ""
+	fields, err := compileFieldPolicy(resolver, input.Entity, input.Fields, autoSortFields)
 	if err != nil {
 		return nil, err
 	}
@@ -213,8 +217,9 @@ func compileFieldPolicy(
 	resolver DescriptorResolver,
 	entityValue any,
 	input FieldPolicyInput,
+	autoSortFields bool,
 ) (FieldPolicy, error) {
-	if isEmptyFieldPolicyInput(input) {
+	if isEmptyFieldPolicyInput(input) && !autoSortFields {
 		return FieldPolicy{}, nil
 	}
 	if isNilPlanValue(resolver) {
@@ -246,7 +251,7 @@ func compileFieldPolicy(
 	if err := compileFieldSet(metadata, entityType, input.InfoIgnoreProperty, policy.infoIgnored, "详情忽略"); err != nil {
 		return FieldPolicy{}, err
 	}
-	if err := compileSortFields(metadata, entityType, input, &policy); err != nil {
+	if err := compileSortFields(metadata, entityType, input, &policy, autoSortFields); err != nil {
 		return FieldPolicy{}, err
 	}
 
@@ -279,6 +284,7 @@ func compileSortFields(
 	entityType reflect.Type,
 	input FieldPolicyInput,
 	policy *FieldPolicy,
+	autoSortFields bool,
 ) error {
 	root := resolvedPlanEntity{
 		planEntity: planEntity{
@@ -297,6 +303,14 @@ func compileSortFields(
 			return exception.Core(fmt.Sprintf("排序字段 %s 重复", reference.name))
 		}
 		policy.sortable[field.JSONName()] = makePlanColumn(root, field)
+	}
+	if autoSortFields {
+		for _, field := range metadata.Fields() {
+			if policy.IsHidden(field.Name()) {
+				continue
+			}
+			policy.sortable[field.JSONName()] = makePlanColumn(root, field)
+		}
 	}
 
 	hasDefaultSort := hasColumnRef(input.DefaultSort)
