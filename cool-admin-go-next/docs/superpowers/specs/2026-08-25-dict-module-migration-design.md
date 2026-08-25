@@ -1,7 +1,7 @@
 # 字典模块迁移设计
 
 > 日期：2026-08-25  
-> 状态：待用户复核  
+> 状态：已批准
 > 源模块：`cool-admin-midway/src/modules/dict`  
 > 目标模块：`cool-admin-go-next/modules/dict`
 
@@ -39,6 +39,8 @@ Node 版是字典业务行为的首要事实来源。Go 版保持相同的 HTTP 
 modules/dict/
 ├── config.go
 ├── db.json
+├── dto/
+│   └── info.go
 ├── entity/
 │   ├── info.go
 │   └── type.go
@@ -182,7 +184,7 @@ Service 提供类型安全的单值和批量解析方法：
 1. 先按字典类型 `key` 查找类型；不存在时返回未命中结果；
 2. 再加载该类型全部字典项；
 3. 优先按 `value` 完全匹配；
-4. 未匹配时按可解析的十进制 ID 查找；
+4. 未匹配时按 ECMAScript `parseInt(value)` 的十进制前缀和 `0x` 十六进制前缀规则解析 ID 后查找；
 5. 未命中返回 `nil`；
 6. 批量输入保持输入顺序和结果数量。
 
