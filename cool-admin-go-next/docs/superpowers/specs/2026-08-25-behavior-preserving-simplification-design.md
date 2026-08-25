@@ -11,6 +11,13 @@
 - 保持错误类型、错误文本及错误发生阶段。
 - 保持组件构造、初始化、启动、监督、停止和回滚顺序。
 - 保持任务参数解析、Seed 时间字段和 Outbox 导出接口的当前能力。
+- 保持业务层的构造器、Controller DSL、Service 调用、Entity/DTO、配置和任务协议用法。
+
+### 业务层零改造原则
+
+本次精简不得要求业务模块适配框架内部变化。`modules/**` 中手写的 Controller、Service、Entity、DTO、Middleware、Schedule 和模块配置保持不变；唯一允许变化的业务目录文件是由 Codegen 全量重生成的 `modules/modules_gen.go`。
+
+若某项精简需要业务代码更改构造器签名、替换 API、调整 DSL、更换配置键或改变请求/响应结构，该项不实施。
 
 ## 目标
 
@@ -30,6 +37,7 @@
 - 不删除 `TaskJob`、`DemoService` 及其导出构造器。
 - 不依赖所有部署都配置 GoFrame 自动时间维护，因此不删除 Seed 显式时间写入。
 - 不精简文档、测试文件或测试夹具。测试仅在生产实现调整导致断言需同步时修改。
+- 不为精简框架内部代码而修改手写业务层文件。
 
 ## 设计
 
@@ -48,6 +56,8 @@
 
 构造器排序、Provider 图、依赖选择和组件局部变量名不变。`modules_gen.go` 只通过项目现有生成命令重新生成，不手工编辑。
 
+业务构造器的声明和调用规约不变：业务层仍使用现有 `New*` 签名声明依赖，只是生成的装配代码从间接调用改为直接调用。
+
 ### 2. 去除 CRUD 计划的重复校验
 
 `QueryPlan` 的字段全部为包内私有，生产路径只能由 `queryPlanCompiler` 构造。在删除 `applyQueryPlan` 中的 `validatePlan` 之前，必须建立以下对应表：
@@ -64,6 +74,8 @@
 对应表中任意一条无法由实际代码证明时，保留该校验，不为达到行数目标而删除。
 
 完全覆盖后，删除 `applyQueryPlan` 的二次校验调用和已无调用的校验函数。编译失败的错误仍在 `CompilePlan` 阶段返回。
+
+Controller 和 Service 层仍使用现有 CRUD DSL、`CompilePlan`、`ActionPlan` 和 Dispatcher 调用方式，不增加新参数、新构造步骤或业务层校验。
 
 ### 3. 合并 Assembly 校验遍历
 
@@ -133,6 +145,7 @@ test -z "$(gofmt -l cool-next modules cmd main.go)"
 ## 成功标准
 
 - 导出 Go API 不变。
+- `modules/**` 中手写业务文件无差异；仅 `modules/modules_gen.go` 可因重新生成而变化。
 - 现有全部测试通过，`go vet ./...` 通过。
 - 生成文件可重复生成，再次生成无差异。
 - 组件图、路由、CRUD SQL、任务协议、Seed 和 Outbox 行为不变。
