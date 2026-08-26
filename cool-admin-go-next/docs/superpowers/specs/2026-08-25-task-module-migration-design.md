@@ -240,20 +240,19 @@ func NewRegistry(demo *DemoService) (*Registry, error)
 
 顶层切分比 Node 的裸 `split(',')` 严格更强：Node 对 `test([1, 2])` 会切成 `[1` 和 `2]`，前端占位符里的示例在 Node 上本就不可用。
 
-## 9. 写入请求体裁剪
+## 9. 前端整行回传
 
-`cool-admin-vue` 的任务表单用 `form: { ...item }` 打开，提交时回传整条记录，并额外带上列表渲染阶段附加的 `_every` 视图字段。Node 侧 TypeORM 静默忽略多余字段，Go 侧 Binder 明确拒绝未知字段，`Base` 也拒绝更新 `createTime`、`updateTime` 这类系统维护字段——不处理会让前端"编辑任务"直接失败。
+`cool-admin-vue` 的任务表单用 `form: { ...item }` 打开，提交时回传整条记录，并额外带上列表渲染阶段附加的 `_every` 视图字段（`src/modules/task/views/list.vue:121`）。Node 侧 TypeORM 静默忽略多余字段，Go 侧原本两处都拒：
 
-对应 Node Controller 用 `before` 钩子改写请求体的做法，Go 版在 `CurdOption.Before` 上挂 `BodyNormalizer.Trim`：
+- `cool-next/core/controller/binder.go` 的 `decodeMutable` 拒绝未知字段，挡掉 `_every`；
+- `cool-next/core/service/base.go` 的 `mutableData` 拒绝更新 `createTime`、`updateTime`。
 
-1. 只处理 `add` 与 `update` 两个路径，`delete`、`page` 等请求体原样通过；
-2. 按实体 Descriptor 的可写字段白名单裁剪，主键保留、系统维护字段与未知字段丢弃；
-3. 对象与数组两种请求体形状都支持，字段值以 `json.RawMessage` 透传，不做二次编解码；
-4. 请求体超过 1 MB 时原样交回 Binder，由 Binder 按自身上限报错。
+前端不可修改，因此这两条都在框架层解决，任务模块不再自带请求体裁剪器：
 
-裁剪器放在 Controller 层：架构设计 §10.4 禁止把 `*ghttp.Request` 传入领域 Service。
+1. **视图字段**——实体绑定遇到未知字段时，以 `_` 开头的按前端视图字段约定丢弃，其余仍然报错，字段名拼错的校验能力不受影响；
+2. **只读字段**——`mutableData` 对客户端来源的只读字段在 Add 与 Update 上一致忽略。此前 Add 忽略、Update 报错的不对称本身就是缺陷；业务代码显式写入只读字段仍然报错，护栏没有拆掉。
 
-这只放宽了任务模块两个写入接口的字段严格性。其他 Vue 页面若同样以整条记录回传，属于框架 Binder 策略层面的统一问题，不在本模块处理。
+两条都不是任务模块专属：任何以整条记录回传的前端页面都会撞上，按 `2026-08-20-base-module-design.md` §3.1 的判定法（换一个业务模块还需要吗）属于框架层。
 
 ## 10. 初始化、菜单与装配
 

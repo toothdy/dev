@@ -23,6 +23,9 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
 )
 
+// 前端视图字段的命名前缀，实体绑定时按未知字段丢弃而不是报错
+const viewFieldPrefix = "_"
+
 var (
 	uploadFileType     = reflect.TypeFor[*ghttp.UploadFile]()
 	uploadFilesType    = reflect.TypeFor[ghttp.UploadFiles]()
@@ -559,6 +562,12 @@ func decodeMutable[E any, ID comparable](
 	for name, encoded := range raw {
 		field, exists := descriptor.JSON(name)
 		if !exists {
+			// cool-admin-vue 会把派生的视图字段挂到取回来的实体行上再整行回传，
+			// 这类字段按前端约定以下划线开头，丢弃即可；其余未知字段仍然报错以保住拼写校验
+			if strings.HasPrefix(name, viewFieldPrefix) {
+				continue
+			}
+
 			return nil, exception.Validate(fmt.Sprintf("实体不存在 JSON 字段 %s", name))
 		}
 		if bytes.Equal(bytes.TrimSpace(encoded), []byte("null")) {

@@ -9,14 +9,13 @@ import (
 )
 
 // 任务管理路由
-func AdminTaskInfoController(info *service.InfoService, normalizer *BodyNormalizer) controller.Definition {
+func AdminTaskInfoController(info *service.InfoService) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{Description: "任务", TagName: "任务"}).
 		Curd(controller.CurdOption{
 			API:     controller.API(controller.Add, controller.Delete, controller.Update, controller.Info, controller.Page),
 			Entity:  entity.Info{},
 			Service: info,
-			Before:  normalizer.Trim,
 			PageQueryOp: controller.StaticQuery(controller.QueryOp{
 				FieldEq: []controller.FieldEq{
 					controller.Eq(controller.Field("status")),

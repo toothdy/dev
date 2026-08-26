@@ -319,7 +319,9 @@ func (base *Base[E, ID]) mutableData(
 		}
 		isReadonly := field.Primary() || field.SystemMaintained() || policy.IsReadonly(field.Name())
 		if isReadonly {
-			if action == crud.ActionAdd && item.source == fieldSourceClient {
+			// 客户端把只读字段原样回传是前端整行提交的常态，Add 与 Update 一律忽略；
+			// 业务代码显式写入只读字段仍然是错误，只有它会走到下面这条
+			if item.source == fieldSourceClient {
 				continue
 			}
 			if action == crud.ActionUpdate {

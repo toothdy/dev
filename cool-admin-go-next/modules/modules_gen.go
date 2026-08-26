@@ -1645,8 +1645,8 @@ func controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller
 	return app3.AppDictInfoController(dependency0)
 }
 
-func controllertaskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController(dependency0 *service3.InfoService, dependency1 *admin3.BodyNormalizer) corecontroller.Definition {
-	return admin3.AdminTaskInfoController(dependency0, dependency1)
+func controllertaskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController(dependency0 *service3.InfoService) corecontroller.Definition {
+	return admin3.AdminTaskInfoController(dependency0)
 }
 
 func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler(dependency0 base.Config) (*admin.ToolHandler, error) {
@@ -1757,10 +1757,6 @@ func builddictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType(
 	return service2.NewType(dependency0, dependency1)
 }
 
-func buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminNewBodyNormalizer() (*admin3.BodyNormalizer, error) {
-	return admin3.NewBodyNormalizer()
-}
-
 func buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo() (*service3.DemoService, error) {
 	return service3.NewDemo()
 }
@@ -1816,7 +1812,7 @@ func generatedGraph() module.Graph {
 			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Module: "dict", Path: "/admin/dict/info", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "字典信息", TagName: "字典信息", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin", Symbol: "AdminDictInfoController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
 			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Module: "dict", Path: "/admin/dict/type", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "字典类型", TagName: "字典类型", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin", Symbol: "AdminDictTypeController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
 			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Module: "dict", Path: "/app/dict/info", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "字典信息", TagName: "字典信息", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/controller/app", Symbol: "AppDictInfoController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Module: "task", Path: "/admin/task/info", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "任务", TagName: "任务", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/controller/admin", Symbol: "AdminTaskInfoController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService, *github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.BodyNormalizer) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Module: "task", Path: "/admin/task/info", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "任务", TagName: "任务", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/controller/admin", Symbol: "AdminTaskInfoController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
 		},
 		Routes: []coreroute.Definition{
 			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCodingController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/coding/getModuleTree", Summary: "获取模块目录结构", Description: "", DevelopmentOnly: true, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "ToolHandler", Method: "GetModuleTree", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
@@ -1961,7 +1957,6 @@ func generatedGraph() module.Graph {
 			{Kind: module.ProviderKindComponent, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewInfo", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService"},
 			{Kind: module.ProviderKindComponent, Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewType", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService"},
 			{Kind: module.ProviderKindConfig, Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task", Name: "Config", Type: "github.com/toothdy/cool-admin-go-next/modules/task.Config"},
-			{Kind: module.ProviderKindComponent, Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/controller/admin", Name: "NewBodyNormalizer", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.BodyNormalizer"},
 			{Kind: module.ProviderKindBase, Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/entity", Name: "basetaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo", Type: "*service.Base[entity.Info, uint64]"},
 			{Kind: module.ProviderKindBase, Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/entity", Name: "basetaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog", Type: "*service.Base[entity.Log, uint64]"},
 			{Kind: module.ProviderKindDescriptor, Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/entity", Name: "descriptortaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo", Type: "entity.Descriptor[entity.Info, uint64]"},
@@ -2007,7 +2002,6 @@ func generatedGraph() module.Graph {
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewUserHandler"},
 			{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewInfo"},
 			{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewType"},
-			{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/controller/admin", Name: "NewBodyNormalizer"},
 			{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewDemo"},
 			{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewRegistry"},
 			{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewExecutor"},
@@ -2049,7 +2043,6 @@ func generatedGraph() module.Graph {
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewUserHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewInfo"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewType"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
-			{Component: module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/controller/admin", Name: "NewBodyNormalizer"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewDemo"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewRegistry"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewExecutor"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
@@ -2462,13 +2455,6 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType := app.Hooks{}
 	definition_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType := module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewType"}
 	assembly.AddComponent(definition_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType, hooks_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType)
-	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminNewBodyNormalizer, err := buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminNewBodyNormalizer()
-	if err != nil {
-		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.NewBodyNormalizer 失败")
-	}
-	hooks_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminNewBodyNormalizer := app.Hooks{}
-	definition_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminNewBodyNormalizer := module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/controller/admin", Name: "NewBodyNormalizer"}
-	assembly.AddComponent(definition_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminNewBodyNormalizer, hooks_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminNewBodyNormalizer)
 	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo, err := buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo()
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/task/service.NewDemo 失败")
@@ -2527,7 +2513,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController := controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController(component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo)
 	controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController := controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController(component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType)
 	controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_appAppDictInfoController := controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_appAppDictInfoController(component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo)
-	controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController := controllertaskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController(component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo, component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminNewBodyNormalizer)
+	controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController := controllertaskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController(component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo)
 	epsViews, err := eps.CompileViews(eps.Input{
 		Graph: generatedGraph(),
 		Controllers: []eps.ControllerInput{
