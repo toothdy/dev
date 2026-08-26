@@ -6,6 +6,7 @@ import (
 	"go/types"
 	"path"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -161,7 +162,9 @@ func (a *analysis) analyzeControllerFactory(
 		}
 		entityExpression, exists := controllerLiteralField(literal, "Entity")
 		entityType, entityValid := controllerEntityType(pkg, function, entityExpression, exists)
-		if !entityValid || !containsControllerEntity(entities, entityType) {
+		if !entityValid || !slices.ContainsFunc(entities, func(entity EntityDeclaration) bool {
+			return types.Identical(types.Unalias(entity.typ), types.Unalias(entityType))
+		}) {
 			position := literal.Pos()
 			if exists {
 				position = entityExpression.Pos()
@@ -499,16 +502,6 @@ func controllerEntityType(pkg *loadedPackage, function *ast.FuncDecl, expression
 	}
 
 	return named, true
-}
-
-func containsControllerEntity(entities []EntityDeclaration, target types.Type) bool {
-	for _, entity := range entities {
-		if types.Identical(types.Unalias(entity.typ), types.Unalias(target)) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func controllerService(

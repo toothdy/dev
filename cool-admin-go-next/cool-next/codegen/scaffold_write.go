@@ -296,9 +296,7 @@ func validateCodeParents(root *os.Root, target string) error {
 func createTemporaryCodeFile(root *os.Root, directory, name string) (string, *os.File, error) {
 	for range 10 {
 		random := make([]byte, 8)
-		if _, err := rand.Read(random); err != nil {
-			return "", nil, exception.WrapCore(err, "生成临时代码文件名失败")
-		}
+		rand.Read(random)
 		temporary := path.Join(directory, "."+name+".cool-"+hex.EncodeToString(random)+".tmp")
 		handle, err := root.OpenFile(temporary, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 		if err == nil {

@@ -3,6 +3,7 @@ package schema
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/gogf/gf/v2/database/gdb"
@@ -16,7 +17,7 @@ func inspectTable(ctx context.Context, database gdb.DB, dialect driver.Dialect, 
 	if err != nil {
 		return Table{}, gerror.Wrap(err, "读取数据库表列表")
 	}
-	if !containsString(tables, tableName) {
+	if !slices.Contains(tables, tableName) {
 		return Table{}, nil
 	}
 	columns, err := inspectColumns(ctx, database, dialect, tableName)
@@ -191,15 +192,6 @@ func boolValueOf(row gdb.Record, name string) bool {
 	for key, value := range row {
 		if strings.EqualFold(key, name) {
 			return value.Bool()
-		}
-	}
-	return false
-}
-
-func containsString(items []string, wanted string) bool {
-	for _, item := range items {
-		if item == wanted {
-			return true
 		}
 	}
 	return false

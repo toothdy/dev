@@ -301,9 +301,7 @@ func snapshotFromPair(subject TokenSubject, pair TokenPair) SessionSnapshot {
 // 生成密码学随机标识符
 func randomID() (string, error) {
 	content := make([]byte, 32)
-	if _, err := rand.Read(content); err != nil {
-		return "", err
-	}
+	rand.Read(content)
 
 	return hex.EncodeToString(content), nil
 }

@@ -52,7 +52,7 @@ func compare(expected Table, actual Table) []Difference {
 		}
 	}
 	for _, column := range actual.Columns {
-		if !containsColumn(expected.Columns, column.Name) {
+		if !slices.ContainsFunc(expected.Columns, func(expected Column) bool { return expected.Name == column.Name }) {
 			differences = append(differences, Difference{
 				Table: expected.Name, Subject: column.Name, Kind: "column", Expected: "缺失", Actual: "存在",
 			})
@@ -79,7 +79,7 @@ func compare(expected Table, actual Table) []Difference {
 		}
 	}
 	for _, index := range actual.Indexes {
-		if index.Name != "PRIMARY" && !containsIndex(expected.Indexes, index.Name) {
+		if index.Name != "PRIMARY" && !slices.ContainsFunc(expected.Indexes, func(expected Index) bool { return expected.Name == index.Name }) {
 			differences = append(differences, Difference{
 				Table: expected.Name, Subject: index.Name, Kind: "index", Expected: "缺失", Actual: "存在",
 			})
@@ -90,14 +90,6 @@ func compare(expected Table, actual Table) []Difference {
 	})
 
 	return differences
-}
-
-func containsColumn(columns []Column, name string) bool {
-	return slices.ContainsFunc(columns, func(column Column) bool { return column.Name == name })
-}
-
-func containsIndex(indexes []Index, name string) bool {
-	return slices.ContainsFunc(indexes, func(index Index) bool { return index.Name == name })
 }
 
 func formatIndex(index Index) string {

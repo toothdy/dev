@@ -2,11 +2,11 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"slices"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
-
-	"fmt"
 )
 
 // 默认 CRUD 动作计划
@@ -31,7 +31,7 @@ func CompilePlan(
 	if err != nil {
 		return nil, err
 	}
-	if !containsAPI(option.API, api) {
+	if !slices.Contains(option.API, api) {
 		return nil, exception.Core(fmt.Sprintf("Controller 未启用 CRUD API %s", api))
 	}
 
@@ -78,14 +78,4 @@ func actionAPI(action crud.Action) (APIType, bool) {
 	default:
 		return "", false
 	}
-}
-
-func containsAPI(values []APIType, target APIType) bool {
-	for _, value := range values {
-		if value == target {
-			return true
-		}
-	}
-
-	return false
 }

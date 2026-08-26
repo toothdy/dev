@@ -251,10 +251,7 @@ func (store *DatabaseStore) claimWithin(
 	}
 	records := make([]Record, 0, len(candidates))
 	for _, candidate := range candidates {
-		token, err := newClaimToken()
-		if err != nil {
-			return nil, err
-		}
+		token := newClaimToken()
 		arguments := store.statements.claimArguments(owner, token, leaseDuration, candidate.MessageID)
 		result, err := transaction.Ctx(ctx).Exec(claimStatement, arguments...)
 		if err != nil {
@@ -656,13 +653,11 @@ func validStatus(status Status) bool {
 	return status == Pending || status == Retry || status == Leased || status == Sent || status == Dead
 }
 
-func newClaimToken() (ClaimToken, error) {
+func newClaimToken() ClaimToken {
 	randomBytes := make([]byte, 16)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", gerror.Wrap(err, "outbox store: 生成 Claim Token")
-	}
+	rand.Read(randomBytes)
 
-	return ClaimToken(hex.EncodeToString(randomBytes)), nil
+	return ClaimToken(hex.EncodeToString(randomBytes))
 }
 
 func invariantError(action string, affected int64) error {

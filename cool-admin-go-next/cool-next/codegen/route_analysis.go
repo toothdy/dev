@@ -847,16 +847,6 @@ func uniqueValid(values []string, validate func(string) bool) bool {
 	return true
 }
 
-func containsString(values []string, target string) bool {
-	for _, value := range values {
-		if value == target {
-			return true
-		}
-	}
-
-	return false
-}
-
 func isNilIdentifier(expression ast.Expr) bool {
 	identifier, matches := unparenControllerExpr(expression).(*ast.Ident)
 

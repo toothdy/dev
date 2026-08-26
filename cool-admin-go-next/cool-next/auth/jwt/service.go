@@ -313,9 +313,7 @@ func (service *Service) validateReady() error {
 // 生成密码学随机 JTI
 func randomJTI() (string, error) {
 	content := make([]byte, 32)
-	if _, err := rand.Read(content); err != nil {
-		return "", err
-	}
+	rand.Read(content)
 
 	return hex.EncodeToString(content), nil
 }

@@ -41,6 +41,14 @@ type termination struct {
 	name      string
 }
 
+type assemblyValidation struct {
+	components []assembledComponent
+	transports []Transport
+	prefix     *Assembly
+	prefixErr  error
+	err        error
+}
+
 // 按生成装配函数启动应用
 func StartDefinition(ctx context.Context, definition Definition) (*Application, error) {
 	if ctx == nil {
@@ -53,25 +61,23 @@ func StartDefinition(ctx context.Context, definition Definition) (*Application, 
 	ctx = context.WithValue(ctx, readinessKey{}, ReadyState(application))
 	input, _ := ctx.Value(assembleInputKey{}).(AssembleInput)
 	assembly, err := definition.assemble(ctx, input)
+	validation := scanAssembly(definition.graph, assembly, err == nil)
 	if err != nil {
-		if prefixErr := validateAssemblyPrefix(definition.graph, assembly); prefixErr != nil {
-			err = errors.Join(err, prefixErr)
-			application.addAssemblyRollback(validAssemblyPrefix(definition.graph, assembly))
-		} else {
-			application.addAssemblyRollback(assembly)
+		if validation.prefixErr != nil {
+			err = errors.Join(err, validation.prefixErr)
 		}
+		application.addAssemblyRollback(validation.prefix)
 		return nil, application.rollback(ctx, err)
 	}
 	if assembly == nil {
 		return nil, application.rollback(ctx, exception.Core("生成装配返回空 Assembly"))
 	}
-	components, transports, err := validateAssembly(definition.graph, assembly)
-	if err != nil {
-		application.addAssemblyRollback(validAssemblyPrefix(definition.graph, assembly))
-		return nil, application.rollback(ctx, err)
+	if validation.err != nil {
+		application.addAssemblyRollback(validation.prefix)
+		return nil, application.rollback(ctx, validation.err)
 	}
-	transports = enabledTransports(transports)
-	if err = application.startAssembly(ctx, components, transports); err != nil {
+	transports := enabledTransports(validation.transports)
+	if err = application.startAssembly(ctx, validation.components, transports); err != nil {
 		return nil, application.rollback(ctx, err)
 	}
 	return application, nil
@@ -136,116 +142,92 @@ func (component assembledComponent) definitionAsComponent() module.Component {
 	return module.ComponentFromDefinition(component.definition)
 }
 
-func validateAssembly(graph module.Graph, assembly *Assembly) ([]assembledComponent, []Transport, error) {
+func scanAssembly(graph module.Graph, assembly *Assembly, complete bool) assemblyValidation {
+	result := assemblyValidation{prefix: NewAssembly()}
 	if assembly == nil {
-		return nil, nil, exception.Core("Assembly 不能为空")
+		result.prefixErr = exception.Core("Assembly 不能为空")
+		if complete {
+			result.err = result.prefixErr
+		}
+		return result
 	}
 	definitions := graph.Components()
-	if len(definitions) != len(assembly.components) {
-		return nil, nil, exception.Core("Assembly 与 Graph 组件数量不一致")
+	if complete && len(definitions) != len(assembly.components) {
+		result.err = exception.Core("Assembly 与 Graph 组件数量不一致")
+	}
+	if len(assembly.components) > len(definitions) {
+		result.prefixErr = exception.Core("Assembly 超出 Graph 组件数量")
 	}
 	lifecycles := graph.Lifecycles()
 	if len(lifecycles) != len(definitions) {
-		return nil, nil, exception.Core("Graph 组件与生命周期数量不一致")
+		lifecycleErr := exception.Core("Graph 组件与生命周期数量不一致")
+		if complete && result.err == nil {
+			result.err = lifecycleErr
+		}
+		if result.prefixErr == nil {
+			result.prefixErr = lifecycleErr
+		}
+		return result
 	}
 	transportDefinitions := graph.Transports()
 	transportsByID := make(map[string]Transport)
-	components := make([]assembledComponent, len(assembly.components))
-	transports := make([]Transport, 0, len(transportDefinitions))
+	result.components = make([]assembledComponent, 0, len(assembly.components))
+	result.transports = make([]Transport, 0, len(transportDefinitions))
 	transportIndex := 0
 	for index, current := range assembly.components {
+		if index >= len(definitions) {
+			break
+		}
 		if module.ComponentFromDefinition(current.definition) != definitions[index] {
-			return nil, nil, exception.Core("Assembly 与 Graph 组件顺序不一致")
+			if complete && result.err == nil {
+				result.err = exception.Core("Assembly 与 Graph 组件顺序不一致")
+			}
+			if result.prefixErr == nil {
+				result.prefixErr = exception.Core("Assembly 不是 Graph 拓扑的合法前缀")
+			}
+			break
 		}
 		if err := validateHooks(lifecycles[index], current.hooks); err != nil {
-			return nil, nil, err
+			if complete && result.err == nil {
+				result.err = err
+			}
+			if result.prefixErr == nil {
+				result.prefixErr = err
+			}
+			break
 		}
-		components[index] = current
 		hasTransport := current.transport != nil
 		wantsTransport := transportIndex < len(transportDefinitions) && definitions[index] == transportDefinitions[transportIndex]
 		if hasTransport != wantsTransport {
-			return nil, nil, exception.Core("Assembly 与 Graph Transport 标记不一致")
+			transportErr := exception.Core("Assembly 与 Graph Transport 标记不一致")
+			if complete && result.err == nil {
+				result.err = transportErr
+			}
+			if result.prefixErr == nil {
+				result.prefixErr = transportErr
+			}
+			break
 		}
+		result.components = append(result.components, current)
+		result.prefix.components = append(result.prefix.components, current)
 		if !hasTransport {
 			continue
 		}
-		name := strings.TrimSpace(current.transport.Name())
-		if name == "" || name != current.transport.Name() || transportsByID[name] != nil {
-			return nil, nil, exception.Core("Assembly Transport 名称无效或重复")
+		if complete && result.err == nil {
+			name := strings.TrimSpace(current.transport.Name())
+			if name == "" || name != current.transport.Name() || transportsByID[name] != nil {
+				result.err = exception.Core("Assembly Transport 名称无效或重复")
+			} else {
+				transportsByID[name] = current.transport
+				result.transports = append(result.transports, current.transport)
+			}
 		}
-		transportsByID[name] = current.transport
-		transports = append(transports, current.transport)
 		transportIndex++
 	}
-	if transportIndex != len(transportDefinitions) {
-		return nil, nil, exception.Core("Assembly 缺少 Transport")
+	if complete && result.err == nil && transportIndex != len(transportDefinitions) {
+		result.err = exception.Core("Assembly 缺少 Transport")
 	}
-	return components, transports, nil
-}
-
-func validateAssemblyPrefix(graph module.Graph, assembly *Assembly) error {
-	if assembly == nil {
-		return exception.Core("Assembly 不能为空")
-	}
-	graphComponents := graph.Components()
-	if len(assembly.components) > len(graphComponents) {
-		return exception.Core("Assembly 超出 Graph 组件数量")
-	}
-	lifecycles := graph.Lifecycles()
-	if len(lifecycles) != len(graphComponents) {
-		return exception.Core("Graph 组件与生命周期数量不一致")
-	}
-	transportDefinitions := graph.Transports()
-	transportIndex := 0
-	for index, current := range assembly.components {
-		if module.ComponentFromDefinition(current.definition) != graphComponents[index] {
-			return exception.Core("Assembly 不是 Graph 拓扑的合法前缀")
-		}
-		if err := validateHooks(lifecycles[index], current.hooks); err != nil {
-			return err
-		}
-		hasTransport := current.transport != nil
-		wantsTransport := transportIndex < len(transportDefinitions) && graphComponents[index] == transportDefinitions[transportIndex]
-		if hasTransport != wantsTransport {
-			return exception.Core("Assembly 与 Graph Transport 标记不一致")
-		}
-		if hasTransport {
-			transportIndex++
-		}
-	}
-	return nil
-}
-
-func validAssemblyPrefix(graph module.Graph, assembly *Assembly) *Assembly {
-	validated := NewAssembly()
-	if assembly == nil {
-		return validated
-	}
-	components := graph.Components()
-	lifecycles := graph.Lifecycles()
-	transports := graph.Transports()
-	if len(lifecycles) != len(components) {
-		return validated
-	}
-	transportIndex := 0
-	for index, current := range assembly.components {
-		if index >= len(components) || module.ComponentFromDefinition(current.definition) != components[index] {
-			break
-		}
-		if validateHooks(lifecycles[index], current.hooks) != nil {
-			break
-		}
-		hasTransport := current.transport != nil
-		wantsTransport := transportIndex < len(transports) && components[index] == transports[transportIndex]
-		if hasTransport != wantsTransport {
-			break
-		}
-		validated.components = append(validated.components, current)
-		if hasTransport {
-			transportIndex++
-		}
-	}
-	return validated
+	return result
 }
 
 func validateHooks(lifecycle module.Lifecycle, hooks Hooks) error {

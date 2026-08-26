@@ -19,9 +19,7 @@ type requestInfo struct {
 // 生成协议无关 Trace ID
 func NewTraceID() (string, error) {
 	content := make([]byte, 16)
-	if _, err := rand.Read(content); err != nil {
-		return "", exception.WrapCore(err, "生成 Trace ID 失败")
-	}
+	rand.Read(content)
 
 	return hex.EncodeToString(content), nil
 }

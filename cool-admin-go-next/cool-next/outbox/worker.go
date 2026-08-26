@@ -111,10 +111,7 @@ func NewWorker(
 	if err := validateWorkerConfig(config); err != nil {
 		return nil, err
 	}
-	id, err := newWorkerID()
-	if err != nil {
-		return nil, err
-	}
+	id := newWorkerID()
 	if logger == nil {
 		logger = g.Log()
 	}
@@ -532,13 +529,11 @@ func retryDelay(config WorkerConfig, attempt uint32) (time.Duration, error) {
 	return floor + time.Duration(random.Int64()), nil
 }
 
-func newWorkerID() (string, error) {
+func newWorkerID() string {
 	randomBytes := make([]byte, workerIDBytes)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", gerror.Wrap(err, "outbox worker: 生成 Worker ID")
-	}
+	rand.Read(randomBytes)
 
-	return hex.EncodeToString(randomBytes), nil
+	return hex.EncodeToString(randomBytes)
 }
 
 func errorSummary(err error) string {

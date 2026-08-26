@@ -1649,138 +1649,6 @@ func controllertaskgithub_com_toothdy_cool_admin_go_next_modules_task_controller
 	return admin3.AdminTaskInfoController(dependency0)
 }
 
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler(dependency0 base.Config) (*admin.ToolHandler, error) {
-	return admin.NewToolHandler(dependency0)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha() (*service.CaptchaService, error) {
-	return service.NewCaptcha()
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf(dependency0 *coreservice.Base[entity.Conf, uint64]) (*service.ConfService, error) {
-	return service.NewConf(dependency0)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.Department, uint64], dependency2 *coreservice.Base[entity.User, uint64], dependency3 *coreservice.Base[entity.Role, uint64], dependency4 *coreservice.Base[entity.UserRole, uint64], dependency5 *coreservice.Base[entity.RoleDepartment, uint64], dependency6 auth.SessionStore) (*service.DepartmentService, error) {
-	return service.NewDepartment(dependency0, dependency1, dependency2, dependency3, dependency4, dependency5, dependency6)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewDepartmentHandler(dependency0 *service.DepartmentService) *sys.DepartmentHandler {
-	return sys.NewDepartmentHandler(dependency0)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog(dependency0 *coreservice.Base[entity.Log, uint64], dependency1 *service.ConfService, dependency2 *coreservice.Base[entity.User, uint64]) (*service.LogService, error) {
-	return service.NewLog(dependency0, dependency1, dependency2)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler(dependency0 *service.LogService) *sys.LogHandler {
-	return sys.NewLogHandler(dependency0)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler(dependency0 *service.LogService) *global.LogHandler {
-	return global.NewLogHandler(dependency0)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob(dependency0 *service.LogService, dependency1 base.Config) (*schedule.LogJob, error) {
-	return schedule.NewLogJob(dependency0, dependency1)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.Menu, uint64], dependency2 *coreservice.Base[entity.Role, uint64], dependency3 *coreservice.Base[entity.RoleMenu, uint64], dependency4 *coreservice.Base[entity.UserRole, uint64], dependency5 auth.SessionStore) (*service.MenuService, error) {
-	return service.NewMenu(dependency0, dependency1, dependency2, dependency3, dependency4, dependency5)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler(dependency0 base.Config, dependency1 *service.MenuService) (*sys.MenuToolHandler, error) {
-	return sys.NewMenuToolHandler(dependency0, dependency1)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam(dependency0 *coreservice.Base[entity.Param, uint64], dependency1 base.Config) (*service.ParamService, error) {
-	return service.NewParam(dependency0, dependency1)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler(dependency0 *service.ParamService) *sys.ParamHTMLHandler {
-	return sys.NewParamHTMLHandler(dependency0)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermission(dependency0 *coreservice.Base[entity.UserRole, uint64], dependency1 *coreservice.Base[entity.Role, uint64], dependency2 *coreservice.Base[entity.RoleMenu, uint64], dependency3 *coreservice.Base[entity.Menu, uint64], dependency4 *service.MenuService) (*service.PermissionService, error) {
-	return service.NewPermission(dependency0, dependency1, dependency2, dependency3, dependency4)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.User, uint64], dependency2 *service.CaptchaService, dependency3 *authbcrypt.Verifier, dependency4 *auth.Service, dependency5 *service.PermissionService, dependency6 auth.SessionStore) (*service.LoginService, error) {
-	return service.NewLogin(dependency0, dependency1, dependency2, dependency3, dependency4, dependency5, dependency6)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler(dependency0 *service.LoginService, dependency1 *service.CaptchaService, dependency2 *service.ParamService) (*admin.OpenHandler, error) {
-	return admin.NewOpenHandler(dependency0, dependency1, dependency2)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.Role, uint64], dependency2 *coreservice.Base[entity.UserRole, uint64], dependency3 *coreservice.Base[entity.RoleMenu, uint64], dependency4 *coreservice.Base[entity.RoleDepartment, uint64], dependency5 auth.SessionStore) (*service.RoleService, error) {
-	return service.NewRole(dependency0, dependency1, dependency2, dependency3, dependency4, dependency5)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate() *service.TranslateService {
-	return service.NewTranslate()
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler(dependency0 *service.TranslateService) *global.TranslateHandler {
-	return global.NewTranslateHandler(dependency0)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUpload(dependency0 base.Config) (*service.UploadService, error) {
-	return service.NewUpload(dependency0)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler(dependency0 *service.UploadService) (*admin.UploadHandler, error) {
-	return admin.NewUploadHandler(dependency0)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler(dependency0 *service.ParamService, dependency1 *admin.UploadHandler) (*app2.CommHandler, error) {
-	return app2.NewCommHandler(dependency0, dependency1)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity.User, uint64], dependency2 *coreservice.Base[entity.UserRole, uint64], dependency3 *coreservice.Base[entity.Role, uint64], dependency4 *coreservice.Base[entity.Department, uint64], dependency5 *authbcrypt.Verifier, dependency6 auth.SessionStore) (*service.UserService, error) {
-	return service.NewUser(dependency0, dependency1, dependency2, dependency3, dependency4, dependency5, dependency6)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler(dependency0 *service.UserService, dependency1 *service.PermissionService) (*admin.CommHandler, error) {
-	return admin.NewCommHandler(dependency0, dependency1)
-}
-
-func buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler(dependency0 *service.UserService) *sys.UserHandler {
-	return sys.NewUserHandler(dependency0)
-}
-
-func builddictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo(dependency0 *coreservice.Base[entity2.Info, uint64], dependency1 *coreservice.Base[entity2.Type, uint64]) (*service2.InfoService, error) {
-	return service2.NewInfo(dependency0, dependency1)
-}
-
-func builddictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType(dependency0 *coreservice.Base[entity2.Type, uint64], dependency1 *coreservice.Base[entity2.Info, uint64]) (*service2.TypeService, error) {
-	return service2.NewType(dependency0, dependency1)
-}
-
-func buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo() (*service3.DemoService, error) {
-	return service3.NewDemo()
-}
-
-func buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewRegistry(dependency0 *service3.DemoService) (*service3.Registry, error) {
-	return service3.NewRegistry(dependency0)
-}
-
-func buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewExecutor(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity3.Info, uint64], dependency2 *coreservice.Base[entity3.Log, uint64], dependency3 *service3.Registry, dependency4 task.Config) (*service3.Executor, error) {
-	return service3.NewExecutor(dependency0, dependency1, dependency2, dependency3, dependency4)
-}
-
-func buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewScheduler(dependency0 *service3.Executor, dependency1 *coreservice.Base[entity3.Info, uint64]) (*service3.Scheduler, error) {
-	return service3.NewScheduler(dependency0, dependency1)
-}
-
-func buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_scheduleNewTaskJob(dependency0 *service3.Scheduler) (*schedule2.TaskJob, error) {
-	return schedule2.NewTaskJob(dependency0)
-}
-
-func buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo(dependency0 *coredb.Runtime, dependency1 *coreservice.Base[entity3.Info, uint64], dependency2 *coreservice.Base[entity3.Log, uint64], dependency3 *service3.Scheduler) (*service3.InfoService, error) {
-	return service3.NewInfo(dependency0, dependency1, dependency2, dependency3)
-}
-
 type generatedGRPCRegistrar struct{}
 
 func (generatedGRPCRegistrar) Register(server *grpcx.GrpcServer) error {
@@ -2277,14 +2145,14 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 Session Store 失败")
 	}
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, sessionAdapter)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu, err := service.NewMenu(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, sessionAdapter)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewMenu 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenu"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermission, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermission(base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermission, err := service.NewPermission(base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewPermission 失败")
 	}
@@ -2299,54 +2167,54 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 bcrypt 验证器失败")
 	}
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler(config0.Config())
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler, err := admin.NewToolHandler(config0.Config())
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.NewToolHandler 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewToolHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha()
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, err := service.NewCaptcha()
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewCaptcha 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCaptcha"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf(base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf, err := service.NewConf(base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewConf 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewConf"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment, sessionAdapter)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment, err := service.NewDepartment(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment, sessionAdapter)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewDepartment 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewDepartment"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewDepartmentHandler := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewDepartmentHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewDepartmentHandler := sys.NewDepartmentHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment)
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewDepartmentHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewDepartmentHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewDepartmentHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewDepartmentHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewDepartmentHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog(base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog, err := service.NewLog(base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewConf, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewLog 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLog"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler := sys.NewLogHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog)
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewLogHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler := global.NewLogHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog)
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewLogHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog, config0.Config())
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob, err := schedule.NewLogJob(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog, config0.Config())
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/schedule.NewLogJob 失败")
 	}
@@ -2355,135 +2223,135 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob.Stopper = component_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/schedule", Name: "NewLogJob"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler(config0.Config(), component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler, err := sys.NewMenuToolHandler(config0.Config(), component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.NewMenuToolHandler 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewMenuToolHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam(base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, config0.Config())
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam, err := service.NewParam(base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, config0.Config())
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewParam 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewParam"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler := sys.NewParamHTMLHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam)
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewParamHTMLHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, bcryptVerifier, authService, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermission, sessionAdapter)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin, err := service.NewLogin(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, bcryptVerifier, authService, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermission, sessionAdapter)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewLogin 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLogin"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler, err := admin.NewOpenHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewCaptcha, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.NewOpenHandler 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewOpenHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment, sessionAdapter)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole, err := service.NewRole(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment, sessionAdapter)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewRole 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewRole"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate()
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate := service.NewTranslate()
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewTranslate"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler := global.NewTranslateHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate)
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewTranslateHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUpload, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUpload(config0.Config())
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUpload, err := service.NewUpload(config0.Config())
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewUpload 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUpload := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUpload := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUpload"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUpload, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUpload)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUpload)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler, err := admin.NewUploadHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUpload)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.NewUploadHandler 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewUploadHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler, err := app2.NewCommHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/controller/app.NewCommHandler 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Name: "NewCommHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, bcryptVerifier, sessionAdapter)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, err := service.NewUser(runtime, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, base_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, bcryptVerifier, sessionAdapter)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewUser 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUser"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler, err := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermission)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler, err := admin.NewCommHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewPermission)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.NewCommHandler 失败")
 	}
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewCommHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler := buildbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler := sys.NewUserHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser)
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewUserHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewUserHandler)
-	component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo, err := builddictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo(base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType)
+	component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo, err := service2.NewInfo(base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/dict/service.NewInfo 失败")
 	}
 	hooks_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo := app.Hooks{}
 	definition_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo := module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewInfo"}
 	assembly.AddComponent(definition_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo, hooks_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo)
-	component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType, err := builddictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType(base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo)
+	component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType, err := service2.NewType(base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, base_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/dict/service.NewType 失败")
 	}
 	hooks_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType := app.Hooks{}
 	definition_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType := module.ComponentDefinition{Module: "dict", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Name: "NewType"}
 	assembly.AddComponent(definition_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType, hooks_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType)
-	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo, err := buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo()
+	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo, err := service3.NewDemo()
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/task/service.NewDemo 失败")
 	}
 	hooks_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo := app.Hooks{}
 	definition_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo := module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewDemo"}
 	assembly.AddComponent(definition_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo, hooks_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo)
-	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewRegistry, err := buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewRegistry(component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo)
+	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewRegistry, err := service3.NewRegistry(component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewDemo)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/task/service.NewRegistry 失败")
 	}
 	hooks_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewRegistry := app.Hooks{}
 	definition_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewRegistry := module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewRegistry"}
 	assembly.AddComponent(definition_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewRegistry, hooks_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewRegistry)
-	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewExecutor, err := buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewExecutor(runtime, base_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo, base_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog, component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewRegistry, config2.Config())
+	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewExecutor, err := service3.NewExecutor(runtime, base_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo, base_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog, component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewRegistry, config2.Config())
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/task/service.NewExecutor 失败")
 	}
 	hooks_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewExecutor := app.Hooks{}
 	definition_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewExecutor := module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewExecutor"}
 	assembly.AddComponent(definition_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewExecutor, hooks_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewExecutor)
-	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewScheduler, err := buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewScheduler(component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewExecutor, base_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo)
+	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewScheduler, err := service3.NewScheduler(component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewExecutor, base_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/task/service.NewScheduler 失败")
 	}
 	hooks_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewScheduler := app.Hooks{}
 	definition_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewScheduler := module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewScheduler"}
 	assembly.AddComponent(definition_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewScheduler, hooks_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewScheduler)
-	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_scheduleNewTaskJob, err := buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_scheduleNewTaskJob(component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewScheduler)
+	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_scheduleNewTaskJob, err := schedule2.NewTaskJob(component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewScheduler)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/task/schedule.NewTaskJob 失败")
 	}
@@ -2492,7 +2360,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_taskgithub_com_toothdy_cool_admin_go_next_modules_task_scheduleNewTaskJob.Stopper = component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_scheduleNewTaskJob
 	definition_taskgithub_com_toothdy_cool_admin_go_next_modules_task_scheduleNewTaskJob := module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/schedule", Name: "NewTaskJob"}
 	assembly.AddComponent(definition_taskgithub_com_toothdy_cool_admin_go_next_modules_task_scheduleNewTaskJob, hooks_taskgithub_com_toothdy_cool_admin_go_next_modules_task_scheduleNewTaskJob)
-	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo, err := buildtaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo(runtime, base_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo, base_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog, component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewScheduler)
+	component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo, err := service3.NewInfo(runtime, base_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo, base_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog, component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewScheduler)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/task/service.NewInfo 失败")
 	}

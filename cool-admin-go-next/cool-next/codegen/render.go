@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/format"
 	"go/types"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -163,10 +164,6 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 	}
 	for _, current := range ordered {
 		imports.add(current.constructor.packagePath, current.constructor.packageName)
-		collectTypeImports(imports, current.constructor.resultType)
-		for _, parameter := range current.constructor.types {
-			collectTypeImports(imports, parameter)
-		}
 	}
 	imports.finalize()
 
@@ -180,7 +177,6 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 	writeBaseProviderDeclarations(&source, fragments, imports)
 	writeServiceAdapterDeclarations(&source, services, imports)
 	writeControllerDeclarations(&source, controllers, imports)
-	writeComponentDeclarations(&source, ordered, imports)
 	writeGRPCRegistrarDeclaration(&source, registrars, imports)
 	writeGeneratedFunction(&source, graph, modules, fragments, descriptorProviders, providers, ordered, dependencies, services, controllers, imports)
 	formatted, err := format.Source([]byte(source.String()))
@@ -511,13 +507,6 @@ func validateGeneratedIdentifiers(
 			used[identifier] = true
 		}
 	}
-	for _, current := range components {
-		identifier := componentFunctionName(current.component, current.constructor)
-		if used[identifier] {
-			return renderError("CG084", "生成标识符重复: "+identifier, current.component.position)
-		}
-		used[identifier] = true
-	}
 	for _, current := range services {
 		for _, action := range serviceActionNames {
 			for _, identifier := range []string{
@@ -790,29 +779,6 @@ func writeDescriptorFunction(source *strings.Builder, fragment DescriptorFragmen
 	fmt.Fprintf(source, "\tdescriptor, err := coreentity.Compile[%s.%s, uint64](%s.%sSchema())\n", entityAlias, fragment.entity, entityAlias, fragment.entity)
 	source.WriteString("\tif err != nil {\n\t\tpanic(err)\n\t}\n")
 	fmt.Fprintf(source, "\treturn %s{Descriptor: descriptor}\n}\n\n", descriptorName)
-}
-
-func writeComponentDeclarations(source *strings.Builder, components []renderComponent, imports *importManager) {
-	for _, current := range components {
-		constructor := current.constructor
-		name := componentFunctionName(current.component, constructor)
-		parameters := make([]string, len(constructor.types))
-		arguments := make([]string, len(constructor.types))
-		for index, parameter := range constructor.types {
-			arguments[index] = "dependency" + strconv.Itoa(index)
-			parameters[index] = arguments[index] + " " + types.TypeString(parameter, importsQualifier(imports))
-		}
-		result := types.TypeString(constructor.resultType, importsQualifier(imports))
-		call := imports.alias(constructor.packagePath) + "." + constructor.name + "(" + strings.Join(arguments, ", ") + ")"
-		if constructorReturnsError(constructor) {
-			fmt.Fprintf(source, "func %s(%s) (%s, error) {\n", name, strings.Join(parameters, ", "), result)
-			fmt.Fprintf(source, "\treturn %s\n", call)
-		} else {
-			fmt.Fprintf(source, "func %s(%s) %s {\n", name, strings.Join(parameters, ", "), result)
-			fmt.Fprintf(source, "\treturn %s\n", call)
-		}
-		source.WriteString("}\n\n")
-	}
 }
 
 func writeGRPCRegistrarDeclaration(source *strings.Builder, registrars []renderGRPCRegistrar, imports *importManager) {
@@ -1155,7 +1121,7 @@ func writeGeneratedFunction(
 		authorizer, exists := authorizerComponent(components)
 		if exists {
 			for _, prerequisite := range authorizerPrerequisites(authorizer, components, dependencies) {
-				writeComponentConstruction(source, prerequisite, dependencies, modules, fragments, descriptorProviders, components, componentResultRequired(prerequisite, graph, dependencies, modules, controllers, components))
+				writeComponentConstruction(source, prerequisite, dependencies, modules, fragments, descriptorProviders, components, componentResultRequired(prerequisite, graph, dependencies, modules, controllers, components), imports)
 			}
 		}
 		authorizerValue := "nil"
@@ -1173,7 +1139,7 @@ func writeGeneratedFunction(
 		if authorizer, exists := authorizerComponent(components); exists && authorizerDependency(authorizer, current, components, dependencies) {
 			continue
 		}
-		writeComponentConstruction(source, current, dependencies, modules, fragments, descriptorProviders, components, componentResultRequired(current, graph, dependencies, modules, controllers, components))
+		writeComponentConstruction(source, current, dependencies, modules, fragments, descriptorProviders, components, componentResultRequired(current, graph, dependencies, modules, controllers, components), imports)
 	}
 	for _, current := range controllers {
 		arguments := make([]string, len(current.declaration.parameterTypes))
@@ -1268,14 +1234,14 @@ func writeEPSPublish(source *strings.Builder, controllers []renderController, fr
 	source.WriteString("\tif err = eps.PublishViews(epsViews); err != nil { return assembly, exception.WrapCore(err, \"发布 EPS 视图失败\") }\n")
 }
 
-func writeComponentConstruction(source *strings.Builder, current renderComponent, dependencies []Dependency, modules []renderModule, fragments []DescriptorFragment, descriptorProviders map[string]Provider, components []renderComponent, resultRequired bool) {
+func writeComponentConstruction(source *strings.Builder, current renderComponent, dependencies []Dependency, modules []renderModule, fragments []DescriptorFragment, descriptorProviders map[string]Provider, components []renderComponent, resultRequired bool, imports *importManager) {
 	componentName := componentVariableName(current.component)
 	currentDependencies := componentDependencies(current.component, dependencies)
 	arguments := make([]string, len(currentDependencies))
 	for index, dependency := range currentDependencies {
 		arguments[index], _ = providerExpression(dependency.provider, modules, fragments, descriptorProviders, components)
 	}
-	call := componentFunctionName(current.component, current.constructor) + "(" + strings.Join(arguments, ", ") + ")"
+	call := imports.alias(current.constructor.packagePath) + "." + current.constructor.name + "(" + strings.Join(arguments, ", ") + ")"
 	errorMessage := "构造组件 " + current.component.packagePath + "." + current.component.name + " 失败"
 	switch {
 	case resultRequired && constructorReturnsError(current.constructor):
@@ -1870,7 +1836,7 @@ func writeHTTPRouteInstall(
 	}
 	pattern := route.method + ":" + route.path
 	routeName := generatedIdentifier(controller.module, route.method, route.path)
-	ignoreToken := containsString(route.tags, "ignoreToken")
+	ignoreToken := slices.Contains(route.tags, "ignoreToken")
 	fmt.Fprintf(
 		source,
 		"%scontextMiddleware_%s, err := apphttp.NewContextMiddleware(%s, %q, %t)\n",
@@ -2205,10 +2171,6 @@ func doValueTypeName(fragment DescriptorFragment) string {
 
 func compiledDescriptorTypeName(fragment DescriptorFragment) string {
 	return "compiledDescriptor" + generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity)
-}
-
-func componentFunctionName(component Component, constructor Constructor) string {
-	return "build" + generatedIdentifier(component.module, constructor.packagePath, constructor.name)
 }
 
 func serviceActionModeName(service renderService, action string) string {

@@ -340,10 +340,7 @@ func (store *DatabaseStore) probeDML(ctx context.Context) error {
 		if inserted {
 			return gerror.New("outbox store: Inbox 重复写入探测再次插入记录")
 		}
-		token, tokenErr := newClaimToken()
-		if tokenErr != nil {
-			return tokenErr
-		}
+		token := newClaimToken()
 		arguments := store.statements.claimArguments("__cool_probe_worker__", token, time.Minute, messageID)
 		result, claimErr := transaction.Ctx(transactionCtx).Exec(store.statements.claim, arguments...)
 		if claimErr != nil {
@@ -415,9 +412,7 @@ func (store *DatabaseStore) requireProbeRowsAbsent(ctx context.Context, messageI
 
 func newProbeMessageID() (string, error) {
 	value := make([]byte, 16)
-	if _, err := rand.Read(value); err != nil {
-		return "", gerror.Wrap(err, "outbox store: 生成探测 Message ID")
-	}
+	rand.Read(value)
 	milliseconds := uint64(time.Now().UnixMilli())
 	for index := 5; index >= 0; index-- {
 		value[index] = byte(milliseconds)

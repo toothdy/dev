@@ -58,10 +58,7 @@ func Probe(
 		}
 	}
 
-	probeTable, err := newProbeTableName()
-	if err != nil {
-		return Report{}, err
-	}
+	probeTable := newProbeTableName()
 	cleanupNeeded := true
 	defer func() {
 		if !cleanupNeeded {
@@ -145,13 +142,11 @@ func readVersion(ctx context.Context, database gdb.DB, kind Kind) (Version, erro
 	return version, nil
 }
 
-func newProbeTableName() (string, error) {
+func newProbeTableName() string {
 	randomBytes := make([]byte, 8)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", gerror.Wrap(err, "生成数据库探测表名")
-	}
+	rand.Read(randomBytes)
 
-	return "cool_probe_" + hex.EncodeToString(randomBytes), nil
+	return "cool_probe_" + hex.EncodeToString(randomBytes)
 }
 
 func createProbeTable(ctx context.Context, database gdb.DB, dialect Dialect, tableName string) error {
