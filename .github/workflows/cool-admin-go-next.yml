@@ -1,0 +1,55 @@
+name: cool-admin-go-next
+
+# 本仓库是多项目并存的 monorepo，GitHub 只读取仓库根的 .github/workflows，
+# 因此工作流放在这里，用 paths 过滤把触发范围收回子项目
+on:
+  pull_request:
+    paths:
+      - "cool-admin-go-next/**"
+      - ".github/workflows/cool-admin-go-next.yml"
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "cool-admin-go-next/**"
+      - ".github/workflows/cool-admin-go-next.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cool-admin-go-next-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: cool-admin-go-next
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.26.4
+          cache: true
+          cache-dependency-path: cool-admin-go-next/go.sum
+      - run: make check
+
+  race:
+    name: Race Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.26.4
+          cache: true
+          cache-dependency-path: cool-admin-go-next/go.sum
+      - run: make test-race

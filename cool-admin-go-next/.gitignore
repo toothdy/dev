@@ -11,6 +11,5 @@
 coverage.out
 /coverage/
 /reports/
-/test/
 *.db
 *.db-*
