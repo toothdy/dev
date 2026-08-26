@@ -11,5 +11,7 @@
 coverage.out
 /coverage/
 /reports/
+*_test.go
+/test/
 *.db
 *.db-*

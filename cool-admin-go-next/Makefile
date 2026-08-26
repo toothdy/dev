@@ -27,11 +27,7 @@ check-vet:
 
 check-architecture:
 	@echo "[check-architecture] 校验依赖边界"
-	@if [ -d test/architecture ]; then \
-		go test ./test/architecture -count=1; \
-	else \
-		echo "  依赖边界测试尚未建立，跳过"; \
-	fi
+	@go test ./test/architecture -count=1
 
 test-unit:
 	@echo "[test-unit] 执行单元测试"
