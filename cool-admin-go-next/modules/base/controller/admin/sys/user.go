@@ -57,6 +57,8 @@ func (handler *UserHandler) Page(ctx context.Context, request *dto.UserPageReq) 
 		DepartmentIDs: request.DepartmentIDs,
 		KeyWord:       request.KeyWord,
 		Status:        request.Status,
+		Order:         request.Order,
+		Sort:          request.Sort,
 	})
 }
 

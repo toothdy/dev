@@ -72,9 +72,6 @@ func HandleCRUD(
 
 		return dispatcher.Dispatch(ctx, action, mode, plan, crud.Adapter(invoke))
 	case crud.ActionModeOverride:
-		if enhance != nil || compile != nil {
-			return exception.Core("纯 override 不允许执行 Base 请求增强或动作计划")
-		}
 		if _, err := bind(ctx); err != nil {
 			return err
 		}

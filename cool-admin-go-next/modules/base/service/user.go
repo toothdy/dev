@@ -47,6 +47,8 @@ type UserPageFilter struct {
 	DepartmentIDs []uint64
 	KeyWord       string
 	Status        *int32
+	Order         string
+	Sort          string
 }
 
 // 用户分页响应
@@ -520,6 +522,10 @@ func (service *UserService) Page(ctx context.Context, page, size int, filter Use
 	if service == nil || page <= 0 || size <= 0 {
 		return UserPageResult{}, exception.Validate("用户分页参数无效")
 	}
+	orderColumn, isDescending, err := userPageOrder(service.Descriptor(), filter.Order, filter.Sort)
+	if err != nil {
+		return UserPageResult{}, err
+	}
 	identity, err := auth.Admin(ctx)
 	if err != nil {
 		return UserPageResult{}, err
@@ -552,19 +558,47 @@ func (service *UserService) Page(ctx context.Context, page, size int, filter Use
 	if keyWord := strings.TrimSpace(filter.KeyWord); keyWord != "" {
 		model = model.Where("name LIKE ? OR username LIKE ?", "%"+keyWord+"%", "%"+keyWord+"%")
 	}
-	var rows []userRow
-	result, total, err := model.OrderAsc("id").Page(page, size).AllAndCount(false)
-	if err != nil {
-		return UserPageResult{}, exception.WrapCore(err, "查询用户分页失败")
+	if isDescending {
+		model = model.OrderDesc(orderColumn)
+	} else {
+		model = model.OrderAsc(orderColumn)
 	}
-	if err = result.ScanList(&rows, ""); err != nil {
-		return UserPageResult{}, exception.WrapCore(err, "解析用户分页失败")
+	var (
+		rows  []userRow
+		total int
+	)
+	if err = model.Page(page, size).ScanAndCount(&rows, &total, false); err != nil {
+		return UserPageResult{}, exception.WrapCore(err, "查询用户分页失败")
 	}
 	items, err := service.pageItems(ctx, rows)
 	if err != nil {
 		return UserPageResult{}, err
 	}
 	return UserPageResult{List: items, Pagination: coreservice.Pagination{Page: page, Size: size, Total: int64(total)}}, nil
+}
+
+func userPageOrder(descriptor coreentity.Metadata, order, sort string) (string, bool, error) {
+	order = strings.TrimSpace(order)
+	sort = strings.TrimSpace(sort)
+	if order == "" && sort == "" {
+		return descriptor.Primary().Column(), false, nil
+	}
+	if order == entity.PasswordFieldName {
+		return "", false, exception.Validate("用户排序字段无效")
+	}
+	field, exists := descriptor.JSON(order)
+	if !exists {
+		return "", false, exception.Validate("用户排序字段无效")
+	}
+
+	switch sort {
+	case "asc":
+		return field.Column(), false, nil
+	case "desc":
+		return field.Column(), true, nil
+	default:
+		return "", false, exception.Validate("用户排序方向无效")
+	}
 }
 
 func (service *UserService) hashPassword(value *coreservice.Mutable[entity.User], isUpdate bool) error {

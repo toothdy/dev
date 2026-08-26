@@ -25,6 +25,8 @@ type UserPageReq struct {
 	DepartmentIDs []uint64 `json:"departmentIds"`
 	KeyWord       string   `json:"keyWord"`
 	Status        *int32   `json:"status"`
+	Order         string   `json:"order"`
+	Sort          string   `json:"sort"`
 }
 
 // 新增用户及其角色关系的请求
