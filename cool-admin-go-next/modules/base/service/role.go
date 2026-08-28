@@ -61,7 +61,7 @@ func NewRole(
 	userRole *coreservice.Base[entity.UserRole, uint64],
 	roleMenu *coreservice.Base[entity.RoleMenu, uint64],
 	roleDepartment *coreservice.Base[entity.RoleDepartment, uint64],
-	sessions auth.SessionStore,
+	sessions auth.Store,
 ) (*RoleService, error) {
 	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(role) ||
 		!validPermissionBase(userRole) || !validPermissionBase(roleMenu) ||

@@ -1,4 +1,4 @@
-package sessionbackend
+package auth
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/database/gredis"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/auth/internal/sessioncontract"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 )
 
@@ -106,45 +105,39 @@ func newRedisStore(ctx context.Context, client redisBackend, prefix string, now 
 }
 
 // 读取有效 Session
-func (store *RedisStore) Get(ctx context.Context, sessionID string) (Session, bool, error) {
-	if err := store.validateReady(); err != nil {
-		return Session{}, false, err
-	}
+func (store *RedisStore) Get(ctx context.Context, sessionID string) (Snapshot, bool, error) {
 	if err := contextError(ctx); err != nil {
-		return Session{}, false, err
+		return Snapshot{}, false, err
 	}
 	if !validIdentifier(sessionID) {
-		return Session{}, false, exception.Core("Session ID 无效")
+		return Snapshot{}, false, exception.Core("Session ID 无效")
 	}
 
 	key := store.prefix + sessionID
 	result, err := store.client.Get(ctx, key)
 	if err != nil {
-		return Session{}, false, exception.WrapCore(err, "读取 Redis Session 失败")
+		return Snapshot{}, false, exception.WrapCore(err, "读取 Redis Session 失败")
 	}
 	if result == nil || result.IsNil() {
-		return Session{}, false, nil
+		return Snapshot{}, false, nil
 	}
 	content := result.Bytes()
 	value, err := decode(content, key, store.prefix, store.now())
 	if errors.Is(err, errExpired) {
 		if _, err = store.client.Eval(ctx, deleteIfUnchangedScript, 1, []string{key}, []any{content}); err != nil {
-			return Session{}, false, exception.WrapCore(err, "清理过期 Redis Session 失败")
+			return Snapshot{}, false, exception.WrapCore(err, "清理过期 Redis Session 失败")
 		}
-		return Session{}, false, nil
+		return Snapshot{}, false, nil
 	}
 	if err != nil {
-		return Session{}, false, err
+		return Snapshot{}, false, err
 	}
 
 	return value, true, nil
 }
 
 // 保存有效 Session
-func (store *RedisStore) Save(ctx context.Context, value Session) error {
-	if err := store.validateReady(); err != nil {
-		return err
-	}
+func (store *RedisStore) Save(ctx context.Context, value Snapshot) error {
 	if err := contextError(ctx); err != nil {
 		return err
 	}
@@ -152,8 +145,8 @@ func (store *RedisStore) Save(ctx context.Context, value Session) error {
 	if err != nil {
 		return err
 	}
-	expiresAt := value.expiresAt.UnixMilli()
-	_, err = store.client.Set(ctx, store.prefix+value.sessionID, content, gredis.SetOption{
+	expiresAt := value.ExpiresAt.UnixMilli()
+	_, err = store.client.Set(ctx, store.prefix+value.SessionID, content, gredis.SetOption{
 		TTLOption: gredis.TTLOption{PXAT: &expiresAt},
 	})
 	if err != nil {
@@ -168,18 +161,15 @@ func (store *RedisStore) RotateRefresh(
 	ctx context.Context,
 	sessionID string,
 	expectedRefreshJTI string,
-	next Session,
+	next Snapshot,
 ) error {
-	if err := store.validateReady(); err != nil {
-		return err
-	}
 	if err := contextError(ctx); err != nil {
 		return err
 	}
 	if !validIdentifier(sessionID) || !validIdentifier(expectedRefreshJTI) {
 		return exception.Core("Session 轮换参数无效")
 	}
-	if next.sessionID != sessionID {
+	if next.SessionID != sessionID {
 		return exception.Core("轮换后的 Session ID 不一致")
 	}
 	key := store.prefix + sessionID
@@ -188,20 +178,20 @@ func (store *RedisStore) RotateRefresh(
 		return exception.WrapCore(err, "读取 Redis Session 失败")
 	}
 	if currentResult == nil || currentResult.IsNil() {
-		return ErrNotFound
+		return ErrSessionNotFound
 	}
 	currentContent := currentResult.Bytes()
 	current, err := decode(currentContent, key, store.prefix, store.now())
 	if errors.Is(err, errExpired) {
-		return ErrNotFound
+		return ErrSessionNotFound
 	}
 	if err != nil {
 		return err
 	}
-	if current.refreshJTI != expectedRefreshJTI {
+	if current.RefreshJTI != expectedRefreshJTI {
 		return ErrRefreshReplay
 	}
-	if current.subject != next.subject || current.userID != next.userID {
+	if current.Subject != next.Subject || current.UserID != next.UserID {
 		return exception.Core("轮换不能改变 Session 身份")
 	}
 	content, err := encode(next, store.now())
@@ -214,14 +204,14 @@ func (store *RedisStore) RotateRefresh(
 		rotateRefreshScript,
 		1,
 		[]string{key},
-		[]any{currentContent, content, next.expiresAt.UnixMilli()},
+		[]any{currentContent, content, next.ExpiresAt.UnixMilli()},
 	)
 	if err != nil {
 		return exception.WrapCore(err, "轮换 Redis Session 失败")
 	}
 	switch result.Int() {
 	case 0:
-		return ErrNotFound
+		return ErrSessionNotFound
 	case 1:
 		return nil
 	case 2:
@@ -233,9 +223,6 @@ func (store *RedisStore) RotateRefresh(
 
 // 撤销指定 Session
 func (store *RedisStore) Revoke(ctx context.Context, sessionID string) error {
-	if err := store.validateReady(); err != nil {
-		return err
-	}
 	if err := contextError(ctx); err != nil {
 		return err
 	}
@@ -249,16 +236,8 @@ func (store *RedisStore) Revoke(ctx context.Context, sessionID string) error {
 	return nil
 }
 
-// 按身份种类和用户 ID 撤销 Session
-func (store *RedisStore) RevokeUser(ctx context.Context, subject sessioncontract.Kind, userID uint64) error {
-	return store.RevokeUsers(ctx, subject, []uint64{userID})
-}
-
 // 按身份种类批量撤销用户 Session
-func (store *RedisStore) RevokeUsers(ctx context.Context, subject sessioncontract.Kind, userIDs []uint64) error {
-	if err := store.validateReady(); err != nil {
-		return err
-	}
+func (store *RedisStore) RevokeUsers(ctx context.Context, subject Kind, userIDs []uint64) error {
 	if err := contextError(ctx); err != nil {
 		return err
 	}
@@ -313,7 +292,7 @@ func (store *RedisStore) scanKeys(ctx context.Context) ([]string, error) {
 func (store *RedisStore) revokeBatch(
 	ctx context.Context,
 	keys []string,
-	subject sessioncontract.Kind,
+	subject Kind,
 	targetIDs []string,
 ) error {
 	if len(keys) == 0 {
@@ -336,15 +315,6 @@ func (store *RedisStore) revokeBatch(
 }
 
 var _ redisBackend = (*gredis.Redis)(nil)
-
-// 校验 Redis Store 已初始化
-func (store *RedisStore) validateReady() error {
-	if store == nil || store.client == nil || store.now == nil || store.prefix == "" {
-		return exception.Core("Redis Session Store 未初始化")
-	}
-
-	return nil
-}
 
 // 校验 Redis Key 前缀
 func validatePrefix(prefix string) error {

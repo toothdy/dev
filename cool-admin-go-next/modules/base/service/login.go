@@ -43,7 +43,7 @@ type LoginService struct {
 	password   *bcrypt.Verifier
 	auth       *auth.Service
 	permission *PermissionService
-	sessions   auth.SessionStore
+	sessions   auth.Store
 }
 
 // 后台登录服务
@@ -54,7 +54,7 @@ func NewLogin(
 	password *bcrypt.Verifier,
 	authService *auth.Service,
 	permission *PermissionService,
-	sessions auth.SessionStore,
+	sessions auth.Store,
 ) (*LoginService, error) {
 	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(user) || captcha == nil || password == nil ||
 		authService == nil || permission == nil || sessions == nil {
@@ -87,7 +87,7 @@ func (service *LoginService) Login(ctx context.Context, request dto.LoginReq) (d
 		return dto.TokenResult{}, loginCredentialError()
 	}
 
-	var pair auth.TokenPair
+	var pair auth.Pair
 	err = service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
 		current, lockErr := service.lockedUser(txCtx, candidate.ID)
 		if lockErr != nil {
@@ -131,7 +131,7 @@ func (service *LoginService) Refresh(ctx context.Context, request dto.RefreshReq
 	if err := service.validateReady(); err != nil {
 		return dto.TokenResult{}, err
 	}
-	var pair auth.TokenPair
+	var pair auth.Pair
 	err := service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
 		var refreshErr error
 		pair, refreshErr = service.auth.RefreshWith(
@@ -283,7 +283,7 @@ func (service *LoginService) rehashPassword(ctx context.Context, userID uint64, 
 	return nil
 }
 
-func (service *LoginService) tokenResult(pair auth.TokenPair) dto.TokenResult {
+func (service *LoginService) tokenResult(pair auth.Pair) dto.TokenResult {
 	return dto.TokenResult{
 		Token: pair.AccessToken, Expire: remainingTokenSeconds(pair.AccessExpiresAt),
 		RefreshToken: pair.RefreshToken, RefreshExpire: remainingTokenSeconds(pair.ExpiresAt),

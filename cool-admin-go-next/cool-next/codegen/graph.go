@@ -370,7 +370,7 @@ func authProviderType(value types.Type) (string, string) {
 	path := named.Obj().Pkg().Path()
 	if path == authPackagePath {
 		switch named.Obj().Name() {
-		case "Service", "TokenCodec", "SessionStore":
+		case "Service", "Codec", "Store":
 			return named.Obj().Name(), path
 		}
 	}

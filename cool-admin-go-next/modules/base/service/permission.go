@@ -79,7 +79,7 @@ func NewPermission(
 	roleMenu *coreservice.Base[entity.RoleMenu, uint64],
 	menu *coreservice.Base[entity.Menu, uint64],
 	menuService *MenuService,
-	sessions auth.SessionStore,
+	sessions auth.Store,
 ) (*PermissionService, error) {
 	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(user) ||
 		!validPermissionBase(userRole) || !validPermissionBase(role) ||

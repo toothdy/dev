@@ -64,7 +64,7 @@ func NewMenu(
 	role *coreservice.Base[entity.Role, uint64],
 	roleMenu *coreservice.Base[entity.RoleMenu, uint64],
 	userRole *coreservice.Base[entity.UserRole, uint64],
-	sessions auth.SessionStore,
+	sessions auth.Store,
 ) (*MenuService, error) {
 	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(menu) || !validPermissionBase(role) ||
 		!validPermissionBase(roleMenu) || !validPermissionBase(userRole) {

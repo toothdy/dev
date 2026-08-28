@@ -237,19 +237,18 @@ func newPermissionRoleTestService(t *testing.T) (*PermissionService, *coredb.Run
 
 type permissionSessionStore struct{}
 
-func (permissionSessionStore) Get(context.Context, string) (auth.SessionSnapshot, bool, error) {
-	return auth.SessionSnapshot{}, false, nil
+func (permissionSessionStore) Get(context.Context, string) (auth.Snapshot, bool, error) {
+	return auth.Snapshot{}, false, nil
 }
 
-func (permissionSessionStore) Save(context.Context, auth.SessionSnapshot) error { return nil }
+func (permissionSessionStore) Save(context.Context, auth.Snapshot) error { return nil }
 
-func (permissionSessionStore) RotateRefresh(context.Context, string, string, auth.SessionSnapshot) error {
+func (permissionSessionStore) RotateRefresh(context.Context, string, string, auth.Snapshot) error {
 	return nil
 }
 
 func (permissionSessionStore) Revoke(context.Context, string) error { return nil }
 
-func (permissionSessionStore) RevokeUser(context.Context, auth.Kind, uint64) error { return nil }
 
 func (permissionSessionStore) RevokeUsers(context.Context, auth.Kind, []uint64) error { return nil }
 
