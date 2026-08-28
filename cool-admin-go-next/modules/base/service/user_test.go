@@ -22,7 +22,7 @@ func TestUserPageOrder(t *testing.T) {
 		wantDescending bool
 		wantError      bool
 	}{
-		{name: "默认排序", wantColumn: "id"},
+		{name: "默认排序", wantColumn: "id", wantDescending: true},
 		{name: "创建时间倒序", order: "createTime", sort: "desc", wantColumn: "createTime", wantDescending: true},
 		{name: "实体字段正序", order: "email", sort: "asc", wantColumn: "email"},
 		{name: "隐藏字段", order: entity.PasswordFieldName, sort: "asc", wantError: true},

@@ -271,19 +271,21 @@ func (service *UserService) Page(ctx context.Context, request *dto.UserPageReq) 
 	if err != nil {
 		return UserPageResult{}, err
 	}
+	model = model.WhereNot("username", "admin")
 	isAdmin, err := service.permission.IsAdmin(ctx, identity.RoleIDs())
 	if err != nil {
 		return UserPageResult{}, err
 	}
 	if !isAdmin {
-		visibleIDs, rangeErr := service.department.VisibleIDs(ctx, identity.UserID, identity.RoleIDs())
+		departmentIDs, rangeErr := service.department.departmentIDsByRoles(ctx, identity.RoleIDs())
 		if rangeErr != nil {
 			return UserPageResult{}, rangeErr
 		}
-		if len(visibleIDs) == 0 {
+		if len(departmentIDs) == 0 {
 			model = model.Where("userId", identity.UserID)
 		} else {
-			model = model.WhereIn("departmentId", visibleIDs).WhereOr("userId", identity.UserID)
+			scope := model.Builder().WhereIn("departmentId", departmentIDs).WhereOr("userId", identity.UserID)
+			model = model.Where(scope)
 		}
 	}
 	if departmentIDs := auth.NormalizeIDs(request.DepartmentIDs); len(departmentIDs) > 0 {
@@ -590,7 +592,7 @@ func userPageOrder(descriptor coreentity.Metadata, order, sort string) (string, 
 	order = strings.TrimSpace(order)
 	sort = strings.TrimSpace(sort)
 	if order == "" && sort == "" {
-		return descriptor.Primary().Column(), false, nil
+		return descriptor.Primary().Column(), true, nil
 	}
 	field, exists := descriptor.JSON(order)
 	if !exists || !field.Persistent() || order == entity.PasswordFieldName {

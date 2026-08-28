@@ -3,7 +3,6 @@ cool: # Cool 应用配置
     jwt:
       issuer: cool-admin-go-next
       audience: cool-admin
-      algorithm: HS256
       currentKeyId: primary
       accessTTL: 2h
       refreshTTL: 360h

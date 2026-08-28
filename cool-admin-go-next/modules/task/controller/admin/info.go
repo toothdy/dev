@@ -13,7 +13,7 @@ func AdminTaskInfoController(info *service.InfoService) controller.Definition {
 	return controller.Admin().
 		Options(controller.RouterOptions{Description: "任务", TagName: "任务"}).
 		Curd(controller.CurdOption{
-			API:     controller.API(controller.Add, controller.Delete, controller.Update, controller.Info, controller.Page),
+			API:     controller.AllAPI(),
 			Entity:  entity.Info{},
 			Service: info,
 			PageQueryOp: controller.StaticQuery(controller.QueryOp{
