@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gogf/gf/v2/database/gdb"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
@@ -28,6 +29,13 @@ type roleRow struct {
 	Relevance        bool        `orm:"relevance"`
 	MenuIDList       []uint64    `orm:"menuIdList"`
 	DepartmentIDList []uint64    `orm:"departmentIdList"`
+}
+
+type roleRelationWrite struct {
+	g.Meta       `orm:"do:true"`
+	RoleID       any `orm:"roleId"`
+	MenuID       any `orm:"menuId"`
+	DepartmentID any `orm:"departmentId"`
 }
 
 // 角色分页响应
@@ -247,7 +255,7 @@ func (service *RoleService) Delete(ctx context.Context, input coreservice.Delete
 	}
 
 	return service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		roleIDs := businessUniqueIDs(input.IDs())
+		roleIDs := auth.NormalizeIDs(input.IDs())
 		menuIDs, departmentIDs, err := service.permissionResourceIDs(txCtx, roleIDs)
 		if err != nil {
 			return err
@@ -473,7 +481,7 @@ func (service *RoleService) userIDs(ctx context.Context, roleIDs []uint64) ([]ui
 		ids[index] = row.UserID
 	}
 
-	return businessUniqueIDs(ids), nil
+	return auth.NormalizeIDs(ids), nil
 }
 
 func (service *RoleService) ensureNoAdminRole(ctx context.Context, roleIDs []uint64) error {
@@ -529,11 +537,11 @@ func setRoleCompatibilityFields(
 	mutable *coreservice.Mutable[entity.Role],
 	permissions dto.RolePermissionInput,
 ) error {
-	if err := mutable.Set("menuIdList", businessUniqueIDs(permissions.MenuIDList)); err != nil {
+	if err := mutable.Set("menuIdList", auth.NormalizeIDs(permissions.MenuIDList)); err != nil {
 		return err
 	}
 
-	return mutable.Set("departmentIdList", businessUniqueIDs(permissions.DepartmentIDList))
+	return mutable.Set("departmentIdList", auth.NormalizeIDs(permissions.DepartmentIDList))
 }
 
 func roleMutablePermissions(
@@ -599,12 +607,21 @@ func replaceRoleRelation[E any](
 	if _, err = model.Where("roleId", roleID).Delete(); err != nil {
 		return exception.WrapCore(err, "删除旧角色关系失败")
 	}
-	for _, id := range businessUniqueIDs(ids) {
-		data, dataErr := businessDO(base.Descriptor(), businessField{name: "roleId", value: roleID}, businessField{name: column, value: id})
-		if dataErr != nil {
-			return dataErr
+	ids = auth.NormalizeIDs(ids)
+	rows := make([]roleRelationWrite, len(ids))
+	for index, id := range ids {
+		rows[index].RoleID = roleID
+		switch column {
+		case "menuId":
+			rows[index].MenuID = id
+		case "departmentId":
+			rows[index].DepartmentID = id
+		default:
+			return exception.Core("角色关系字段无效")
 		}
-		if _, err = model.Data(data).Insert(); err != nil {
+	}
+	if len(rows) > 0 {
+		if _, err = model.Data(rows).Insert(); err != nil {
 			return exception.WrapCore(err, "写入角色关系失败")
 		}
 	}
@@ -642,7 +659,7 @@ func roleRelationIDsForRoles[E any](
 	column string,
 	roleIDs []uint64,
 ) ([]uint64, error) {
-	roleIDs = businessUniqueIDs(roleIDs)
+	roleIDs = auth.NormalizeIDs(roleIDs)
 	if len(roleIDs) == 0 {
 		return nil, nil
 	}
@@ -661,7 +678,7 @@ func roleRelationIDsForRoles[E any](
 		ids[index] = row.ID
 	}
 
-	return businessUniqueIDs(ids), nil
+	return auth.NormalizeIDs(ids), nil
 }
 
 func roleInfoResult(row roleRow) dto.RoleInfoResult {

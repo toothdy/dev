@@ -142,22 +142,18 @@ func ExecuteMutation[E any, ID comparable](
 	}
 	operation, hasOperation := crud.CurrentOperation(ctx)
 	switch dispatch.Mode() {
-	case crud.ActionModeBase, crud.ActionModeDelegate:
-		if !hasOperation || operation.Plan() == nil {
-			return AddResult[ID]{}, exception.Core("当前上下文不存在 CRUD 动作计划")
-		}
-		if operation.Plan().Action() != mutation.action {
-			return AddResult[ID]{}, exception.Core(fmt.Sprintf("CRUD 动作计划不匹配: 当前 %s，请求 %s",
-				operation.Plan().Action(),
-				mutation.action),
-			)
-		}
-	case crud.ActionModeOverride:
-		if hasOperation {
-			return AddResult[ID]{}, exception.Core("纯 override 不允许使用 CRUD 动作计划")
-		}
+	case crud.ActionModeBase, crud.ActionModeDelegate, crud.ActionModeOverride:
 	default:
 		return AddResult[ID]{}, exception.Core("CRUD 调度模式无效")
+	}
+	if !hasOperation || operation.Plan() == nil {
+		return AddResult[ID]{}, exception.Core("当前上下文不存在 CRUD 动作计划")
+	}
+	if operation.Plan().Action() != mutation.action {
+		return AddResult[ID]{}, exception.Core(fmt.Sprintf("CRUD 动作计划不匹配: 当前 %s，请求 %s",
+			operation.Plan().Action(),
+			mutation.action),
+		)
 	}
 	if modify == nil {
 		return AddResult[ID]{}, exception.Core("Mutation 写操作不能为空")

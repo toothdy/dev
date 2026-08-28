@@ -41,6 +41,9 @@ func NewDO(descriptor coreentity.RuntimeDescriptor, values map[string]any, isIns
 		return nil, exception.WrapCore(err, "设置初始化更新时间失败")
 	}
 	for field, value := range values {
+		if metadata, exists := descriptor.Field(field); exists && !metadata.Persistent() {
+			return nil, exception.Core("数据库种子不能写入非持久化字段: " + descriptor.Table() + "." + metadata.JSONName())
+		}
 		if err := do.SetColumn(field, value); err != nil {
 			return nil, exception.WrapCore(err, "构造初始化数据失败")
 		}
@@ -124,8 +127,12 @@ func SyncTree(
 // 解码完整种子记录并保留显式主键
 func (record Record) SeedData(descriptor coreentity.RuntimeDescriptor) (any, error) {
 	for name := range record {
-		if _, exists := descriptor.JSON(name); !exists {
+		field, exists := descriptor.JSON(name)
+		if !exists {
 			return nil, exception.Core("数据库种子包含未知字段: " + descriptor.Table() + "." + name)
+		}
+		if !field.Persistent() {
+			return nil, exception.Core("数据库种子不能包含非持久化字段: " + descriptor.Table() + "." + name)
 		}
 	}
 	values, err := record.seedValues(descriptor, true)
@@ -151,6 +158,9 @@ func (record Record) seedValues(descriptor coreentity.RuntimeDescriptor, include
 		field, exists := descriptor.JSON(name)
 		if !exists || field.SystemMaintained() || (field.Primary() && !includePrimary) {
 			continue
+		}
+		if !field.Persistent() {
+			return nil, exception.Core("数据库种子不能包含非持久化字段: " + descriptor.Table() + "." + name)
 		}
 		value, err := DecodeValue(raw, field)
 		if err != nil {

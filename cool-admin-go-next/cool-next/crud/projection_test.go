@@ -12,9 +12,10 @@ import (
 type projectionRoot struct {
 	g.Meta `orm:"table:projection_root" description:"投影根实体"`
 	coreentity.Base
-	OwnerID uint64 `json:"ownerId" orm:"ownerId" description:"所有者"`
-	Name    string `json:"name" orm:"displayName" description:"名称"`
-	Status  int    `json:"status" orm:"status" description:"状态"`
+	OwnerID uint64    `json:"ownerId" orm:"ownerId" description:"所有者"`
+	Name    string    `json:"name" orm:"displayName" description:"名称"`
+	Status  int       `json:"status" orm:"status" description:"状态"`
+	RoleIDs *[]uint64 `json:"roleIds" description:"角色 ID" cool:"transient"`
 }
 
 type projectionOwner struct {
@@ -77,11 +78,11 @@ func TestProjectQueryResolvesStaticFields(t *testing.T) {
 	if len(projection.FieldLike) != 1 || projection.FieldLike[0].Column.Descriptor != owner || projection.FieldLike[0].RequestParam != "ownerKeyword" {
 		t.Fatalf("field like = %#v", projection.FieldLike)
 	}
-	if len(projection.Select) != len(root.Fields())+2 {
+	if len(projection.Select) != len(root.PersistentFields())+2 {
 		t.Fatalf("select count = %d", len(projection.Select))
 	}
-	ownerSelect := projection.Select[len(root.Fields())]
-	rootAliasSelect := projection.Select[len(root.Fields())+1]
+	ownerSelect := projection.Select[len(root.PersistentFields())]
+	rootAliasSelect := projection.Select[len(root.PersistentFields())+1]
 	if ownerSelect.Name != "ownerName" || ownerSelect.Column.Descriptor != owner || ownerSelect.Column.Source != "owner.name" {
 		t.Fatalf("owner select = %#v", ownerSelect)
 	}
@@ -127,6 +128,7 @@ func TestProjectQueryRejectsInvalidProjectedFields(t *testing.T) {
 		{KeyWordLikeFields: []ColumnRef{NewColumnRef("status")}},
 		{FieldLike: []FieldLike{Like(NewColumnRef("status"))}},
 		{FieldEq: []FieldEq{{Column: NewColumnRef("missing"), RequestParam: "missing"}}},
+		{FieldEq: []FieldEq{{Column: NewColumnRef("roleIds"), RequestParam: "roleIds"}}},
 		{Select: []SelectField{All("missing")}},
 	}
 	for _, op := range tests {
@@ -159,6 +161,7 @@ func TestProjectColumnsResolvesOnlyRootEntity(t *testing.T) {
 
 	invalid := []ColumnRef{
 		NewColumnRef("missing"),
+		NewColumnRef("roleIds"),
 		NewColumnRefOf[projectionOwner]("name"),
 		NewColumnRef("name").Of("owner"),
 	}

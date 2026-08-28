@@ -47,39 +47,32 @@ func HandleCRUD(
 	if invoke == nil {
 		return exception.Core("CRUD Service 调用函数不能为空")
 	}
-
 	switch mode {
-	case crud.ActionModeBase, crud.ActionModeDelegate:
-		if compile == nil {
-			return exception.Core("Base CRUD 动作计划函数不能为空")
-		}
-		if err := ApplyBefore(ctx, definition); err != nil {
-			return err
-		}
-		request, err := bind(ctx)
-		if err != nil {
-			return err
-		}
-		if enhance != nil {
-			if err = enhance(ctx); err != nil {
-				return err
-			}
-		}
-		plan, err := compile(ctx, request)
-		if err != nil {
-			return err
-		}
-
-		return dispatcher.Dispatch(ctx, action, mode, plan, crud.Adapter(invoke))
-	case crud.ActionModeOverride:
-		if _, err := bind(ctx); err != nil {
-			return err
-		}
-
-		return dispatcher.Dispatch(ctx, action, mode, nil, crud.Adapter(invoke))
+	case crud.ActionModeBase, crud.ActionModeDelegate, crud.ActionModeOverride:
 	default:
 		return exception.Core("CRUD 动作模式无效")
 	}
+	if compile == nil {
+		return exception.Core("CRUD 动作计划函数不能为空")
+	}
+	if err := ApplyBefore(ctx, definition); err != nil {
+		return err
+	}
+	request, err := bind(ctx)
+	if err != nil {
+		return err
+	}
+	if enhance != nil {
+		if err = enhance(ctx); err != nil {
+			return err
+		}
+	}
+	plan, err := compile(ctx, request)
+	if err != nil {
+		return err
+	}
+
+	return dispatcher.Dispatch(ctx, action, mode, plan, crud.Adapter(invoke))
 }
 
 // 按路由事务策略执行自定义 Handler

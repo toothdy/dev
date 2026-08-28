@@ -341,7 +341,7 @@ func (compiler *queryPlanCompiler) compileSelects(selects []SelectField) error {
 			if !exists {
 				return exception.Core(fmt.Sprintf("查询别名 %s 不存在", node.alias))
 			}
-			for _, field := range resolved.metadata.Fields() {
+			for _, field := range resolved.metadata.PersistentFields() {
 				if isNilPlanValue(field) {
 					return exception.Core(fmt.Sprintf("查询别名 %s 包含无效字段", node.alias))
 				}
@@ -665,6 +665,9 @@ func (compiler *queryPlanCompiler) resolveColumn(reference ColumnRef) (planColum
 	field, exists := resolved.metadata.Field(reference.name)
 	if !exists || isNilPlanValue(field) {
 		return planColumn{}, exception.Core(fmt.Sprintf("实体别名 %s 的字段 %s 不存在", alias, reference.name))
+	}
+	if !field.Persistent() {
+		return planColumn{}, exception.Core(fmt.Sprintf("实体别名 %s 的字段 %s 不是持久化字段", alias, reference.name))
 	}
 
 	return makePlanColumn(resolved, field), nil

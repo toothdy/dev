@@ -305,7 +305,7 @@ func compileSortFields(
 		policy.sortable[field.JSONName()] = makePlanColumn(root, field)
 	}
 	if autoSortFields {
-		for _, field := range metadata.Fields() {
+		for _, field := range metadata.PersistentFields() {
 			if policy.IsHidden(field.Name()) {
 				continue
 			}
@@ -352,6 +352,9 @@ func resolvePolicyField(
 	field, exists := metadata.Field(reference.name)
 	if !exists || isNilPlanValue(field) {
 		return nil, exception.Core(fmt.Sprintf("%s字段 %s 不存在", label, reference.name))
+	}
+	if !field.Persistent() {
+		return nil, exception.Core(fmt.Sprintf("%s字段 %s 不是持久化字段", label, reference.name))
 	}
 
 	return field, nil

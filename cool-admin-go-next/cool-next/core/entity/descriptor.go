@@ -14,6 +14,7 @@ type fieldDescriptor struct {
 	isPrimary          bool
 	isAutoIncrement    bool
 	isSystemMaintained bool
+	isPersistent       bool
 	constraints        Constraints
 }
 
@@ -47,22 +48,26 @@ func (f *fieldDescriptor) AutoIncrement() bool { return f.isAutoIncrement }
 // 是否由系统维护
 func (f *fieldDescriptor) SystemMaintained() bool { return f.isSystemMaintained }
 
+// 是否持久化
+func (f *fieldDescriptor) Persistent() bool { return f.isPersistent }
+
 // 可移植字段约束
 func (f *fieldDescriptor) Constraints() Constraints { return f.constraints }
 
 // Descriptor 的不可变实现
 type descriptorValue[E any, ID comparable] struct {
-	table       string
-	description string
-	entityType  reflect.Type
-	idType      reflect.Type
-	primary     Field
-	fields      []Field
-	byName      map[string]Field
-	byJSON      map[string]Field
-	byColumn    map[string]Field
-	indexes     []Index
-	doShape     *doShape
+	table            string
+	description      string
+	entityType       reflect.Type
+	idType           reflect.Type
+	primary          Field
+	fields           []Field
+	persistentFields []Field
+	byName           map[string]Field
+	byJSON           map[string]Field
+	byColumn         map[string]Field
+	indexes          []Index
+	doShape          *doShape
 }
 
 // 数据库表名
@@ -86,6 +91,11 @@ func (d *descriptorValue[E, ID]) NewDO() DOValue { return d.doShape.newValue() }
 // 字段列表副本
 func (d *descriptorValue[E, ID]) Fields() []Field {
 	return append([]Field(nil), d.fields...)
+}
+
+// 持久化字段列表副本
+func (d *descriptorValue[E, ID]) PersistentFields() []Field {
+	return append([]Field(nil), d.persistentFields...)
 }
 
 // 按逻辑名查找字段

@@ -449,6 +449,9 @@ func compilePageColumns(selects []crud.QuerySelect, root coreentity.RuntimeDescr
 }
 
 func visibleQueryColumn(column crud.QueryColumn, root coreentity.RuntimeDescriptor, hidden map[string]bool) bool {
+	if column.Field == nil || !column.Field.Persistent() {
+		return false
+	}
 	if column.Descriptor.Table() != root.Table() || !strings.HasPrefix(column.Source, "a.") {
 		return true
 	}

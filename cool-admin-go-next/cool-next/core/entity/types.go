@@ -28,7 +28,7 @@ type Constraints struct {
 	HasScale     bool
 }
 
-// 持久化字段的只读元数据
+// 实体字段的只读元数据
 type Field interface {
 	Name() string             // 逻辑名
 	JSONName() string         // JSON 字段名
@@ -40,6 +40,7 @@ type Field interface {
 	Primary() bool            // 是否主键
 	AutoIncrement() bool      // 是否自增
 	SystemMaintained() bool   // 是否系统维护
+	Persistent() bool         // 是否持久化
 	Constraints() Constraints // cool 约束
 }
 
@@ -49,6 +50,7 @@ type Metadata interface {
 	Description() string              // 表描述
 	Primary() Field                   // 主键
 	Fields() []Field                  // 字段列表
+	PersistentFields() []Field        // 持久化字段列表
 	Field(name string) (Field, bool)  // 按逻辑名查字段
 	JSON(name string) (Field, bool)   // 按 JSON 名查字段
 	Column(name string) (Field, bool) // 按列名查字段

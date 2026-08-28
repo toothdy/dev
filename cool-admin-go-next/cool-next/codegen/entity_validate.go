@@ -27,6 +27,7 @@ type generatedField struct {
 	column      string
 	declaration string
 	json        string
+	persistent  bool
 	position    Position
 }
 
@@ -41,11 +42,12 @@ func validateEntityDeclaration(declaration EntityDeclaration, schema SchemaDecla
 		return metadata, []Diagnostic{{Code: "CG044", Message: "实体类型信息缺失", Position: declaration.position}}
 	}
 	var (
-		diagnostics []Diagnostic
-		hasBase     bool
-		hasMeta     bool
-		jsonNames   = map[string]bool{"id": true, "createTime": true, "updateTime": true}
-		columns     = map[string]bool{"id": true, "createTime": true, "updateTime": true}
+		diagnostics     []Diagnostic
+		hasBase         bool
+		hasMeta         bool
+		jsonNames       = map[string]bool{"id": true, "createTime": true, "updateTime": true}
+		persistentNames = map[string]bool{"id": true, "createTime": true, "updateTime": true}
+		columns         = map[string]bool{"id": true, "createTime": true, "updateTime": true}
 	)
 	for _, field := range declaration.fields {
 		if field.embedded {
@@ -85,13 +87,16 @@ func validateEntityDeclaration(declaration EntityDeclaration, schema SchemaDecla
 			diagnostics = append(diagnostics, diagnostic("CG051", "实体存在重复 json 名 "+generated.json, field.position))
 			continue
 		}
-		if columns[generated.column] {
-			diagnostics = append(diagnostics, diagnostic("CG052", "实体存在重复列名 "+generated.column, field.position))
-			continue
+		if generated.persistent {
+			if columns[generated.column] {
+				diagnostics = append(diagnostics, diagnostic("CG052", "实体存在重复列名 "+generated.column, field.position))
+				continue
+			}
+			columns[generated.column] = true
+			persistentNames[generated.json] = true
+			metadata.fields = append(metadata.fields, generated)
 		}
 		jsonNames[generated.json] = true
-		columns[generated.column] = true
-		metadata.fields = append(metadata.fields, generated)
 	}
 	if !hasMeta {
 		diagnostics = append(diagnostics, diagnostic("CG053", "实体必须嵌入 g.Meta", declaration.position))
@@ -106,7 +111,7 @@ func validateEntityDeclaration(declaration EntityDeclaration, schema SchemaDecla
 		return metadata, diagnostics
 	}
 
-	indexes, schemaDiagnostics := parseSchemaIndexes(schema, jsonNames, metadata.table)
+	indexes, schemaDiagnostics := parseSchemaIndexes(schema, persistentNames, metadata.table)
 	metadata.indexes = indexes
 	return metadata, schemaDiagnostics
 }
@@ -154,32 +159,47 @@ func validateBusinessField(field entityField) (generatedField, string) {
 	if json == "" || json == "-" || strings.Contains(json, ",") || !codegenLowerCamel.MatchString(json) {
 		return generatedField{}, "字段 json 标签无效"
 	}
-	column, exists := lookupTag(field.tag, "orm")
-	if !exists {
-		return generatedField{}, "字段缺少 orm 标签"
-	}
-	if column == "" || strings.Contains(column, ",") || !codegenLowerCamel.MatchString(column) {
-		return generatedField{}, "字段 orm 列名无效"
-	}
 	if description, exists := lookupTag(field.tag, "description"); !exists || strings.TrimSpace(description) == "" {
 		return generatedField{}, "字段 description 不能为空"
 	}
-	isJSON := codegenHasJSONConstraint(field.tag)
-	logicalType, message := codegenLogicalType(field.typ, isJSON)
+	markers, message := parseCodegenCoolMarkers(field.tag)
+	if message != "" {
+		return generatedField{}, message
+	}
+	column, hasColumn := lookupTag(field.tag, "orm")
+	if markers.isTransient {
+		if hasColumn {
+			return generatedField{}, "字段 cool 标签的 transient 不能声明 orm"
+		}
+	} else {
+		if !hasColumn {
+			return generatedField{}, "字段缺少 orm 标签"
+		}
+		if column == "" || strings.Contains(column, ",") || !codegenLowerCamel.MatchString(column) {
+			return generatedField{}, "字段 orm 列名无效"
+		}
+	}
+	logicalType, message := codegenLogicalType(field.typ, markers.isJSON, markers.isTransient)
 	if message != "" {
 		return generatedField{}, message
 	}
 	if message = validateCoolTag(field.tag, logicalType); message != "" {
 		return generatedField{}, message
 	}
-	return generatedField{column: column, declaration: field.variable.Name(), json: json, position: field.position}, ""
+	return generatedField{
+		column:      column,
+		declaration: field.variable.Name(),
+		json:        json,
+		persistent:  !markers.isTransient,
+		position:    field.position,
+	}, ""
 }
 
 func lookupTag(tag, key string) (string, bool) {
 	return reflect.StructTag(tag).Lookup(key)
 }
 
-func codegenLogicalType(value types.Type, isJSON bool) (string, string) {
+func codegenLogicalType(value types.Type, isJSON, isTransient bool) (string, string) {
 	value = types.Unalias(value)
 	if pointer, ok := value.(*types.Pointer); ok {
 		value = types.Unalias(pointer.Elem())
@@ -210,6 +230,9 @@ func codegenLogicalType(value types.Type, isJSON bool) (string, string) {
 		}
 		return "", "字段 cool 标签的 json 只支持非字节 slice 或 string key map"
 	}
+	if isTransient && codegenScalarSlice(value) {
+		return "json", ""
+	}
 	basic, ok := value.Underlying().(*types.Basic)
 	if !ok {
 		return "", "字段类型不受支持"
@@ -230,18 +253,63 @@ func codegenLogicalType(value types.Type, isJSON bool) (string, string) {
 	}
 }
 
-func codegenHasJSONConstraint(tag string) bool {
+type codegenCoolMarkers struct {
+	isJSON      bool
+	isTransient bool
+}
+
+func parseCodegenCoolMarkers(tag string) (codegenCoolMarkers, string) {
 	raw, exists := lookupTag(tag, "cool")
 	if !exists {
-		return false
+		return codegenCoolMarkers{}, ""
 	}
+	if raw == "" {
+		return codegenCoolMarkers{}, "字段 cool 标签不能为空"
+	}
+	markers := codegenCoolMarkers{}
+	seen := make(map[string]bool)
 	for _, item := range strings.Split(raw, ",") {
 		key, value, found := strings.Cut(item, "=")
-		if found && key == "json" && value == "true" {
-			return true
+		if key == "" || seen[key] {
+			return codegenCoolMarkers{}, "字段 cool 标签无效"
+		}
+		seen[key] = true
+		if key == "transient" {
+			if found {
+				return codegenCoolMarkers{}, "字段 cool 标签的 transient 无效"
+			}
+			markers.isTransient = true
+			continue
+		}
+		if !found || value == "" {
+			return codegenCoolMarkers{}, "字段 cool 标签无效"
+		}
+		if key == "json" && value == "true" {
+			markers.isJSON = true
 		}
 	}
-	return false
+
+	return markers, ""
+}
+
+func codegenScalarSlice(value types.Type) bool {
+	slice, ok := types.Unalias(value).Underlying().(*types.Slice)
+	if !ok {
+		return false
+	}
+	basic, ok := types.Unalias(slice.Elem()).Underlying().(*types.Basic)
+	if !ok {
+		return false
+	}
+	switch basic.Kind() {
+	case types.Bool,
+		types.Int, types.Int8, types.Int16, types.Int32, types.Int64,
+		types.Uint, types.Uint8, types.Uint16, types.Uint32, types.Uint64,
+		types.Float32, types.Float64, types.String:
+		return true
+	default:
+		return false
+	}
 }
 
 func validateCoolTag(tag, logicalType string) string {
@@ -261,10 +329,19 @@ func validateCoolTag(tag, logicalType string) string {
 	)
 	for _, item := range strings.Split(raw, ",") {
 		key, value, found := strings.Cut(item, "=")
-		if !found || key == "" || value == "" || seen[key] {
+		if key == "" || seen[key] {
 			return "字段 cool 标签无效"
 		}
 		seen[key] = true
+		if key == "transient" {
+			if found {
+				return "字段 cool 标签的 transient 无效"
+			}
+			continue
+		}
+		if !found || value == "" {
+			return "字段 cool 标签无效"
+		}
 		switch key {
 		case "size":
 			if logicalType != "string" && logicalType != "bytes" || !isPositiveUint(value) {

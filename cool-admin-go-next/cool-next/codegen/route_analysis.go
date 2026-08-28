@@ -395,6 +395,9 @@ func serviceHandlerReference(value types.Type, method string) (coreroute.Callabl
 	if !matches || named.Obj() == nil || named.Obj().Pkg() == nil {
 		return coreroute.CallableRef{}, false
 	}
+	if !matchesServiceActionSignature(named, method, signature) {
+		return coreroute.CallableRef{}, false
+	}
 
 	reference := coreroute.CallableRef{
 		Method:       method,

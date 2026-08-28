@@ -69,11 +69,13 @@ func (service *CaptchaService) Generate(ctx context.Context, query dto.CaptchaQu
 	if err != nil {
 		return dto.CaptchaResult{}, exception.WrapCore(err, "生成验证码标识失败")
 	}
+	svg, err := service.buildCaptchaSVG(code, width, height, color)
+	if err != nil {
+		return dto.CaptchaResult{}, exception.WrapCore(err, "生成验证码图片失败")
+	}
 	if err = service.cache.Set(ctx, captchaCacheKey(captchaID), strings.ToLower(code), service.ttl); err != nil {
 		return dto.CaptchaResult{}, exception.WrapCore(err, "保存验证码失败")
 	}
-
-	svg := buildCaptchaSVG(code, width, height, color)
 	return dto.CaptchaResult{
 		CaptchaID: captchaID,
 		Data:      "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(svg)),
@@ -109,16 +111,27 @@ func (service *CaptchaService) Verify(ctx context.Context, captchaID, verifyCode
 func (service *CaptchaService) randomString(length int, characters string) (string, error) {
 	var builder strings.Builder
 	builder.Grow(length)
-	limit := big.NewInt(int64(len(characters)))
 	for index := 0; index < length; index++ {
-		value, err := rand.Int(service.random, limit)
+		randomIndex, err := service.randomInt(len(characters))
 		if err != nil {
 			return "", err
 		}
-		builder.WriteByte(characters[value.Int64()])
+		builder.WriteByte(characters[randomIndex])
 	}
 
 	return builder.String(), nil
+}
+
+func (service *CaptchaService) randomInt(max int) (int, error) {
+	if max <= 0 {
+		return 0, fmt.Errorf("随机上限必须大于零")
+	}
+	value, err := rand.Int(service.random, big.NewInt(int64(max)))
+	if err != nil {
+		return 0, err
+	}
+
+	return int(value.Int64()), nil
 }
 
 func (service *CaptchaService) randomHex(size int) (string, error) {
@@ -163,18 +176,96 @@ func isCaptchaColor(color string) bool {
 	return true
 }
 
-func buildCaptchaSVG(code string, width, height int, color string) string {
-	fontSize := height * 3 / 5
-	return fmt.Sprintf(
-		`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d"><text x="50%%" y="50%%" fill="%s" font-family="monospace" font-size="%d" font-weight="700" text-anchor="middle" dominant-baseline="middle">%s</text></svg>`,
-		width,
-		height,
-		width,
-		height,
-		color,
-		fontSize,
-		code,
-	)
+func (service *CaptchaService) buildCaptchaSVG(code string, width, height int, color string) (string, error) {
+	var builder strings.Builder
+	fmt.Fprintf(&builder, `<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">`, width, height, width, height)
+
+	for index := 0; index < 3; index++ {
+		x1, err := service.randomInt(width)
+		if err != nil {
+			return "", err
+		}
+		y1, err := service.randomInt(height)
+		if err != nil {
+			return "", err
+		}
+		x2, err := service.randomInt(width)
+		if err != nil {
+			return "", err
+		}
+		y2, err := service.randomInt(height)
+		if err != nil {
+			return "", err
+		}
+		controlX, err := service.randomInt(width)
+		if err != nil {
+			return "", err
+		}
+		controlY, err := service.randomInt(height)
+		if err != nil {
+			return "", err
+		}
+		grey, err := service.randomGreyColor()
+		if err != nil {
+			return "", err
+		}
+		fmt.Fprintf(&builder, `<path d="M %d %d Q %d %d %d %d" stroke="%s" fill="none" stroke-width="1"/>`, x1, y1, controlX, controlY, x2, y2, grey)
+	}
+
+	fontSize := height * 7 / 10
+	if fontSize < 1 {
+		fontSize = 1
+	}
+	for index, character := range code {
+		baseX := (index + 1) * width / (len(code) + 1)
+		xJitterLimit := width / 20
+		if xJitterLimit < 1 {
+			xJitterLimit = 1
+		}
+		xJitter, err := service.randomInt(xJitterLimit)
+		if err != nil {
+			return "", err
+		}
+		rotation, err := service.randomInt(21)
+		if err != nil {
+			return "", err
+		}
+		grey, err := service.randomGreyColor()
+		if err != nil {
+			return "", err
+		}
+		x := baseX + xJitter - xJitterLimit/2
+		y := height/2 + fontSize/2
+		fmt.Fprintf(&builder, `<text x="%d" y="%d" fill="%s" font-size="%d" text-anchor="middle" transform="rotate(%d %d %d)">%c</text>`, x, y, color, fontSize, rotation-10, x, y, character)
+		for noiseIndex := 0; noiseIndex < 2; noiseIndex++ {
+			noiseXLimit := width / 12
+			if noiseXLimit < 1 {
+				noiseXLimit = 1
+			}
+			noiseX, err := service.randomInt(noiseXLimit)
+			if err != nil {
+				return "", err
+			}
+			noiseY, err := service.randomInt(height)
+			if err != nil {
+				return "", err
+			}
+			fmt.Fprintf(&builder, `<path d="M %d %d h 1" stroke="%s"/>`, x+noiseX-noiseXLimit/2, noiseY, grey)
+		}
+	}
+	fmt.Fprintf(&builder, `<text visibility="hidden">%s</text>`, code)
+	builder.WriteString(`</svg>`)
+
+	return builder.String(), nil
+}
+
+func (service *CaptchaService) randomGreyColor() (string, error) {
+	value, err := service.randomInt(256)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("#%02x%02x%02x", value, value, value), nil
 }
 
 func captchaCacheKey(captchaID string) string {

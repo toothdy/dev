@@ -93,7 +93,7 @@ func (a *analysis) analyzeServices(root string) []ServiceDeclaration {
 					current.declaration.hasAfter = true
 				default:
 					action, exists := current.actions[function.Name.Name]
-					if !exists || !matchesBaseActionSignature(current.declaration.typ, function.Name.Name, signature) {
+					if !exists || !matchesServiceActionSignature(current.declaration.typ, function.Name.Name, signature) {
 						continue
 					}
 					action.mode = ServiceActionOverride
@@ -156,12 +156,41 @@ func baseTypeArguments(value types.Type) (types.Type, types.Type, bool) {
 }
 
 func matchesBaseActionSignature(serviceType *types.Named, action string, signature *types.Signature) bool {
-	if serviceType == nil || signature == nil {
+	expected := baseActionSignature(serviceType, action)
+
+	return identicalMethodSignature(signature, expected)
+}
+
+func matchesServiceActionSignature(serviceType *types.Named, action string, signature *types.Signature) bool {
+	if action == "Add" || action == "Delete" || action == "Update" {
+		return matchesBaseActionSignature(serviceType, action, signature)
+	}
+	expected := baseActionSignature(serviceType, action)
+	if expected == nil || signature == nil || signature.Variadic() || signature.TypeParams().Len() != 0 ||
+		signature.Params().Len() != 2 || signature.Results().Len() != 2 ||
+		!types.Identical(signature.Params().At(0).Type(), expected.Params().At(0).Type()) ||
+		!types.Identical(signature.Results().At(1).Type(), types.Universe.Lookup("error").Type()) ||
+		types.Identical(signature.Results().At(0).Type(), types.Universe.Lookup("error").Type()) {
 		return false
+	}
+	switch action {
+	case "Info":
+		return types.Identical(signature.Params().At(1).Type(), expected.Params().At(1).Type())
+	case "List", "Page":
+		request := signature.Params().At(1).Type()
+		return types.Identical(request, expected.Params().At(1).Type()) || isNamedStructPointer(request)
+	default:
+		return false
+	}
+}
+
+func baseActionSignature(serviceType *types.Named, action string) *types.Signature {
+	if serviceType == nil {
+		return nil
 	}
 	structure, _ := serviceType.Underlying().(*types.Struct)
 	if structure == nil {
-		return false
+		return nil
 	}
 	for index := range structure.NumFields() {
 		field := structure.Field(index)
@@ -173,14 +202,28 @@ func matchesBaseActionSignature(serviceType *types.Named, action string, signatu
 		}
 		selection := types.NewMethodSet(field.Type()).Lookup(nil, action)
 		if selection == nil {
-			return false
+			return nil
 		}
 		expected, _ := selection.Obj().Type().(*types.Signature)
 
-		return identicalMethodSignature(signature, expected)
+		return expected
 	}
 
-	return false
+	return nil
+}
+
+func isNamedStructPointer(value types.Type) bool {
+	pointer, matches := types.Unalias(value).(*types.Pointer)
+	if !matches {
+		return false
+	}
+	named, matches := types.Unalias(pointer.Elem()).(*types.Named)
+	if !matches || named.Obj() == nil || named.Obj().Pkg() == nil {
+		return false
+	}
+	_, matches = named.Underlying().(*types.Struct)
+
+	return matches
 }
 
 func identicalMethodSignature(left, right *types.Signature) bool {

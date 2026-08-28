@@ -326,6 +326,11 @@ declare namespace Eps {
 		socketId?: string;
 
 		/**
+		 * 角色ID列表
+		 */
+		roleIdList?: any;
+
+		/**
 		 * 创建时间
 		 */
 		createTime?: string;
@@ -425,6 +430,113 @@ declare namespace Eps {
 		[key: string]: any;
 	}
 
+	interface TaskInfoEntity {
+		/**
+		 * ID
+		 */
+		id?: number;
+
+		/**
+		 * 任务ID
+		 */
+		jobId?: string;
+
+		/**
+		 * 任务配置
+		 */
+		repeatConf?: string;
+
+		/**
+		 * 名称
+		 */
+		name?: string;
+
+		/**
+		 * cron
+		 */
+		cron?: string;
+
+		/**
+		 * 最大执行次数 不传为无限次
+		 */
+		limit?: number;
+
+		/**
+		 * 每间隔多少毫秒执行一次 如果cron设置了 这项设置就无效
+		 */
+		every?: number;
+
+		/**
+		 * 备注
+		 */
+		remark?: string;
+
+		/**
+		 * 状态 0-停止 1-运行
+		 */
+		status?: number;
+
+		/**
+		 * 开始时间
+		 */
+		startDate?: Date;
+
+		/**
+		 * 结束时间
+		 */
+		endDate?: Date;
+
+		/**
+		 * 数据
+		 */
+		data?: string;
+
+		/**
+		 * 执行的service实例ID
+		 */
+		service?: string;
+
+		/**
+		 * 状态 0-系统 1-用户
+		 */
+		type?: number;
+
+		/**
+		 * 下一次执行时间
+		 */
+		nextRunTime?: Date;
+
+		/**
+		 * 状态 0-cron 1-时间间隔
+		 */
+		taskType?: number;
+
+		/**
+		 * 最近执行时间
+		 */
+		lastExecuteTime?: Date;
+
+		/**
+		 * 执行锁过期时间
+		 */
+		lockExpireTime?: Date;
+
+		/**
+		 * 创建时间
+		 */
+		createTime?: string;
+
+		/**
+		 * 更新时间
+		 */
+		updateTime?: string;
+
+		/**
+		 * 任意键值
+		 */
+		[key: string]: any;
+	}
+
 	type json = any;
 
 	type DictKey = "brand" | "occupation";
@@ -475,6 +587,11 @@ declare namespace Eps {
 	interface DictTypePageResponse {
 		pagination: PagePagination;
 		list: DictTypeEntity[];
+	}
+
+	interface TaskInfoPageResponse {
+		pagination: PagePagination;
+		list: TaskInfoEntity[];
 	}
 
 	interface BaseCoding {
@@ -900,9 +1017,19 @@ declare namespace Eps {
 
 	interface BaseSysUser {
 		/**
+		 * 新增
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
 		 * 删除
 		 */
 		delete(data?: any): Promise<any>;
+
+		/**
+		 * 修改
+		 */
+		update(data?: any): Promise<any>;
 
 		/**
 		 * 单个信息
@@ -913,16 +1040,6 @@ declare namespace Eps {
 		 * 列表查询
 		 */
 		list(data?: any): Promise<BaseSysUserEntity[]>;
-
-		/**
-		 * 新增
-		 */
-		add(data?: any): Promise<any>;
-
-		/**
-		 * 更新
-		 */
-		update(data?: any): Promise<any>;
 
 		/**
 		 * 分页查询
@@ -938,11 +1055,11 @@ declare namespace Eps {
 		 * 权限标识
 		 */
 		permission: {
+			add: string;
 			delete: string;
+			update: string;
 			info: string;
 			list: string;
-			add: string;
-			update: string;
 			page: string;
 			move: string;
 		};
@@ -951,11 +1068,11 @@ declare namespace Eps {
 		 * 权限状态
 		 */
 		_permission: {
+			add: boolean;
 			delete: boolean;
+			update: boolean;
 			info: boolean;
 			list: boolean;
-			add: boolean;
-			update: boolean;
 			page: boolean;
 			move: boolean;
 		};
@@ -1093,6 +1210,85 @@ declare namespace Eps {
 		request: Request;
 	}
 
+	interface TaskInfo {
+		/**
+		 * 新增
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 删除
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 修改
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 单个信息
+		 */
+		info(data?: any): Promise<TaskInfoEntity>;
+
+		/**
+		 * 分页查询
+		 */
+		page(data?: any): Promise<TaskInfoPageResponse>;
+
+		/**
+		 * 执行一次
+		 */
+		once(data?: any): Promise<any>;
+
+		/**
+		 * 停止
+		 */
+		stop(data?: any): Promise<any>;
+
+		/**
+		 * 开始
+		 */
+		start(data?: any): Promise<any>;
+
+		/**
+		 * 日志
+		 */
+		log(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			add: string;
+			delete: string;
+			update: string;
+			info: string;
+			page: string;
+			once: string;
+			stop: string;
+			start: string;
+			log: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			add: boolean;
+			delete: boolean;
+			update: boolean;
+			info: boolean;
+			page: boolean;
+			once: boolean;
+			stop: boolean;
+			start: boolean;
+			log: boolean;
+		};
+
+		request: Request;
+	}
+
 	interface RequestOptions {
 		url: string;
 		method?: "OPTIONS" | "GET" | "HEAD" | "POST" | "PUT" | "DELETE" | "TRACE" | "CONNECT";
@@ -1122,5 +1318,6 @@ declare namespace Eps {
 			};
 		};
 		dict: { info: DictInfo; type: DictType };
+		task: { info: TaskInfo };
 	};
 }

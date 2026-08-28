@@ -19,7 +19,7 @@ func expectedTable(dialect driver.Dialect, metadata entity.Metadata) (Table, err
 	}
 
 	table := Table{Name: metadata.Table()}
-	for _, field := range metadata.Fields() {
+	for _, field := range metadata.PersistentFields() {
 		columnType, err := expectedColumnType(dialect, field)
 		if err != nil {
 			return Table{}, gerror.Wrapf(err, "构建表 %s 的期望字段", metadata.Table())
@@ -38,6 +38,9 @@ func expectedTable(dialect driver.Dialect, metadata entity.Metadata) (Table, err
 			field, exists := metadata.Field(fieldName)
 			if !exists {
 				return Table{}, gerror.Newf("索引 %s 引用未知字段 %s", source.Name, fieldName)
+			}
+			if !field.Persistent() {
+				return Table{}, gerror.Newf("索引 %s 引用非持久化字段 %s", source.Name, fieldName)
 			}
 			fields = append(fields, field.Column())
 		}

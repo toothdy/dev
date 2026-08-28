@@ -70,20 +70,23 @@ func Compile[E any, ID comparable](schema Schema) (Descriptor[E, ID], error) {
 	}
 	fields := baseFields()
 	descriptor := &descriptorValue[E, ID]{
-		table:       table,
-		description: description,
-		entityType:  entityType,
-		idType:      idType,
-		primary:     fields[0],
-		fields:      fields,
-		byName:      make(map[string]Field, len(fields)),
-		byJSON:      make(map[string]Field, len(fields)),
-		byColumn:    make(map[string]Field, len(fields)),
+		table:            table,
+		description:      description,
+		entityType:       entityType,
+		idType:           idType,
+		primary:          fields[0],
+		fields:           fields,
+		persistentFields: append([]Field(nil), fields...),
+		byName:           make(map[string]Field, len(fields)),
+		byJSON:           make(map[string]Field, len(fields)),
+		byColumn:         make(map[string]Field, len(fields)),
 	}
+	persistentByName := make(map[string]Field, len(fields))
 	for _, field := range fields {
 		descriptor.byName[field.Name()] = field
 		descriptor.byJSON[field.JSONName()] = field
 		descriptor.byColumn[field.Column()] = field
+		persistentByName[field.Name()] = field
 	}
 	for _, source := range businessFields {
 		field, err := parseBusinessField(source, entityType)
@@ -96,20 +99,26 @@ func Compile[E any, ID comparable](schema Schema) (Descriptor[E, ID], error) {
 		if _, exists := descriptor.byName[field.Name()]; exists {
 			return nil, exception.Core(fmt.Sprintf("实体 %s 存在重复字段名 %s", entityType, field.Name()))
 		}
-		if _, exists := descriptor.byColumn[field.Column()]; exists {
-			return nil, exception.Core(fmt.Sprintf("实体 %s 存在重复列名 %s", entityType, field.Column()))
+		if field.Persistent() {
+			if _, exists := descriptor.byColumn[field.Column()]; exists {
+				return nil, exception.Core(fmt.Sprintf("实体 %s 存在重复列名 %s", entityType, field.Column()))
+			}
 		}
 		descriptor.fields = append(descriptor.fields, field)
 		descriptor.byName[field.Name()] = field
 		descriptor.byJSON[field.JSONName()] = field
-		descriptor.byColumn[field.Column()] = field
+		if field.Persistent() {
+			descriptor.persistentFields = append(descriptor.persistentFields, field)
+			descriptor.byColumn[field.Column()] = field
+			persistentByName[field.Name()] = field
+		}
 	}
-	indexes, err := compileIndexes(table, schema, descriptor.byName)
+	indexes, err := compileIndexes(table, schema, persistentByName)
 	if err != nil {
 		return nil, err
 	}
 	descriptor.indexes = indexes
-	descriptor.doShape = compileDOShape(entityType, table, descriptor.fields)
+	descriptor.doShape = compileDOShape(entityType, table, descriptor.persistentFields)
 
 	return descriptor, nil
 }
@@ -154,6 +163,7 @@ func baseFields() []Field {
 			goType:          reflect.TypeFor[uint64](),
 			isPrimary:       true,
 			isAutoIncrement: true,
+			isPersistent:    true,
 		},
 		&fieldDescriptor{
 			name:               "createTime",
@@ -163,6 +173,7 @@ func baseFields() []Field {
 			logicalType:        LogicalTime,
 			goType:             reflect.TypeFor[*gtime.Time](),
 			isSystemMaintained: true,
+			isPersistent:       true,
 		},
 		&fieldDescriptor{
 			name:               "updateTime",
@@ -172,6 +183,7 @@ func baseFields() []Field {
 			logicalType:        LogicalTime,
 			goType:             reflect.TypeFor[*gtime.Time](),
 			isSystemMaintained: true,
+			isPersistent:       true,
 		},
 	}
 }

@@ -28,23 +28,32 @@ func parseBusinessField(field reflect.StructField, entityType reflect.Type) (*fi
 		return nil, exception.Core(fmt.Sprintf("实体 %s 的字段 %s 的 json 标签 %q 无效", entityType, field.Name, jsonName))
 	}
 
-	column, exists := field.Tag.Lookup("orm")
-	if !exists {
-		return nil, exception.Core(fmt.Sprintf("实体 %s 的字段 %s 缺少 orm 标签", entityType, field.Name))
-	}
-	if column == "" || strings.Contains(column, ",") || !lowerCamelNamePattern.MatchString(column) {
-		return nil, exception.Core(fmt.Sprintf("实体 %s 的字段 %s 列名 %q 无效", entityType, field.Name, column))
-	}
-
 	description := strings.TrimSpace(field.Tag.Get("description"))
 	if description == "" {
 		return nil, exception.Core(fmt.Sprintf("实体 %s 的字段 %s 的 description 不能为空", entityType, field.Name))
 	}
 
-	isJSON := hasJSONConstraint(field.Tag)
-	logicalType, isNullable, err := inferLogicalType(field.Type, isJSON)
+	markers, err := parseCoolMarkers(field.Tag, entityType, field.Name)
 	if err != nil {
-		if isJSON {
+		return nil, err
+	}
+	column, hasColumn := field.Tag.Lookup("orm")
+	if markers.isTransient {
+		if hasColumn {
+			return nil, invalidCoolConstraint(entityType, field.Name, "transient 字段不能声明 orm")
+		}
+	} else {
+		if !hasColumn {
+			return nil, exception.Core(fmt.Sprintf("实体 %s 的字段 %s 缺少 orm 标签", entityType, field.Name))
+		}
+		if column == "" || strings.Contains(column, ",") || !lowerCamelNamePattern.MatchString(column) {
+			return nil, exception.Core(fmt.Sprintf("实体 %s 的字段 %s 列名 %q 无效", entityType, field.Name, column))
+		}
+	}
+
+	logicalType, isNullable, err := inferLogicalType(field.Type, markers.isJSON, markers.isTransient)
+	if err != nil {
+		if markers.isJSON {
 			return nil, invalidCoolConstraint(entityType, field.Name, "json 只支持非字节 slice 或 string key map")
 		}
 		return nil, exception.Core(fmt.Sprintf("实体 %s 的字段 %s 的类型 %s 不受支持", entityType, field.Name, field.Type))
@@ -55,19 +64,20 @@ func parseBusinessField(field reflect.StructField, entityType reflect.Type) (*fi
 	}
 
 	return &fieldDescriptor{
-		name:        jsonName,
-		jsonName:    jsonName,
-		column:      column,
-		description: description,
-		logicalType: logicalType,
-		goType:      field.Type,
-		isNullable:  isNullable,
-		constraints: constraints,
+		name:         jsonName,
+		jsonName:     jsonName,
+		column:       column,
+		description:  description,
+		logicalType:  logicalType,
+		goType:       field.Type,
+		isNullable:   isNullable,
+		isPersistent: !markers.isTransient,
+		constraints:  constraints,
 	}, nil
 }
 
 // 从 Go 类型推导逻辑类型和可空性
-func inferLogicalType(fieldType reflect.Type, isJSON bool) (LogicalType, bool, error) {
+func inferLogicalType(fieldType reflect.Type, isJSON, isTransient bool) (LogicalType, bool, error) {
 	original := fieldType
 	isNullable := false
 	if fieldType.Kind() == reflect.Pointer {
@@ -98,6 +108,9 @@ func inferLogicalType(fieldType reflect.Type, isJSON bool) (LogicalType, bool, e
 		}
 		return "", false, exception.Core("JSON 字段类型无效")
 	}
+	if isTransient && fieldType.Kind() == reflect.Slice && isScalarKind(fieldType.Elem().Kind()) {
+		return LogicalJSON, isNullable, nil
+	}
 
 	switch fieldType.Kind() {
 	case reflect.Bool:
@@ -115,18 +128,61 @@ func inferLogicalType(fieldType reflect.Type, isJSON bool) (LogicalType, bool, e
 	}
 }
 
-func hasJSONConstraint(tag reflect.StructTag) bool {
+type coolMarkers struct {
+	isJSON      bool
+	isTransient bool
+}
+
+// 解析影响字段形态的 cool 标记
+func parseCoolMarkers(
+	tag reflect.StructTag,
+	entityType reflect.Type,
+	fieldName string,
+) (coolMarkers, error) {
 	raw, exists := tag.Lookup("cool")
 	if !exists {
-		return false
+		return coolMarkers{}, nil
 	}
+	if raw == "" {
+		return coolMarkers{}, invalidCoolConstraint(entityType, fieldName, "标签不能为空")
+	}
+	markers := coolMarkers{}
+	seen := make(map[string]bool)
 	for _, item := range strings.Split(raw, ",") {
 		key, value, found := strings.Cut(item, "=")
-		if found && key == "json" && value == "true" {
-			return true
+		if key == "" || seen[key] {
+			return coolMarkers{}, invalidCoolConstraint(entityType, fieldName, "约束 %q 无效", item)
+		}
+		seen[key] = true
+		if key == "transient" {
+			if found {
+				return coolMarkers{}, invalidCoolConstraint(entityType, fieldName, "transient 标记不能包含值")
+			}
+			markers.isTransient = true
+			continue
+		}
+		if !found || value == "" {
+			return coolMarkers{}, invalidCoolConstraint(entityType, fieldName, "约束 %q 无效", item)
+		}
+		if key == "json" && value == "true" {
+			markers.isJSON = true
 		}
 	}
-	return false
+
+	return markers, nil
+}
+
+// 判断是否为 transient 支持的标量切片元素
+func isScalarKind(kind reflect.Kind) bool {
+	switch kind {
+	case reflect.Bool,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64, reflect.String:
+		return true
+	default:
+		return false
+	}
 }
 
 // 解析 cool 标签中的约束
@@ -148,13 +204,22 @@ func parseConstraints(
 	seen := make(map[string]bool)
 	for _, item := range strings.Split(raw, ",") {
 		key, value, found := strings.Cut(item, "=")
-		if !found || key == "" || value == "" {
+		if key == "" {
 			return Constraints{}, invalidCoolConstraint(entityType, fieldName, "约束 %q 无效", item)
 		}
 		if seen[key] {
 			return Constraints{}, invalidCoolConstraint(entityType, fieldName, "约束 %q 重复", key)
 		}
 		seen[key] = true
+		if key == "transient" {
+			if found {
+				return Constraints{}, invalidCoolConstraint(entityType, fieldName, "transient 标记不能包含值")
+			}
+			continue
+		}
+		if !found || value == "" {
+			return Constraints{}, invalidCoolConstraint(entityType, fieldName, "约束 %q 无效", item)
+		}
 
 		switch key {
 		case "size":

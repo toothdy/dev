@@ -143,7 +143,7 @@ func (service *MenuService) Update(ctx context.Context, input coreservice.Update
 		if err := service.validateMenuParents(txCtx, parents); err != nil {
 			return err
 		}
-		users, err := service.userIDsByMenus(txCtx, businessUniqueIDs(targetIDs))
+		users, err := service.userIDsByMenus(txCtx, auth.NormalizeIDs(targetIDs))
 		if err != nil {
 			return err
 		}
@@ -364,7 +364,7 @@ func stringValue(value *string) any {
 }
 
 func (service *MenuService) lockMenus(ctx context.Context, ids []uint64) error {
-	ids = businessUniqueIDs(ids)
+	ids = auth.NormalizeIDs(ids)
 	if len(ids) == 0 {
 		return nil
 	}
@@ -388,7 +388,7 @@ func (service *MenuService) lockMenus(ctx context.Context, ids []uint64) error {
 }
 
 func (service *MenuService) lockedDescendantIDs(ctx context.Context, roots []uint64) ([]uint64, error) {
-	roots = businessUniqueIDs(roots)
+	roots = auth.NormalizeIDs(roots)
 	if len(roots) == 0 {
 		return nil, exception.Validate("菜单 ID 不能为空")
 	}
@@ -417,7 +417,7 @@ func (service *MenuService) lockedDescendantIDs(ctx context.Context, roots []uin
 				candidateIDs = append(candidateIDs, child.ID)
 			}
 		}
-		candidateIDs = businessUniqueIDs(candidateIDs)
+		candidateIDs = auth.NormalizeIDs(candidateIDs)
 		if len(candidateIDs) == 0 {
 			break
 		}
@@ -452,7 +452,7 @@ func (service *MenuService) lockedDescendantIDs(ctx context.Context, roots []uin
 	for id := range seen {
 		ids = append(ids, id)
 	}
-	return businessUniqueIDs(ids), nil
+	return auth.NormalizeIDs(ids), nil
 }
 
 func (service *MenuService) validateMenuParents(ctx context.Context, changes map[uint64]*uint64) error {
@@ -515,7 +515,7 @@ func menuAddParentIDs(input coreservice.AddInput[entity.Menu]) ([]uint64, error)
 			ids = append(ids, *parentID)
 		}
 	}
-	return businessUniqueIDs(ids), nil
+	return auth.NormalizeIDs(ids), nil
 }
 
 func menuMutableParentID(value *coreservice.Mutable[entity.Menu]) (*uint64, bool, error) {
@@ -554,7 +554,7 @@ func (service *MenuService) userIDsByMenus(ctx context.Context, menuIDs []uint64
 	for index, row := range rows {
 		ids[index] = row.UserID
 	}
-	return businessUniqueIDs(ids), nil
+	return auth.NormalizeIDs(ids), nil
 }
 
 func (service *MenuService) menuIDsByRoles(ctx context.Context, roleIDs []uint64) ([]uint64, error) {
@@ -575,7 +575,7 @@ func (service *MenuService) menuIDsByRoles(ctx context.Context, roleIDs []uint64
 	for index, row := range rows {
 		ids[index] = row.MenuID
 	}
-	return businessUniqueIDs(ids), nil
+	return auth.NormalizeIDs(ids), nil
 }
 
 func (service *MenuService) isAdmin(ctx context.Context, roleIDs []uint64) (bool, error) {

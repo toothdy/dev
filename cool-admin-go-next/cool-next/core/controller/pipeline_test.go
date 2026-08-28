@@ -18,41 +18,67 @@ func (*pipelineRunner) Within(ctx context.Context, callback dbtx.Callback) error
 	return callback(ctx)
 }
 
-func TestHandleCRUDOverrideIgnoresBaseCallbacks(t *testing.T) {
+func TestHandleCRUDOverrideRunsDeclaredPipelineWithoutBaseHooks(t *testing.T) {
 	dispatcher, err := crud.NewDispatcher(&pipelineRunner{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	bindCalls := 0
-	invokeCalls := 0
+	events := make([]string, 0, 5)
+	definition := Admin("pipeline").Curd(CurdOption{
+		API:     API(Update),
+		Entity:  projectionEntity{},
+		Service: &projectionService{},
+		Before: func(context.Context) error {
+			events = append(events, "before")
+			return nil
+		},
+	}).Build()
+	request := &crud.QueryRequest{}
+	plan, err := crud.CompilePlan(t.Context(), nil, crud.PlanInput{Action: crud.ActionUpdate}, request)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	err = HandleCRUD(
 		t.Context(),
-		nil,
+		definition,
 		crud.ActionUpdate,
 		crud.ActionModeOverride,
 		dispatcher,
 		func(context.Context) (*crud.QueryRequest, error) {
-			bindCalls++
-			return &crud.QueryRequest{}, nil
+			events = append(events, "bind")
+			return request, nil
 		},
 		func(context.Context) error {
-			t.Fatal("override 不应执行 Base 请求增强")
+			events = append(events, "enhance")
 			return nil
 		},
-		func(context.Context, *crud.QueryRequest) (*crud.ActionPlan, error) {
-			t.Fatal("override 不应编译 Base 动作计划")
-			return nil, nil
+		func(_ context.Context, current *crud.QueryRequest) (*crud.ActionPlan, error) {
+			if current != request {
+				t.Fatal("计划编译收到的请求已变化")
+			}
+			events = append(events, "compile")
+			return plan, nil
 		},
-		func(context.Context) error {
-			invokeCalls++
+		func(ctx context.Context) error {
+			events = append(events, "invoke")
+			operation, exists := crud.CurrentOperation(ctx)
+			if !exists || operation.Plan() != plan {
+				t.Fatalf("override operation = %#v, %t", operation, exists)
+			}
 			return nil
 		},
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bindCalls != 1 || invokeCalls != 1 {
-		t.Fatalf("HandleCRUD() 调用次数 = bind:%d invoke:%d", bindCalls, invokeCalls)
+	want := []string{"before", "bind", "enhance", "compile", "invoke"}
+	if len(events) != len(want) {
+		t.Fatalf("HandleCRUD() events = %#v", events)
+	}
+	for index := range want {
+		if events[index] != want[index] {
+			t.Fatalf("HandleCRUD() events = %#v", events)
+		}
 	}
 }

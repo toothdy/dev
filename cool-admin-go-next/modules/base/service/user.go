@@ -4,16 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"slices"
 	"strings"
 
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt"
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
@@ -37,18 +36,16 @@ type userRow struct {
 	SocketID     *string     `orm:"socketId"`
 }
 
-type userRoleNameRow struct {
-	RoleID uint64 `orm:"roleId"`
-	Name   string `orm:"name"`
-}
-
-// 用户分页的固定筛选条件
-type UserPageFilter struct {
-	DepartmentIDs []uint64
-	KeyWord       string
-	Status        *int32
-	Order         string
-	Sort          string
+type userWrite struct {
+	g.Meta       `orm:"do:true"`
+	DepartmentID any `orm:"departmentId"`
+	Name         any `orm:"name"`
+	NickName     any `orm:"nickName"`
+	HeadImg      any `orm:"headImg"`
+	Phone        any `orm:"phone"`
+	Email        any `orm:"email"`
+	Password     any `orm:"password"`
+	PasswordV    any `orm:"passwordV"`
 }
 
 // 用户分页响应
@@ -57,472 +54,212 @@ type UserPageResult struct {
 	Pagination coreservice.Pagination `json:"pagination"`
 }
 
-// 后台用户、角色关系和管理员保护
+// 后台用户业务服务
 type UserService struct {
 	*coreservice.Base[entity.User, uint64]
-	runtime    *coredb.Runtime
-	userRole   *coreservice.Base[entity.UserRole, uint64]
-	role       *coreservice.Base[entity.Role, uint64]
-	department *coreservice.Base[entity.Department, uint64]
+	permission *PermissionService
+	department *DepartmentService
 	password   *bcrypt.Verifier
-	boundary   *auth.Boundary
 }
 
 // 用户业务服务
 func NewUser(
-	runtime *coredb.Runtime,
 	user *coreservice.Base[entity.User, uint64],
-	userRole *coreservice.Base[entity.UserRole, uint64],
-	role *coreservice.Base[entity.Role, uint64],
-	department *coreservice.Base[entity.Department, uint64],
+	permission *PermissionService,
+	department *DepartmentService,
 	password *bcrypt.Verifier,
-	sessions auth.SessionStore,
 ) (*UserService, error) {
-	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(user) || !validPermissionBase(userRole) ||
-		!validPermissionBase(role) || !validPermissionBase(department) || password == nil {
+	if !validPermissionBase(user) || permission == nil || permission.boundary == nil ||
+		department == nil || department.boundary == nil || password == nil {
 		return nil, exception.Core("用户服务依赖无效")
 	}
-	boundary, err := auth.NewBoundary(runtime, sessions)
-	if err != nil {
-		return nil, err
-	}
-	return &UserService{Base: user, runtime: runtime, userRole: userRole, role: role, department: department, password: password, boundary: boundary}, nil
+
+	return &UserService{Base: user, permission: permission, department: department, password: password}, nil
 }
 
-// 新增用户并写入角色关系
-func (service *UserService) Add(ctx context.Context, request dto.UserAddReq, operatorID uint64) (coreservice.AddResult[uint64], error) {
-	input, err := userAddInput(service.Descriptor(), request, operatorID)
+// 新增用户及其角色关系
+func (service *UserService) Add(ctx context.Context, input coreservice.AddInput[entity.User]) (coreservice.AddResult[uint64], error) {
+	value := input.One()
+	if service == nil || value == nil {
+		return coreservice.AddResult[uint64]{}, exception.Validate("用户新增只支持单条记录")
+	}
+	roleIDs, submitted, err := userRoleIDs(value)
+	if err != nil || !submitted || len(roleIDs) == 0 {
+		if err != nil {
+			return coreservice.AddResult[uint64]{}, err
+		}
+		return coreservice.AddResult[uint64]{}, exception.Validate("用户至少需要一个角色")
+	}
+	if err = service.hashPassword(value); err != nil {
+		return coreservice.AddResult[uint64]{}, err
+	}
+	departmentIDs, err := userDepartmentIDs(value)
 	if err != nil {
 		return coreservice.AddResult[uint64]{}, err
 	}
+	if err = service.permission.LockRoles(ctx, roleIDs); err != nil {
+		return coreservice.AddResult[uint64]{}, err
+	}
+	if err = service.department.LockDepartments(ctx, departmentIDs); err != nil {
+		return coreservice.AddResult[uint64]{}, err
+	}
+	result, err := service.Base.Add(ctx, input)
+	if err != nil {
+		return coreservice.AddResult[uint64]{}, err
+	}
+	if err = service.permission.ReplaceRoles(ctx, result.One(), roleIDs); err != nil {
+		return coreservice.AddResult[uint64]{}, err
+	}
 
-	return service.AddWithRoles(ctx, input, request.RoleIDList)
+	return result, nil
 }
 
-// 更新用户并按提交状态替换角色关系
-func (service *UserService) Update(ctx context.Context, request *dto.UserUpdateReq) error {
-	input, roleIDs, err := userUpdateInput(service.Descriptor(), request)
+// 更新用户及其可选角色关系
+func (service *UserService) Update(ctx context.Context, input coreservice.UpdateInput[entity.User, uint64]) error {
+	item := input.One()
+	if service == nil || input.IsMany() || item.Mutable() == nil {
+		return exception.Validate("用户更新只支持单条记录")
+	}
+	value := item.Mutable()
+	roleIDs, hasRoles, err := userRoleIDs(value)
 	if err != nil {
 		return err
 	}
-
-	return service.UpdateWithRoles(ctx, input, roleIDs)
-}
-
-func userAddInput(
-	descriptor coreentity.Descriptor[entity.User, uint64],
-	request dto.UserAddReq,
-	userID uint64,
-) (coreservice.AddInput[entity.User], error) {
-	fields := []coreservice.FieldValue{
-		coreservice.Value("userId", userID),
-		coreservice.Value("username", request.Username),
-		coreservice.Value("password", request.Password),
-	}
-	fields = appendPresentUserFields(fields, map[string]bool{
-		"departmentId": request.DepartmentID != nil,
-		"name":         request.Name != nil,
-		"nickName":     request.NickName != nil,
-		"headImg":      request.HeadImg != nil,
-		"phone":        request.Phone != nil,
-		"email":        request.Email != nil,
-		"remark":       request.Remark != nil,
-		"status":       request.Status != nil,
-	}, request.DepartmentID, request.Name, request.NickName, request.HeadImg, request.Phone, request.Email, request.Remark, request.Status)
-	mutable, err := coreservice.NewMutable[entity.User, uint64](descriptor, fields)
+	departmentIDs, err := userDepartmentIDs(value)
 	if err != nil {
-		return coreservice.AddInput[entity.User]{}, err
+		return err
 	}
-
-	return coreservice.NewAddObject[entity.User, uint64](descriptor, mutable)
-}
-
-func userUpdateInput(
-	descriptor coreentity.Descriptor[entity.User, uint64],
-	request *dto.UserUpdateReq,
-) (coreservice.UpdateInput[entity.User, uint64], *[]uint64, error) {
-	if request == nil {
-		return coreservice.UpdateInput[entity.User, uint64]{}, nil, exception.Validate("用户更新请求不能为空")
-	}
-	fields := make([]coreservice.FieldValue, 0, 10)
-	fields = appendPresentUserFields(fields, map[string]bool{
-		"departmentId": request.HasField("departmentId"),
-		"name":         request.HasField("name"),
-		"nickName":     request.HasField("nickName"),
-		"headImg":      request.HasField("headImg"),
-		"phone":        request.HasField("phone"),
-		"email":        request.HasField("email"),
-		"remark":       request.HasField("remark"),
-		"status":       request.HasField("status"),
-	}, request.DepartmentID, request.Name, request.NickName, request.HeadImg, request.Phone, request.Email, request.Remark, request.Status)
-	if request.HasField("username") {
-		fields = appendUserField(fields, "username", request.Username)
-	}
-	if request.HasField("password") && request.Password != nil && strings.TrimSpace(*request.Password) != "" {
-		fields = append(fields, coreservice.Value("password", *request.Password))
-	}
-	mutable, err := coreservice.NewMutable[entity.User, uint64](descriptor, fields)
-	if err != nil {
-		return coreservice.UpdateInput[entity.User, uint64]{}, nil, err
-	}
-	item, err := coreservice.NewUpdateItem(descriptor, request.ID, mutable)
-	if err != nil {
-		return coreservice.UpdateInput[entity.User, uint64]{}, nil, err
-	}
-	input, err := coreservice.NewUpdateObject(descriptor, item)
-	if err != nil {
-		return coreservice.UpdateInput[entity.User, uint64]{}, nil, err
-	}
-	var roleIDs *[]uint64
-	if request.HasField("roleIdList") {
-		values := []uint64{}
-		if request.RoleIDList != nil {
-			values = append(values, (*request.RoleIDList)...)
-		}
-		roleIDs = &values
-	}
-
-	return input, roleIDs, nil
-}
-
-func appendPresentUserFields(
-	fields []coreservice.FieldValue,
-	submitted map[string]bool,
-	departmentID *uint64,
-	name *string,
-	nickName *string,
-	headImg *string,
-	phone *string,
-	email *string,
-	remark *string,
-	status *int32,
-) []coreservice.FieldValue {
-	values := []struct {
-		name  string
-		value any
-	}{
-		{"departmentId", departmentID},
-		{"name", name},
-		{"nickName", nickName},
-		{"headImg", headImg},
-		{"phone", phone},
-		{"email", email},
-		{"remark", remark},
-		{"status", status},
-	}
-	for _, value := range values {
-		if submitted[value.name] {
-			fields = appendUserField(fields, value.name, value.value)
-		}
-	}
-
-	return fields
-}
-
-func appendUserField(fields []coreservice.FieldValue, name string, value any) []coreservice.FieldValue {
-	switch current := value.(type) {
-	case *uint64:
-		if current == nil {
-			return append(fields, coreservice.Null(name))
-		}
-		return append(fields, coreservice.Value(name, *current))
-	case *int32:
-		if current == nil {
-			return append(fields, coreservice.Null(name))
-		}
-		return append(fields, coreservice.Value(name, *current))
-	case *string:
-		if current == nil {
-			return append(fields, coreservice.Null(name))
-		}
-		return append(fields, coreservice.Value(name, *current))
-	default:
-		return fields
-	}
-}
-
-// 在同一事务中新建用户并写入角色关系
-func (service *UserService) AddWithRoles(ctx context.Context, input coreservice.AddInput[entity.User], roleIDs []uint64) (coreservice.AddResult[uint64], error) {
-	if service == nil || service.runtime == nil {
-		return coreservice.AddResult[uint64]{}, exception.Core("用户服务未初始化")
-	}
-	var result coreservice.AddResult[uint64]
-	err := service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		value := input.One()
-		if value == nil {
-			return exception.Validate("用户新增只支持单条记录")
-		}
-		departmentIDs, err := submittedUserDepartmentIDs(value)
+	isAuthorizationChange := value.Has("status") || hasRoles
+	var snapshot map[uint64][]uint64
+	if isAuthorizationChange {
+		snapshot, err = service.permission.PrepareRoleChange(ctx, []uint64{item.ID()}, roleIDs)
 		if err != nil {
 			return err
 		}
-		if err := service.hashPassword(value, false); err != nil {
-			return err
-		}
-		if err = service.boundary.LockTable(txCtx, service.department.Descriptor().Table(), departmentIDs, "锁定授权部门失败"); err != nil {
-			return err
-		}
-		if err = service.boundary.LockTable(txCtx, service.role.Descriptor().Table(), roleIDs, "锁定授权角色失败"); err != nil {
-			return err
-		}
-		result, err = service.Base.Add(txCtx, input)
-		if err != nil {
-			return err
-		}
-		return service.replaceRoles(txCtx, result.One(), roleIDs)
-	})
-	return result, err
-}
-
-// 更新用户，并在提交前替换可选的角色关系
-func (service *UserService) UpdateWithRoles(ctx context.Context, input coreservice.UpdateInput[entity.User, uint64], roleIDs *[]uint64) error {
-	if service == nil || service.runtime == nil {
-		return exception.Core("用户服务未初始化")
 	}
-	return service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		items := userUpdateItems(input)
-		if len(items) != 1 {
-			return exception.Validate("用户更新只支持单条记录")
-		}
-		item := items[0]
-		departmentIDs, err := submittedUserDepartmentIDs(item.Mutable())
-		if err != nil {
-			return err
-		}
-		if err = service.boundary.LockTable(txCtx, service.department.Descriptor().Table(), departmentIDs, "锁定授权部门失败"); err != nil {
-			return err
-		}
-		isAuthorizationChange := item.Mutable().Has("status") || roleIDs != nil
-		if isAuthorizationChange {
-			var newRoleIDs []uint64
-			if roleIDs != nil {
-				newRoleIDs = *roleIDs
-			}
-			if err := service.lockUserAuthorizationChanges(txCtx, []uint64{item.ID()}, newRoleIDs); err != nil {
-				return err
-			}
-		} else if err := service.lockUsers(txCtx, []uint64{item.ID()}); err != nil {
-			return err
-		}
-		row, err := service.userByID(txCtx, item.ID())
-		if err != nil || row == nil {
-			return err
-		}
-		if isAuthorizationChange {
-			currentRoleIDs, roleErr := service.roleIDs(txCtx, item.ID())
-			if roleErr != nil {
-				return roleErr
-			}
-			nextRoleIDs := currentRoleIDs
-			if roleIDs != nil {
-				nextRoleIDs = *roleIDs
-			}
-			nextStatus := row.Status
-			if item.Mutable().Has("status") {
-				status, exists := item.Mutable().Get("status")
-				statusValue, ok := status.(int32)
-				if !exists || !ok {
-					return exception.Validate("用户状态无效")
-				}
-				nextStatus = statusValue
-			}
-			if err = service.ensureAdminTransition(txCtx, item.ID(), row.Status, nextStatus, currentRoleIDs, nextRoleIDs); err != nil {
-				return err
-			}
-		}
-		if err = service.hashPassword(item.Mutable(), true); err != nil {
-			return err
-		}
-		if item.Mutable().Has("password") {
-			if err = item.Mutable().Set("passwordV", row.PasswordV+1); err != nil {
-				return err
-			}
-		}
-		if item.Mutable().Has("password") || item.Mutable().Has("status") || roleIDs != nil {
-			if err = service.revokeUsers(txCtx, []uint64{item.ID()}); err != nil {
-				return err
-			}
-		}
-		if err = service.Base.Update(txCtx, input); err != nil {
-			return err
-		}
-		if roleIDs != nil {
-			return service.replaceRoles(txCtx, item.ID(), *roleIDs)
-		}
-		return nil
-	})
-}
-
-// 替换一个用户的角色关系并撤销其旧 Session
-func (service *UserService) UpdateRelations(ctx context.Context, userID uint64, input dto.UserRoleInput) error {
-	if service == nil || service.runtime == nil || userID == 0 {
-		return exception.Validate("用户角色关系参数无效")
+	if err = service.department.LockDepartments(ctx, departmentIDs); err != nil {
+		return err
 	}
-	return service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		if err := service.lockUserAuthorizationChanges(txCtx, []uint64{userID}, input.RoleIDList); err != nil {
-			return err
-		}
-		row, err := service.userByID(txCtx, userID)
-		if err != nil || row == nil {
-			return err
-		}
-		currentRoleIDs, err := service.roleIDs(txCtx, userID)
-		if err != nil {
-			return err
-		}
-		if err = service.ensureAdminTransition(txCtx, userID, row.Status, row.Status, currentRoleIDs, input.RoleIDList); err != nil {
-			return err
-		}
-		if err = service.revokeUsers(txCtx, []uint64{userID}); err != nil {
-			return err
-		}
-		return service.replaceRoles(txCtx, userID, input.RoleIDList)
-	})
-}
-
-// 删除用户及其角色关系，并保护最后一个有效管理员
-func (service *UserService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
-	if service == nil || service.runtime == nil {
-		return exception.Core("用户服务未初始化")
+	if err = service.permission.LockUsers(ctx, []uint64{item.ID()}); err != nil {
+		return err
 	}
-	return service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		ids := businessUniqueIDs(input.IDs())
-		if err := service.lockUserAuthorizationChanges(txCtx, ids, nil); err != nil {
+	if isAuthorizationChange {
+		after, snapshotErr := service.permission.RoleSnapshot(ctx, []uint64{item.ID()})
+		if snapshotErr != nil {
+			return snapshotErr
+		}
+		if err = service.permission.ValidateRoleSnapshot(snapshot, after); err != nil {
 			return err
 		}
-		if err := service.ensureNotLastAdmin(txCtx, ids); err != nil {
-			return err
-		}
-		if err := service.revokeUsers(txCtx, ids); err != nil {
-			return err
-		}
-		model, err := service.userRole.Model(txCtx)
-		if err != nil {
-			return err
-		}
-		if _, err = model.WhereIn("userId", ids).Delete(); err != nil {
-			return exception.WrapCore(err, "清理用户角色关系失败")
-		}
-		return service.Base.Delete(txCtx, input)
-	})
-}
-
-// 批量移动用户部门
-func (service *UserService) Move(ctx context.Context, request dto.UserMoveReq) error {
-	if service == nil || service.runtime == nil || request.DepartmentID == 0 || len(request.UserIDs) == 0 {
-		return exception.Validate("移动用户参数无效")
 	}
-	return service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		if err := service.boundary.LockTable(txCtx, service.department.Descriptor().Table(), []uint64{request.DepartmentID}, "锁定授权部门失败"); err != nil {
-			return err
-		}
-		if err := service.boundary.LockUsersAndRevoke(txCtx, service.Descriptor().Table(), request.UserIDs, auth.AdminKind, "锁定授权用户失败"); err != nil {
-			return err
-		}
-		data, err := businessDO(service.Descriptor(), businessField{name: "departmentId", value: request.DepartmentID})
-		if err != nil {
-			return err
-		}
-		model, err := service.Base.Model(txCtx)
-		if err != nil {
-			return err
-		}
-		if _, err = model.WhereIn("id", businessUniqueIDs(request.UserIDs)).Data(data).Update(); err != nil {
-			return exception.WrapCore(err, "移动用户部门失败")
-		}
-		return nil
-	})
-}
-
-// 用户详情及角色、部门虚拟字段，绝不返回密码摘要
-func (service *UserService) Info(ctx context.Context, userID uint64) (*dto.UserInfoResult, error) {
-	row, err := service.userByID(ctx, userID)
+	row, err := service.userByID(ctx, item.ID())
 	if err != nil || row == nil {
-		return nil, err
+		return err
 	}
-	result := userInfoResult(*row)
-	result.RoleIDList, err = service.roleIDs(ctx, userID)
-	if err != nil {
-		return nil, err
+	currentRoleIDs := snapshot[item.ID()]
+	nextRoleIDs := currentRoleIDs
+	if hasRoles {
+		nextRoleIDs = roleIDs
 	}
-	result.DepartmentName, err = service.departmentName(ctx, row.DepartmentID)
-	return &result, err
-}
-
-// 当前已认证管理员的个人资料
-func (service *UserService) Person(ctx context.Context) (*dto.UserInfoResult, error) {
-	identity, err := auth.Admin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return service.Info(ctx, identity.UserID)
-}
-
-// 更新当前用户允许修改的资料；修改密码时校验旧密码并递增版本
-func (service *UserService) PersonUpdate(ctx context.Context, request dto.PersonUpdateReq) error {
-	identity, err := auth.Admin(ctx)
+	nextStatus, err := userNextStatus(value, row.Status)
 	if err != nil {
 		return err
 	}
-	if service == nil || service.runtime == nil {
-		return exception.Core("用户服务未初始化")
+	if isAuthorizationChange {
+		if err = service.permission.EnsureAdminTransition(ctx, item.ID(), row.Status, nextStatus, currentRoleIDs, nextRoleIDs); err != nil {
+			return err
+		}
 	}
-	return service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		row, err := service.lockedUser(txCtx, identity.UserID)
-		if err != nil || row == nil {
+	if err = service.updatePassword(value, row.PasswordV); err != nil {
+		return err
+	}
+	shouldRevoke := value.Has("password") || value.Has("status") || hasRoles
+	if userHasPersistentUpdate(service.Descriptor(), value) {
+		if err = service.Base.Update(ctx, input); err != nil {
 			return err
 		}
-		fields := []businessField{}
-		for _, value := range []struct {
-			name  string
-			value *string
-		}{{"name", request.Name}, {"nickName", request.NickName}, {"headImg", request.HeadImg}, {"phone", request.Phone}, {"email", request.Email}} {
-			if value.value != nil {
-				fields = append(fields, businessField{name: value.name, value: *value.value})
-			}
-		}
-		if request.Password != nil && strings.TrimSpace(*request.Password) != "" {
-			if request.OldPassword == nil || strings.TrimSpace(*request.OldPassword) == "" {
-				return exception.Comm("原密码不能为空")
-			}
-			verified, verifyErr := service.password.Verify(*request.OldPassword, row.Password)
-			if verifyErr != nil {
-				return verifyErr
-			}
-			if !verified.Valid {
-				return exception.Comm("原密码错误")
-			}
-			hash, hashErr := service.password.Hash(*request.Password)
-			if hashErr != nil {
-				return hashErr
-			}
-			fields = append(fields, businessField{name: "password", value: hash}, businessField{name: "passwordV", value: row.PasswordV + 1})
-			if err = service.revokeUsers(txCtx, []uint64{identity.UserID}); err != nil {
-				return err
-			}
-		}
-		if len(fields) == 0 {
-			return nil
-		}
-		data, err := businessDO(service.Descriptor(), fields...)
-		if err != nil {
+	}
+	if hasRoles {
+		if err = service.permission.ReplaceRoles(ctx, item.ID(), roleIDs); err != nil {
 			return err
 		}
-		model, err := service.Base.Model(txCtx)
-		if err != nil {
-			return err
-		}
-		_, err = model.Where("id", identity.UserID).Data(data).Update()
-		return exception.WrapCore(err, "更新个人资料失败")
-	})
+	}
+	if shouldRevoke {
+		return service.permission.RevokeUsers(ctx, []uint64{item.ID()})
+	}
+
+	return nil
 }
 
-// 按当前管理员的数据范围返回用户分页和虚拟字段
-func (service *UserService) Page(ctx context.Context, page, size int, filter UserPageFilter) (UserPageResult, error) {
-	if service == nil || page <= 0 || size <= 0 {
+// 删除用户及其角色关系
+func (service *UserService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+	ids := auth.NormalizeIDs(input.IDs())
+	if service == nil || len(ids) == 0 {
+		return exception.Validate("用户 ID 不能为空")
+	}
+	snapshot, err := service.permission.PrepareRoleChange(ctx, ids, nil)
+	if err != nil {
+		return err
+	}
+	if err = service.permission.LockUsers(ctx, ids); err != nil {
+		return err
+	}
+	after, err := service.permission.RoleSnapshot(ctx, ids)
+	if err != nil {
+		return err
+	}
+	if err = service.permission.ValidateRoleSnapshot(snapshot, after); err != nil {
+		return err
+	}
+	if err = service.permission.EnsureNotLastAdmin(ctx, ids); err != nil {
+		return err
+	}
+	if err = service.permission.DeleteUserRoles(ctx, ids); err != nil {
+		return err
+	}
+	if err = service.Base.Delete(ctx, input); err != nil {
+		return err
+	}
+
+	return service.permission.RevokeUsers(ctx, ids)
+}
+
+// 用户详情及角色、部门虚拟字段
+func (service *UserService) Info(ctx context.Context, userID uint64) (*dto.UserInfoResult, error) {
+	record, err := service.Base.Info(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if _, exists := record.Get("id"); !exists {
+		return nil, nil
+	}
+	var result dto.UserInfoResult
+	if err = record.Scan(&result); err != nil {
+		return nil, err
+	}
+	if err = service.enrichUserInfo(ctx, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// 按当前管理员的数据范围返回用户分页
+func (service *UserService) Page(ctx context.Context, request *dto.UserPageReq) (UserPageResult, error) {
+	if service == nil || request == nil {
 		return UserPageResult{}, exception.Validate("用户分页参数无效")
 	}
-	orderColumn, isDescending, err := userPageOrder(service.Descriptor(), filter.Order, filter.Sort)
+	page, size := request.Page, request.Size
+	if page == 0 {
+		page = 1
+	}
+	if size == 0 {
+		size = 15
+	}
+	if page < 1 || size < 1 {
+		return UserPageResult{}, exception.Validate("用户分页参数无效")
+	}
+	orderColumn, isDescending, err := userPageOrder(service.Descriptor(), request.Order, request.Sort)
 	if err != nil {
 		return UserPageResult{}, err
 	}
@@ -534,29 +271,29 @@ func (service *UserService) Page(ctx context.Context, page, size int, filter Use
 	if err != nil {
 		return UserPageResult{}, err
 	}
-	isAdmin, err := service.isAdmin(ctx, identity.UserID)
+	isAdmin, err := service.permission.IsAdmin(ctx, identity.RoleIDs())
 	if err != nil {
 		return UserPageResult{}, err
 	}
 	if !isAdmin {
-		departmentIDs, rangeErr := service.departmentIDs(ctx, identity.UserID)
+		visibleIDs, rangeErr := service.department.VisibleIDs(ctx, identity.UserID, identity.RoleIDs())
 		if rangeErr != nil {
 			return UserPageResult{}, rangeErr
 		}
-		if len(departmentIDs) > 0 {
-			model = model.WhereIn("departmentId", departmentIDs).WhereOr("userId", identity.UserID)
-		} else {
+		if len(visibleIDs) == 0 {
 			model = model.Where("userId", identity.UserID)
+		} else {
+			model = model.WhereIn("departmentId", visibleIDs).WhereOr("userId", identity.UserID)
 		}
 	}
-	if len(filter.DepartmentIDs) > 0 {
-		model = model.WhereIn("departmentId", businessUniqueIDs(filter.DepartmentIDs))
+	if departmentIDs := auth.NormalizeIDs(request.DepartmentIDs); len(departmentIDs) > 0 {
+		model = model.WhereIn("departmentId", departmentIDs)
 	}
-	if filter.Status != nil {
-		model = model.Where("status", *filter.Status)
+	if request.Status != nil {
+		model = model.Where("status", *request.Status)
 	}
-	if keyWord := strings.TrimSpace(filter.KeyWord); keyWord != "" {
-		model = model.Where("name LIKE ? OR username LIKE ?", "%"+keyWord+"%", "%"+keyWord+"%")
+	if keyword := strings.TrimSpace(request.KeyWord); keyword != "" {
+		model = model.Where("name LIKE ? OR username LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
 	}
 	if isDescending {
 		model = model.OrderDesc(orderColumn)
@@ -574,41 +311,142 @@ func (service *UserService) Page(ctx context.Context, page, size int, filter Use
 	if err != nil {
 		return UserPageResult{}, err
 	}
+
 	return UserPageResult{List: items, Pagination: coreservice.Pagination{Page: page, Size: size, Total: int64(total)}}, nil
 }
 
-func userPageOrder(descriptor coreentity.Metadata, order, sort string) (string, bool, error) {
-	order = strings.TrimSpace(order)
-	sort = strings.TrimSpace(sort)
-	if order == "" && sort == "" {
-		return descriptor.Primary().Column(), false, nil
+// 批量移动用户部门
+func (service *UserService) Move(ctx context.Context, request *dto.UserMoveReq) error {
+	if service == nil || request == nil {
+		return exception.Validate("移动用户参数无效")
 	}
-	if order == entity.PasswordFieldName {
-		return "", false, exception.Validate("用户排序字段无效")
+	userIDs := auth.NormalizeIDs(request.UserIDs)
+	if request.DepartmentID == 0 || len(userIDs) == 0 {
+		return exception.Validate("移动用户参数无效")
 	}
-	field, exists := descriptor.JSON(order)
-	if !exists {
-		return "", false, exception.Validate("用户排序字段无效")
+	if err := service.department.LockDepartments(ctx, []uint64{request.DepartmentID}); err != nil {
+		return err
+	}
+	if err := service.permission.LockUsers(ctx, userIDs); err != nil {
+		return err
+	}
+	model, err := service.Base.Model(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err = model.WhereIn("id", userIDs).Data(userWrite{DepartmentID: request.DepartmentID}).Update(); err != nil {
+		return exception.WrapCore(err, "移动用户部门失败")
 	}
 
-	switch sort {
-	case "asc":
-		return field.Column(), false, nil
-	case "desc":
-		return field.Column(), true, nil
-	default:
-		return "", false, exception.Validate("用户排序方向无效")
-	}
+	return service.permission.RevokeUsers(ctx, userIDs)
 }
 
-func (service *UserService) hashPassword(value *coreservice.Mutable[entity.User], isUpdate bool) error {
-	password, exists := value.Get("password")
-	if !exists {
+// 当前已认证管理员的个人资料
+func (service *UserService) Person(ctx context.Context) (*dto.UserInfoResult, error) {
+	identity, err := auth.Admin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	row, err := service.userByID(ctx, identity.UserID)
+	if err != nil || row == nil {
+		return nil, err
+	}
+	result := userInfoResult(*row)
+	if err = service.enrichUserInfo(ctx, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// 更新当前用户允许修改的资料
+func (service *UserService) PersonUpdate(ctx context.Context, request dto.PersonUpdateReq) error {
+	identity, err := auth.Admin(ctx)
+	if err != nil {
+		return err
+	}
+	if err = service.permission.LockUsers(ctx, []uint64{identity.UserID}); err != nil {
+		return err
+	}
+	row, err := service.userByID(ctx, identity.UserID)
+	if err != nil || row == nil {
+		return err
+	}
+	data := userWrite{}
+	hasUpdate := false
+	for _, field := range []struct {
+		value *string
+		set   func(string)
+	}{
+		{request.Name, func(value string) { data.Name = value }},
+		{request.NickName, func(value string) { data.NickName = value }},
+		{request.HeadImg, func(value string) { data.HeadImg = value }},
+		{request.Phone, func(value string) { data.Phone = value }},
+		{request.Email, func(value string) { data.Email = value }},
+	} {
+		if field.value != nil {
+			field.set(*field.value)
+			hasUpdate = true
+		}
+	}
+	shouldRevoke := request.Password != nil && strings.TrimSpace(*request.Password) != ""
+	if shouldRevoke {
+		if request.OldPassword == nil || strings.TrimSpace(*request.OldPassword) == "" {
+			return exception.Comm("原密码不能为空")
+		}
+		verified, verifyErr := service.password.Verify(*request.OldPassword, row.Password)
+		if verifyErr != nil {
+			return verifyErr
+		}
+		if !verified.Valid {
+			return exception.Comm("原密码错误")
+		}
+		data.Password, err = service.password.Hash(*request.Password)
+		if err != nil {
+			return err
+		}
+		data.PasswordV = row.PasswordV + 1
+		hasUpdate = true
+	}
+	if !hasUpdate {
 		return nil
 	}
+	model, err := service.Base.Model(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err = model.Where("id", identity.UserID).Data(data).Update(); err != nil {
+		return exception.WrapCore(err, "更新个人资料失败")
+	}
+	if shouldRevoke {
+		return service.permission.RevokeUsers(ctx, []uint64{identity.UserID})
+	}
+
+	return nil
+}
+
+func (service *UserService) hashPassword(value *coreservice.Mutable[entity.User]) error {
+	password, exists := value.Get("password")
+	plain, ok := password.(string)
+	if !exists || !ok || strings.TrimSpace(plain) == "" {
+		return exception.Validate("密码不能为空")
+	}
+	hash, err := service.password.Hash(plain)
+	if err != nil {
+		return err
+	}
+
+	return value.Set("password", hash)
+}
+
+func (service *UserService) updatePassword(value *coreservice.Mutable[entity.User], passwordVersion int32) error {
+	if !value.Has("password") {
+		return nil
+	}
+	password, _ := value.Get("password")
 	plain, ok := password.(string)
 	if !ok || strings.TrimSpace(plain) == "" {
-		return exception.Validate("密码不能为空")
+		return value.Unset("password")
 	}
 	hash, err := service.password.Hash(plain)
 	if err != nil {
@@ -617,15 +455,8 @@ func (service *UserService) hashPassword(value *coreservice.Mutable[entity.User]
 	if err = value.Set("password", hash); err != nil {
 		return err
 	}
-	_ = isUpdate
-	return nil
-}
 
-func (service *UserService) lockedUser(ctx context.Context, userID uint64) (*userRow, error) {
-	if err := service.lockUsers(ctx, []uint64{userID}); err != nil {
-		return nil, err
-	}
-	return service.userByID(ctx, userID)
+	return value.Set("passwordV", passwordVersion+1)
 }
 
 func (service *UserService) userByID(ctx context.Context, userID uint64) (*userRow, error) {
@@ -641,383 +472,146 @@ func (service *UserService) userByID(ctx context.Context, userID uint64) (*userR
 	if err != nil {
 		return nil, exception.WrapCore(err, "查询用户失败")
 	}
+
 	return row, nil
 }
 
-func (service *UserService) lockUserAuthorizationChanges(ctx context.Context, userIDs, newRoleIDs []uint64) error {
-	adminRoleIDs, err := service.adminRoleIDs(ctx)
+func (service *UserService) enrichUserInfo(ctx context.Context, result *dto.UserInfoResult) error {
+	roleIDs, err := service.permission.RoleIDs(ctx, result.ID)
 	if err != nil {
 		return err
 	}
-	if err = service.boundary.LockTable(ctx, service.role.Descriptor().Table(), adminRoleIDs, "锁定授权角色失败"); err != nil {
-		return err
-	}
-	currentRoleIDs, err := service.roleIDsForUsers(ctx, userIDs)
-	if err != nil {
-		return err
-	}
-	involvedRoleIDs := make([]uint64, 0, len(currentRoleIDs)+len(newRoleIDs))
-	for _, roleID := range businessUniqueIDs(append(currentRoleIDs, newRoleIDs...)) {
-		if !slices.Contains(adminRoleIDs, roleID) {
-			involvedRoleIDs = append(involvedRoleIDs, roleID)
+	result.RoleIDList = roleIDs
+	if result.DepartmentID != nil {
+		name, nameErr := service.department.Name(ctx, *result.DepartmentID)
+		if nameErr != nil {
+			return nameErr
 		}
-	}
-	if err = service.boundary.LockTable(ctx, service.role.Descriptor().Table(), involvedRoleIDs, "锁定授权角色失败"); err != nil {
-		return err
-	}
-	if err = service.lockUsers(ctx, userIDs); err != nil {
-		return err
-	}
-	lockedRoleIDs, err := service.roleIDsForUsers(ctx, userIDs)
-	if err != nil {
-		return err
-	}
-	return auth.ValidateSnapshot(currentRoleIDs, lockedRoleIDs, "用户角色已变更，请重试")
-}
-
-func (service *UserService) lockUsers(ctx context.Context, userIDs []uint64) error {
-	return service.boundary.LockTable(ctx, service.Descriptor().Table(), userIDs, "锁定授权用户失败")
-}
-
-func (service *UserService) revokeUsers(ctx context.Context, userIDs []uint64) error {
-	return service.boundary.RevokeUsers(ctx, auth.AdminKind, userIDs)
-}
-
-func (service *UserService) replaceRoles(ctx context.Context, userID uint64, roleIDs []uint64) error {
-	model, err := service.userRole.Model(ctx)
-	if err != nil {
-		return err
-	}
-	if _, err = model.Where("userId", userID).Delete(); err != nil {
-		return exception.WrapCore(err, "删除旧用户角色关系失败")
-	}
-	for _, roleID := range businessUniqueIDs(roleIDs) {
-		data, dataErr := businessDO(service.userRole.Descriptor(), businessField{name: "userId", value: userID}, businessField{name: "roleId", value: roleID})
-		if dataErr != nil {
-			return dataErr
-		}
-		if _, err = model.Data(data).Insert(); err != nil {
-			return exception.WrapCore(err, "写入用户角色关系失败")
-		}
-	}
-	return nil
-}
-
-func submittedUserDepartmentIDs(mutable *coreservice.Mutable[entity.User]) ([]uint64, error) {
-	if mutable == nil || !mutable.Has("departmentId") {
-		return nil, nil
-	}
-	value, exists := mutable.Get("departmentId")
-	if !exists || value == nil {
-		return nil, nil
-	}
-	departmentID, ok := value.(*uint64)
-	if !ok {
-		return nil, exception.Validate("用户部门参数无效")
-	}
-	if departmentID == nil || *departmentID == 0 {
-		return nil, nil
-	}
-
-	return []uint64{*departmentID}, nil
-}
-
-func (service *UserService) roleIDs(ctx context.Context, userID uint64) ([]uint64, error) {
-	model, err := service.userRole.Model(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var rows []struct {
-		RoleID uint64 `orm:"roleId"`
-	}
-	if err = model.Fields("roleId").Where("userId", userID).OrderAsc("roleId").Scan(&rows); err != nil {
-		return nil, exception.WrapCore(err, "查询用户角色失败")
-	}
-	result := make([]uint64, len(rows))
-	for index, row := range rows {
-		result[index] = row.RoleID
-	}
-	return result, nil
-}
-
-func (service *UserService) roleIDsForUsers(ctx context.Context, userIDs []uint64) ([]uint64, error) {
-	ids := businessUniqueIDs(userIDs)
-	if len(ids) == 0 {
-		return nil, nil
-	}
-	model, err := service.userRole.Model(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var rows []struct {
-		RoleID uint64 `orm:"roleId"`
-	}
-	if err = model.Fields("roleId").WhereIn("userId", ids).OrderAsc("roleId").Scan(&rows); err != nil {
-		return nil, exception.WrapCore(err, "查询用户角色失败")
-	}
-	roleIDs := make([]uint64, len(rows))
-	for index, row := range rows {
-		roleIDs[index] = row.RoleID
-	}
-
-	return businessUniqueIDs(roleIDs), nil
-}
-
-func (service *UserService) adminRoleIDs(ctx context.Context) ([]uint64, error) {
-	model, err := service.role.Model(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var rows []struct {
-		ID uint64 `orm:"id"`
-	}
-	if err = model.Fields("id").Where("label", adminRoleLabel).OrderAsc("id").Scan(&rows); err != nil {
-		return nil, exception.WrapCore(err, "查询管理员角色失败")
-	}
-	roleIDs := make([]uint64, len(rows))
-	for index, row := range rows {
-		roleIDs[index] = row.ID
-	}
-
-	return roleIDs, nil
-}
-
-func (service *UserService) ensureAdminTransition(
-	ctx context.Context,
-	userID uint64,
-	currentStatus int32,
-	nextStatus int32,
-	currentRoleIDs []uint64,
-	nextRoleIDs []uint64,
-) error {
-	if currentStatus != 1 {
-		return nil
-	}
-	currentIsAdmin, err := service.containsAdminRole(ctx, currentRoleIDs)
-	if err != nil || !currentIsAdmin {
-		return err
-	}
-	if nextStatus == 1 {
-		nextIsAdmin, checkErr := service.containsAdminRole(ctx, nextRoleIDs)
-		if checkErr != nil || nextIsAdmin {
-			return checkErr
-		}
-	}
-
-	return service.ensureNotLastAdmin(ctx, []uint64{userID})
-}
-
-func (service *UserService) ensureNotLastAdmin(ctx context.Context, userIDs []uint64) error {
-	ids := businessUniqueIDs(userIDs)
-	if len(ids) == 0 {
-		return nil
-	}
-	model, err := service.Base.Model(ctx)
-	if err != nil {
-		return err
-	}
-	var affected []struct {
-		ID uint64 `orm:"id"`
-	}
-	if err = model.Fields("id").WhereIn("id", ids).Where("status", 1).Scan(&affected); err != nil {
-		return exception.WrapCore(err, "查询管理员状态失败")
-	}
-	removesAdmin := false
-	for _, user := range affected {
-		isAdmin, checkErr := service.isAdmin(ctx, user.ID)
-		if checkErr != nil {
-			return checkErr
-		}
-		if isAdmin {
-			removesAdmin = true
-			break
-		}
-	}
-	if !removesAdmin {
-		return nil
-	}
-	adminRoleIDs, err := service.adminRoleIDs(ctx)
-	if err != nil {
-		return err
-	}
-	relationModel, err := service.userRole.Model(ctx)
-	if err != nil {
-		return err
-	}
-	var rows []struct {
-		UserID uint64 `orm:"userId"`
-	}
-	if err = relationModel.
-		Fields("userId").
-		WhereIn("roleId", adminRoleIDs).
-		WhereNotIn("userId", ids).
-		Scan(&rows); err != nil {
-		return exception.WrapCore(err, "查询管理员关系失败")
-	}
-	remainingUserIDs := make([]uint64, len(rows))
-	for index, row := range rows {
-		remainingUserIDs[index] = row.UserID
-	}
-	if len(remainingUserIDs) == 0 {
-		return exception.Comm("不能删除或禁用最后一个管理员")
-	}
-	remainingModel, err := service.Base.Model(ctx)
-	if err != nil {
-		return err
-	}
-	remainingAdmin, err := remainingModel.
-		WhereIn("id", businessUniqueIDs(remainingUserIDs)).
-		Where("status", 1).
-		Exist()
-	if err != nil {
-		return exception.WrapCore(err, "查询有效管理员失败")
-	}
-	if !remainingAdmin {
-		return exception.Comm("不能删除或禁用最后一个管理员")
+		result.DepartmentName = &name
 	}
 
 	return nil
-}
-
-func (service *UserService) isAdmin(ctx context.Context, userID uint64) (bool, error) {
-	roleIDs, err := service.roleIDs(ctx, userID)
-	if err != nil || len(roleIDs) == 0 {
-		return false, err
-	}
-
-	return service.containsAdminRole(ctx, roleIDs)
-}
-
-func (service *UserService) containsAdminRole(ctx context.Context, roleIDs []uint64) (bool, error) {
-	roleIDs = businessUniqueIDs(roleIDs)
-	if len(roleIDs) == 0 {
-		return false, nil
-	}
-	model, err := service.role.Model(ctx)
-	if err != nil {
-		return false, err
-	}
-	var count int
-	count, err = model.WhereIn("id", roleIDs).Where("label", adminRoleLabel).Count()
-	if err != nil {
-		return false, exception.WrapCore(err, "查询管理员角色失败")
-	}
-	return count > 0, nil
-}
-
-func (service *UserService) departmentIDs(ctx context.Context, userID uint64) ([]uint64, error) {
-	roleIDs, err := service.roleIDs(ctx, userID)
-	if err != nil || len(roleIDs) == 0 {
-		return nil, err
-	}
-	var rows []struct {
-		DepartmentID uint64 `orm:"departmentId"`
-	}
-	if err = service.runtime.DB().Model("base_sys_role_department").Ctx(ctx).Fields("departmentId").WhereIn("roleId", roleIDs).Scan(&rows); err != nil {
-		return nil, exception.WrapCore(err, "查询部门权限失败")
-	}
-	ids := make([]uint64, len(rows))
-	for index, row := range rows {
-		ids[index] = row.DepartmentID
-	}
-	return businessUniqueIDs(ids), nil
-}
-
-func (service *UserService) departmentName(ctx context.Context, departmentID *uint64) (*string, error) {
-	if departmentID == nil || *departmentID == 0 {
-		return nil, nil
-	}
-	model, err := service.department.Model(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var row *struct {
-		Name string `orm:"name"`
-	}
-	if err = model.Fields("name").Where("id", *departmentID).Scan(&row); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, exception.WrapCore(err, "查询部门名称失败")
-	}
-	if row == nil {
-		return nil, nil
-	}
-	return &row.Name, nil
 }
 
 func (service *UserService) pageItems(ctx context.Context, rows []userRow) ([]dto.UserPageItem, error) {
-	result := make([]dto.UserPageItem, 0, len(rows))
+	userIDs := make([]uint64, 0, len(rows))
+	departmentIDs := make([]uint64, 0, len(rows))
 	for _, row := range rows {
-		roles, err := service.roleNames(ctx, row.ID)
-		if err != nil {
-			return nil, err
+		userIDs = append(userIDs, row.ID)
+		if row.DepartmentID != nil {
+			departmentIDs = append(departmentIDs, *row.DepartmentID)
 		}
-		departmentName, err := service.departmentName(ctx, row.DepartmentID)
-		if err != nil {
-			return nil, err
-		}
-		roleIDs := make([]uint64, len(roles))
-		roleNames := make([]string, len(roles))
-		for index, role := range roles {
-			roleIDs[index], roleNames[index] = role.RoleID, role.Name
-		}
-		result = append(result, dto.UserPageItem{ID: row.ID, CreateTime: row.CreateTime, UpdateTime: row.UpdateTime, DepartmentID: row.DepartmentID, Name: row.Name, Username: row.Username, NickName: row.NickName, HeadImg: row.HeadImg, Phone: row.Phone, Email: row.Email, Remark: row.Remark, Status: row.Status, DepartmentName: departmentName, RoleIDs: roleIDs, RoleName: strings.Join(roleNames, ",")})
 	}
-	return result, nil
-}
-
-func (service *UserService) roleNames(ctx context.Context, userID uint64) ([]userRoleNameRow, error) {
-	statement, err := coreservice.NativeSQL(`SELECT ur.roleId, r.name FROM base_sys_user_role ur INNER JOIN base_sys_role r ON r.id = ur.roleId WHERE ur.userId = ? ORDER BY ur.roleId ASC`, userID)
+	roles, err := service.permission.RolesByUsers(ctx, userIDs)
 	if err != nil {
 		return nil, err
 	}
-	var rows []userRoleNameRow
-	if err = service.Base.NativeQuery(ctx, statement, &rows); err != nil {
+	departmentNames, err := service.department.Names(ctx, departmentIDs)
+	if err != nil {
 		return nil, err
 	}
-	return rows, nil
+	items := make([]dto.UserPageItem, 0, len(rows))
+	for _, row := range rows {
+		var departmentName *string
+		if row.DepartmentID != nil {
+			if name, exists := departmentNames[*row.DepartmentID]; exists {
+				departmentName = &name
+			}
+		}
+		userRoles := roles[row.ID]
+		items = append(items, dto.UserPageItem{
+			ID: row.ID, CreateTime: row.CreateTime, UpdateTime: row.UpdateTime,
+			DepartmentID: row.DepartmentID, Name: row.Name, Username: row.Username,
+			NickName: row.NickName, HeadImg: row.HeadImg, Phone: row.Phone, Email: row.Email,
+			Remark: row.Remark, Status: row.Status, DepartmentName: departmentName,
+			RoleIDs: userRoles.IDs, RoleName: strings.Join(userRoles.Names, ","),
+		})
+	}
+
+	return items, nil
+}
+
+func userRoleIDs(value *coreservice.Mutable[entity.User]) ([]uint64, bool, error) {
+	if value == nil || !value.Has("roleIdList") {
+		return nil, false, nil
+	}
+	if value.IsNull("roleIdList") {
+		return []uint64{}, true, nil
+	}
+	current, _ := value.Get("roleIdList")
+	roleIDs, ok := current.([]uint64)
+	if !ok {
+		return nil, false, exception.Validate("用户角色参数无效")
+	}
+
+	return auth.NormalizeIDs(roleIDs), true, nil
+}
+
+func userDepartmentIDs(value *coreservice.Mutable[entity.User]) ([]uint64, error) {
+	if value == nil || !value.Has("departmentId") || value.IsNull("departmentId") {
+		return nil, nil
+	}
+	current, _ := value.Get("departmentId")
+	departmentID, ok := current.(uint64)
+	if !ok {
+		return nil, exception.Validate("用户部门参数无效")
+	}
+	if departmentID == 0 {
+		return nil, nil
+	}
+
+	return []uint64{departmentID}, nil
+}
+
+func userNextStatus(value *coreservice.Mutable[entity.User], current int32) (int32, error) {
+	if !value.Has("status") {
+		return current, nil
+	}
+	next, exists := value.Get("status")
+	status, ok := next.(int32)
+	if !exists || !ok {
+		return 0, exception.Validate("用户状态无效")
+	}
+
+	return status, nil
+}
+
+func userHasPersistentUpdate(descriptor coreentity.Metadata, value *coreservice.Mutable[entity.User]) bool {
+	for _, field := range descriptor.PersistentFields() {
+		if value.Has(field.Name()) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func userPageOrder(descriptor coreentity.Metadata, order, sort string) (string, bool, error) {
+	order = strings.TrimSpace(order)
+	sort = strings.TrimSpace(sort)
+	if order == "" && sort == "" {
+		return descriptor.Primary().Column(), false, nil
+	}
+	field, exists := descriptor.JSON(order)
+	if !exists || !field.Persistent() || order == entity.PasswordFieldName {
+		return "", false, exception.Validate("用户排序字段无效")
+	}
+	switch sort {
+	case "asc":
+		return field.Column(), false, nil
+	case "desc":
+		return field.Column(), true, nil
+	default:
+		return "", false, exception.Validate("用户排序方向无效")
+	}
 }
 
 func userInfoResult(row userRow) dto.UserInfoResult {
-	return dto.UserInfoResult{ID: row.ID, CreateTime: row.CreateTime, UpdateTime: row.UpdateTime, DepartmentID: row.DepartmentID, UserID: row.UserID, Name: row.Name, Username: row.Username, PasswordV: row.PasswordV, NickName: row.NickName, HeadImg: row.HeadImg, Phone: row.Phone, Email: row.Email, Remark: row.Remark, Status: row.Status, SocketID: row.SocketID}
-}
-
-func userUpdateItems(input coreservice.UpdateInput[entity.User, uint64]) []coreservice.UpdateItem[entity.User, uint64] {
-	if input.IsMany() {
-		return input.Many()
+	return dto.UserInfoResult{
+		ID: row.ID, CreateTime: row.CreateTime, UpdateTime: row.UpdateTime,
+		DepartmentID: row.DepartmentID, UserID: row.UserID, Name: row.Name,
+		Username: row.Username, PasswordV: row.PasswordV, NickName: row.NickName,
+		HeadImg: row.HeadImg, Phone: row.Phone, Email: row.Email, Remark: row.Remark,
+		Status: row.Status, SocketID: row.SocketID,
 	}
-	return []coreservice.UpdateItem[entity.User, uint64]{input.One()}
-}
-
-type businessField struct {
-	name  string
-	value any
-}
-
-func businessDO(descriptor coreentity.RuntimeDescriptor, fields ...businessField) (any, error) {
-	if descriptor == nil {
-		return nil, exception.Core("实体 Descriptor 无效")
-	}
-	value := descriptor.NewDO()
-	if value == nil {
-		return nil, exception.Core("实体 DO 无效")
-	}
-	for _, field := range fields {
-		if err := value.SetColumn(field.name, field.value); err != nil {
-			return nil, err
-		}
-	}
-	return value.DBData(), nil
-}
-
-func businessUniqueIDs(ids []uint64) []uint64 {
-	result := make([]uint64, 0, len(ids))
-	for _, id := range ids {
-		if id != 0 {
-			result = append(result, id)
-		}
-	}
-	slices.Sort(result)
-	return slices.Compact(result)
 }

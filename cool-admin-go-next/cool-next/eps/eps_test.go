@@ -19,10 +19,11 @@ import (
 type epsItem struct {
 	g.Meta `orm:"table:eps_item" description:"EPS 项目"`
 	coreentity.Base
-	Name    string  `json:"name" orm:"name" description:"名称" cool:"size=80"`
-	Secret  string  `json:"secret" orm:"secret" description:"密钥"`
-	Status  int32   `json:"status" orm:"status" description:"状态" cool:"default=1"`
-	GroupID *uint64 `json:"groupId" orm:"groupId" description:"分组"`
+	Name    string    `json:"name" orm:"name" description:"名称" cool:"size=80"`
+	Secret  string    `json:"secret" orm:"secret" description:"密钥"`
+	Status  int32     `json:"status" orm:"status" description:"状态" cool:"default=1"`
+	GroupID *uint64   `json:"groupId" orm:"groupId" description:"分组"`
+	RoleIDs *[]uint64 `json:"roleIds" description:"角色 ID" cool:"transient"`
 }
 
 type epsGroup struct {
@@ -82,6 +83,9 @@ func TestCompileViewsProjectsFinalContract(t *testing.T) {
 	}
 
 	columns := columnNames(crudController.Columns)
+	if !columns["roleIds"] {
+		t.Fatalf("transient 字段未出现在 columns: %#v", crudController.Columns)
+	}
 	if columns["secret"] {
 		t.Fatalf("隐藏字段 secret 出现在 columns: %#v", crudController.Columns)
 	}
@@ -121,6 +125,9 @@ func TestCompileViewsProjectsFinalContract(t *testing.T) {
 	}
 	if countSource(crudController.PageColumns, "a.secret") != 0 {
 		t.Fatalf("隐藏字段出现在 pageColumns: %#v", crudController.PageColumns)
+	}
+	if countSource(crudController.PageColumns, "a.roleIds") != 0 {
+		t.Fatalf("transient 字段出现在 pageColumns: %#v", crudController.PageColumns)
 	}
 	lastPageColumns := crudController.PageColumns[len(crudController.PageColumns)-2:]
 	if lastPageColumns[0].PropertyName != "createTime" || lastPageColumns[0].Source != "g.name" ||

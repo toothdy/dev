@@ -128,7 +128,6 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 		collectTypeImports(imports, current.declaration.idType)
 	}
 	if len(controllers) > 0 {
-		imports.add(authPackagePath, "auth")
 		imports.add(controllerPackagePath, "corecontroller")
 		imports.add(entityPackagePath, "coreentity")
 		imports.add(epsPackagePath, "eps")
@@ -557,12 +556,6 @@ func writeBaseProviderDeclarations(source *strings.Builder, fragments []Descript
 func writeServiceAdapterDeclarations(source *strings.Builder, services []renderService, imports *importManager) {
 	for _, current := range services {
 		declaration := current.declaration
-		entityType := types.TypeString(declaration.entityType, importsQualifier(imports))
-		idType := types.TypeString(declaration.idType, importsQualifier(imports))
-		serviceType := "*" + imports.alias(declaration.packagePath) + "." + declaration.name
-		addTarget := serviceActionTarget(declaration.actions, "Add")
-		deleteTarget := serviceActionTarget(declaration.actions, "Delete")
-		updateTarget := serviceActionTarget(declaration.actions, "Update")
 		for _, action := range declaration.actions {
 			fmt.Fprintf(
 				source,
@@ -570,36 +563,50 @@ func writeServiceAdapterDeclarations(source *strings.Builder, services []renderS
 				serviceActionModeName(current, action.name),
 				serviceActionModeConstant(action.mode),
 			)
+			writeServiceActionAdapter(source, current, action, imports)
 		}
-		fmt.Fprintf(
-			source,
-			"func %s(ctx context.Context, instance %s, input coreservice.AddInput[%s]) (coreservice.AddResult[%s], error) {\n\treturn %s(ctx, input)\n}\n\n",
-			serviceActionAdapterName(current, "Add"),
-			serviceType,
-			entityType,
-			idType,
-			addTarget,
-		)
-		fmt.Fprintf(
-			source,
-			"func %s(ctx context.Context, instance %s, input coreservice.DeleteInput[%s]) error {\n\treturn %s(ctx, input)\n}\n\n",
-			serviceActionAdapterName(current, "Delete"),
-			serviceType,
-			idType,
-			deleteTarget,
-		)
-		fmt.Fprintf(
-			source,
-			"func %s(ctx context.Context, instance %s, input coreservice.UpdateInput[%s, %s]) error {\n\treturn %s(ctx, input)\n}\n\n",
-			serviceActionAdapterName(current, "Update"),
-			serviceType,
-			entityType,
-			idType,
-			updateTarget,
-		)
 		writeHookAdapter(source, current, imports, "ModifyBefore", declaration.hasBefore)
 		writeHookAdapter(source, current, imports, "ModifyAfter", declaration.hasAfter)
 	}
+}
+
+func writeServiceActionAdapter(source *strings.Builder, current renderService, action ServiceAction, imports *importManager) {
+	signature := serviceActionSignature(current.declaration, action)
+	if signature == nil {
+		return
+	}
+	serviceType := "*" + imports.alias(current.declaration.packagePath) + "." + current.declaration.name
+	requestType := types.TypeString(signature.Params().At(1).Type(), importsQualifier(imports))
+	result := "error"
+	if signature.Results().Len() == 2 {
+		resultType := "any"
+		if action.name == "Add" {
+			resultType = types.TypeString(signature.Results().At(0).Type(), importsQualifier(imports))
+		}
+		result = "(" + resultType + ", error)"
+	}
+	fmt.Fprintf(
+		source,
+		"func %s(ctx context.Context, instance %s, input %s) %s {\n\treturn %s(ctx, input)\n}\n\n",
+		serviceActionAdapterName(current, action.name),
+		serviceType,
+		requestType,
+		result,
+		serviceActionTarget(current.declaration.actions, action.name),
+	)
+}
+
+func serviceActionSignature(declaration ServiceDeclaration, action ServiceAction) *types.Signature {
+	if action.mode == ServiceActionBase {
+		return baseActionSignature(declaration.typ, action.name)
+	}
+	selection := types.NewMethodSet(types.NewPointer(declaration.typ)).Lookup(nil, action.name)
+	if selection == nil {
+		return nil
+	}
+	signature, _ := selection.Obj().Type().(*types.Signature)
+
+	return signature
 }
 
 func writeControllerDeclarations(source *strings.Builder, controllers []renderController, imports *importManager) {
@@ -1912,38 +1919,42 @@ func writeHTTPHandlerCall(
 	componentName := componentVariableName(component.component)
 	controllerName := "controller_" + generatedIdentifier(controller.module, controller.declaration.packagePath, controller.declaration.name)
 	mode := serviceActionModeName(service, route.handler.Method)
+	adapter := serviceActionAdapterName(service, route.handler.Method)
 	descriptor := "descriptor_" + generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity)
 	entityType := imports.alias(fragment.entityPackage) + "." + fragment.entity
 	switch route.handler.Method {
 	case "Add":
-		fmt.Fprintf(source, "%sreturn corecontroller.HandleAdd[%s, uint64](ctx, binder, dispatcher, descriptorResolver, %s, %s, %s, %s.Add)\n", indent, entityType, controllerName, mode, descriptor, componentName)
+		fmt.Fprintf(source, "%sreturn corecontroller.HandleAdd[%s, uint64](ctx, binder, dispatcher, descriptorResolver, %s, %s, %s, func(scopeCtx context.Context, input coreservice.AddInput[%s]) (coreservice.AddResult[uint64], error) {\n", indent, entityType, controllerName, mode, descriptor, entityType)
+		fmt.Fprintf(source, "%s\treturn %s(scopeCtx, %s, input)\n%s})\n", indent, adapter, componentName, indent)
 	case "Delete":
-		fmt.Fprintf(source, "%sreturn corecontroller.HandleDelete[%s, uint64](ctx, binder, dispatcher, descriptorResolver, %s, %s, %s, %s.Delete)\n", indent, entityType, controllerName, mode, descriptor, componentName)
+		fmt.Fprintf(source, "%sreturn corecontroller.HandleDelete[%s, uint64](ctx, binder, dispatcher, descriptorResolver, %s, %s, %s, func(scopeCtx context.Context, input coreservice.DeleteInput[uint64]) error {\n", indent, entityType, controllerName, mode, descriptor)
+		fmt.Fprintf(source, "%s\treturn %s(scopeCtx, %s, input)\n%s})\n", indent, adapter, componentName, indent)
 	case "Update":
-		fmt.Fprintf(source, "%sreturn corecontroller.HandleUpdate[%s, uint64](ctx, binder, dispatcher, descriptorResolver, %s, %s, %s, %s.Update)\n", indent, entityType, controllerName, mode, descriptor, componentName)
+		fmt.Fprintf(source, "%sreturn corecontroller.HandleUpdate[%s, uint64](ctx, binder, dispatcher, descriptorResolver, %s, %s, %s, func(scopeCtx context.Context, input coreservice.UpdateInput[%s, uint64]) error {\n", indent, entityType, controllerName, mode, descriptor, entityType)
+		fmt.Fprintf(source, "%s\treturn %s(scopeCtx, %s, input)\n%s})\n", indent, adapter, componentName, indent)
 	case "Info":
 		if route.handler.HasRequest {
-			writeCRUDDTOCall(source, indent, route, controllerName, mode, componentName, imports)
+			writeCRUDDTOCall(source, indent, route, controllerName, mode, adapter, componentName, imports)
 			return
 		}
 		fmt.Fprintf(source, "%sreturn corecontroller.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, %s, %s, func(scopeCtx context.Context, input uint64) (any, error) {\n", indent, controllerName, mode)
-		writeInvokeResult(source, indent+"\t", componentName+".Info(scopeCtx, input)", route.handler.ReturnsValue)
+		fmt.Fprintf(source, "%s\treturn %s(scopeCtx, %s, input)\n", indent, adapter, componentName)
 		fmt.Fprintf(source, "%s})\n", indent)
 	case "List", "Page":
 		if route.handler.HasRequest {
-			writeCRUDDTOCall(source, indent, route, controllerName, mode, componentName, imports)
+			writeCRUDDTOCall(source, indent, route, controllerName, mode, adapter, componentName, imports)
 			return
 		}
 		fmt.Fprintf(source, "%sreturn corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, %s, crud.Action%s, %s, func(scopeCtx context.Context, input coreservice.Query) (any, error) {\n", indent, controllerName, route.handler.Method, mode)
-		writeInvokeResult(source, indent+"\t", componentName+"."+route.handler.Method+"(scopeCtx, input)", route.handler.ReturnsValue)
+		fmt.Fprintf(source, "%s\treturn %s(scopeCtx, %s, input)\n", indent, adapter, componentName)
 		fmt.Fprintf(source, "%s})\n", indent)
 	}
 }
 
-func writeCRUDDTOCall(source *strings.Builder, indent string, route RouteDeclaration, controllerName, mode, componentName string, imports *importManager) {
+func writeCRUDDTOCall(source *strings.Builder, indent string, route RouteDeclaration, controllerName, mode, adapter, componentName string, imports *importManager) {
 	dtoType := imports.alias(route.handler.RequestPackagePath) + "." + route.handler.RequestType
 	fmt.Fprintf(source, "%sreturn corecontroller.HandleCRUDDTO[%s](ctx, binder, coreroute.Bind%s, dispatcher, descriptorResolver, %s, crud.Action%s, %s, func(scopeCtx context.Context, input *%s) (any, error) {\n", indent, dtoType, bindSourceName(route.bind), controllerName, route.handler.Method, mode, dtoType)
-	writeInvokeResult(source, indent+"\t", componentName+"."+route.handler.Method+"(scopeCtx, input)", route.handler.ReturnsValue)
+	fmt.Fprintf(source, "%s\treturn %s(scopeCtx, %s, input)\n", indent, adapter, componentName)
 	fmt.Fprintf(source, "%s})\n", indent)
 }
 

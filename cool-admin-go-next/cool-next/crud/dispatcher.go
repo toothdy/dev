@@ -69,11 +69,7 @@ func (dispatcher *Dispatcher) Dispatch(
 
 	return dispatcher.runner.Within(ctx, func(scopeCtx context.Context) error {
 		scopeCtx = context.WithValue(scopeCtx, dispatchContextKey{}, &DispatchScope{action: action, mode: mode})
-		if mode != ActionModeOverride {
-			scopeCtx = WithOperation(scopeCtx, plan)
-		} else {
-			scopeCtx = withoutOperation(scopeCtx)
-		}
+		scopeCtx = WithOperation(scopeCtx, plan)
 
 		return adapter(scopeCtx)
 	})
@@ -108,20 +104,14 @@ func (scope *DispatchScope) Mode() ActionMode {
 }
 
 func validateDispatchPlan(action Action, mode ActionMode, plan *ActionPlan) error {
-	switch mode {
-	case ActionModeBase, ActionModeDelegate:
-		if plan == nil {
-			return exception.Core(fmt.Sprintf("%s 模式必须提供 CRUD 动作计划", mode))
-		}
-		if plan.Action() != action {
-			return exception.Core(fmt.Sprintf("CRUD 动作计划不匹配: 当前 %s，请求 %s", plan.Action(), action))
-		}
-	case ActionModeOverride:
-		if plan != nil {
-			return exception.Core("纯 override 不允许携带 CRUD 动作计划")
-		}
-	default:
+	if !isActionMode(mode) {
 		return exception.Core("CRUD 动作模式无效")
+	}
+	if plan == nil {
+		return exception.Core(fmt.Sprintf("%s 模式必须提供 CRUD 动作计划", mode))
+	}
+	if plan.Action() != action {
+		return exception.Core(fmt.Sprintf("CRUD 动作计划不匹配: 当前 %s，请求 %s", plan.Action(), action))
 	}
 
 	return nil

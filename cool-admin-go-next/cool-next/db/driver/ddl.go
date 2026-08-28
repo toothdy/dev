@@ -21,7 +21,7 @@ func (d Dialect) Compile(metadata entity.Metadata) (DDL, error) {
 	if err != nil {
 		return DDL{}, gerror.Wrap(err, "引用实体表名")
 	}
-	fields := metadata.Fields()
+	fields := metadata.PersistentFields()
 	if len(fields) == 0 {
 		return DDL{}, gerror.Newf("实体表 %s 没有字段", metadata.Table())
 	}

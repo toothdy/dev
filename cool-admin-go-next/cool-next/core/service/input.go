@@ -204,6 +204,20 @@ func (value *Mutable[E]) SetNull(field string) error {
 	return value.set(item, true, nil, fieldSourceServer)
 }
 
+// 删除字段及其提交状态
+func (value *Mutable[E]) Unset(field string) error {
+	if value == nil || value.descriptor == nil {
+		return exception.Validate("可写字段集合无效")
+	}
+	item, exists := value.descriptor.JSON(field)
+	if !exists {
+		return exception.Validate(fmt.Sprintf("实体字段 %s 不存在", field))
+	}
+	delete(value.values, item.Name())
+
+	return nil
+}
+
 // 判断是否为数组输入
 func (in AddInput[E]) IsMany() bool { return in.isMany }
 

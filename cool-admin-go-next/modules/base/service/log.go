@@ -125,7 +125,10 @@ func (service *LogService) Clear(ctx context.Context, all bool) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	if !all {
+	if all {
+		// GoFrame 要求删除操作显式携带 WHERE 条件。
+		model = model.Where("1=1")
+	} else {
 		days, keepErr := service.conf.LogKeep(ctx)
 		if keepErr != nil {
 			return 0, keepErr

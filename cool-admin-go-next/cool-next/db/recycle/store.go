@@ -191,21 +191,28 @@ func (store *Store) archiveDelete(
 	if rows.Len() == 0 {
 		return nil
 	}
-	normalizeSnapshotBytes(rows, descriptor)
-	snapshot, err := json.Marshal(rows.Interface())
-	if err != nil {
-		return exception.WrapCore(err, "编码删除快照失败")
-	}
+	items := make([]map[string]any, rows.Len())
 	actualIDs := make([]any, rows.Len())
 	for index := 0; index < rows.Len(); index++ {
-		value, isNull, currentErr := entityFieldValue(rows.Index(index), descriptor.Primary())
-		if currentErr != nil {
-			return exception.WrapCore(currentErr, "读取删除快照主键失败")
+		items[index] = make(map[string]any, len(descriptor.PersistentFields()))
+		for _, field := range descriptor.PersistentFields() {
+			value, isNull, currentErr := entityFieldValue(rows.Index(index), field)
+			if currentErr != nil {
+				return currentErr
+			}
+			if isNull {
+				value = nil
+			}
+			items[index][field.JSONName()] = value
 		}
-		if isNull {
+		actualIDs[index] = items[index][descriptor.Primary().JSONName()]
+		if actualIDs[index] == nil {
 			return exception.Core("删除快照主键不能为 null")
 		}
-		actualIDs[index] = value
+	}
+	snapshot, err := json.Marshal(items)
+	if err != nil {
+		return exception.WrapCore(err, "编码删除快照失败")
 	}
 	if err = store.insertRecord(ctx, transaction, descriptor.Table(), snapshot, uint64(rows.Len())); err != nil {
 		return err
@@ -321,7 +328,7 @@ func (store *Store) insertSnapshot(
 ) error {
 	for index := 0; index < entities.Len(); index++ {
 		data := descriptor.NewDO()
-		for _, field := range descriptor.Fields() {
+		for _, field := range descriptor.PersistentFields() {
 			value, isNull, err := entityFieldValue(entities.Index(index), field)
 			if err != nil {
 				return err
@@ -360,8 +367,8 @@ func decodeSnapshot(
 	if uint64(len(shape)) != count {
 		return reflect.Value{}, exception.Core(fmt.Sprintf("回收记录快照数量不匹配: 记录 %d，快照 %d", count, len(shape)))
 	}
-	expected := make(map[string]struct{}, len(descriptor.Fields()))
-	for _, field := range descriptor.Fields() {
+	expected := make(map[string]struct{}, len(descriptor.PersistentFields()))
+	for _, field := range descriptor.PersistentFields() {
 		expected[field.JSONName()] = struct{}{}
 	}
 	for _, item := range shape {
@@ -423,8 +430,8 @@ func validateIDs(descriptor entity.RuntimeDescriptor, ids []any) ([]any, error) 
 }
 
 func descriptorColumns(descriptor entity.RuntimeDescriptor) []string {
-	columns := make([]string, 0, len(descriptor.Fields()))
-	for _, field := range descriptor.Fields() {
+	columns := make([]string, 0, len(descriptor.PersistentFields()))
+	for _, field := range descriptor.PersistentFields() {
 		columns = append(columns, field.Column())
 	}
 
@@ -455,25 +462,6 @@ func entityFieldValue(value reflect.Value, field entity.Field) (data any, isNull
 	}
 
 	return nil, false, exception.Core(fmt.Sprintf("实体 %s 缺少快照字段 %s", value.Type(), field.JSONName()))
-}
-
-func normalizeSnapshotBytes(entities reflect.Value, descriptor entity.RuntimeDescriptor) {
-	for index := 0; index < entities.Len(); index++ {
-		value := entities.Index(index)
-		for _, field := range descriptor.Fields() {
-			if field.LogicalType() != entity.LogicalBytes || field.Nullable() {
-				continue
-			}
-			for _, candidate := range reflect.VisibleFields(value.Type()) {
-				name := strings.Split(candidate.Tag.Get("json"), ",")[0]
-				current := value.FieldByIndex(candidate.Index)
-				if name == field.JSONName() && current.Kind() == reflect.Slice && current.IsNil() {
-					current.Set(reflect.MakeSlice(current.Type(), 0, 0))
-					break
-				}
-			}
-		}
-	}
 }
 
 func (store *Store) validate() error {

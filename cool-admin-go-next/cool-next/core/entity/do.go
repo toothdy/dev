@@ -51,7 +51,11 @@ func compileDOShape(entityType reflect.Type, table string, fields []Field) *doSh
 		},
 	}
 	bindings := make(map[string]doFieldBinding, len(fields))
-	for index, field := range fields {
+	for _, field := range fields {
+		if !field.Persistent() {
+			continue
+		}
+		index := len(bindings)
 		structFields = append(structFields, reflect.StructField{
 			Name: fmt.Sprintf("Field%d", index),
 			Type: reflect.TypeFor[any](),
@@ -73,7 +77,7 @@ func compileDOShape(entityType reflect.Type, table string, fields []Field) *doSh
 		entityType: entityType,
 		structType: reflect.StructOf(structFields),
 		fields:     bindings,
-		fieldCount: len(fields),
+		fieldCount: len(bindings),
 	}
 }
 
