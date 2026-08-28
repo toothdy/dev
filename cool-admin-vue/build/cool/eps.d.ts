@@ -1232,6 +1232,11 @@ declare namespace Eps {
 		info(data?: any): Promise<TaskInfoEntity>;
 
 		/**
+		 * 列表查询
+		 */
+		list(data?: any): Promise<TaskInfoEntity[]>;
+
+		/**
 		 * 分页查询
 		 */
 		page(data?: any): Promise<TaskInfoPageResponse>;
@@ -1264,6 +1269,7 @@ declare namespace Eps {
 			delete: string;
 			update: string;
 			info: string;
+			list: string;
 			page: string;
 			once: string;
 			stop: string;
@@ -1279,6 +1285,7 @@ declare namespace Eps {
 			delete: boolean;
 			update: boolean;
 			info: boolean;
+			list: boolean;
 			page: boolean;
 			once: boolean;
 			stop: boolean;
