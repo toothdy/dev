@@ -579,7 +579,20 @@ func decodeMutable[E any, ID comparable](
 			target = target.Elem()
 		}
 		value := reflect.New(target)
-		if err := decodeJSON(encoded, value.Interface()); err != nil {
+		var err error
+		if target.Kind() == reflect.Bool {
+			switch string(bytes.TrimSpace(encoded)) {
+			case "0":
+				value.Elem().SetBool(false)
+			case "1":
+				value.Elem().SetBool(true)
+			default:
+				err = decodeJSON(encoded, value.Interface())
+			}
+		} else {
+			err = decodeJSON(encoded, value.Interface())
+		}
+		if err != nil {
 			return nil, exception.WrapValidate(err, fmt.Sprintf("实体字段 %s 无效", name))
 		}
 		fields = append(fields, service.Value(name, value.Elem().Interface()))
