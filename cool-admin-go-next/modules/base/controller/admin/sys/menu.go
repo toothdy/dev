@@ -7,7 +7,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/codegen"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	base "github.com/toothdy/cool-admin-go-next/modules/base"
+	"github.com/toothdy/cool-admin-go-next/modules/base"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"

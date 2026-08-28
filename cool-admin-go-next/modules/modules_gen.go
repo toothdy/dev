@@ -1132,6 +1132,7 @@ type infrastructureConfig struct {
 		Auth struct {
 			JWT     auth.JWTConfig     `json:"jwt"`
 			Session auth.SessionConfig `json:"session"`
+			Bcrypt  authbcrypt.Config  `json:"bcrypt"`
 		} `json:"auth"`
 	} `json:"cool"`
 	Database map[string]gdb.ConfigGroup `json:"database"`
@@ -1146,6 +1147,7 @@ func generatedInfrastructureConfig(ctx context.Context, source configuration.Sou
 	defaults.Cool.Transports.GRPC = coolgrpc.DefaultConfig()
 	defaults.Cool.Auth.JWT = auth.DefaultJWTConfig()
 	defaults.Cool.Auth.Session = auth.DefaultSessionConfig()
+	defaults.Cool.Auth.Bcrypt = authbcrypt.Config{Cost: authbcrypt.DefaultCost}
 	result, err := configuration.Load(ctx, defaults, source)
 	if err != nil {
 		return infrastructureConfig{}, exception.WrapCore(err, "基础设施配置无效")
@@ -2276,7 +2278,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 Auth 服务失败")
 	}
-	bcryptVerifier, err := authbcrypt.New(authbcrypt.Config{})
+	bcryptVerifier, err := authbcrypt.New(infrastructure.Cool.Auth.Bcrypt)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 bcrypt 验证器失败")
 	}

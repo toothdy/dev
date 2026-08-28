@@ -30,6 +30,25 @@ type PersonUpdateReq struct {
 	OldPassword *string `json:"oldPassword"`
 }
 
+// 当前管理员个人信息
+type PersonResult struct {
+	ID           uint64      `json:"id"`
+	CreateTime   *gtime.Time `json:"createTime"`
+	UpdateTime   *gtime.Time `json:"updateTime"`
+	DepartmentID *uint64     `json:"departmentId"`
+	UserID       *uint64     `json:"userId"`
+	Name         *string     `json:"name"`
+	Username     string      `json:"username"`
+	PasswordV    int32       `json:"passwordV"`
+	NickName     *string     `json:"nickName"`
+	HeadImg      *string     `json:"headImg"`
+	Phone        *string     `json:"phone"`
+	Email        *string     `json:"email"`
+	Remark       *string     `json:"remark"`
+	Status       int32       `json:"status"`
+	SocketID     *string     `json:"socketId"`
+}
+
 // 用户分页列表的稳定响应字段
 type UserPageItem struct {
 	ID             uint64      `json:"id"`

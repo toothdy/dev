@@ -533,53 +533,42 @@ func (service *PermissionService) PermissionMenu(ctx context.Context) (dto.Permi
 	if err != nil {
 		return dto.PermissionMenuResult{}, err
 	}
-	roleIDs, err := service.RoleIDs(ctx, identity.UserID)
-	if err != nil {
-		return dto.PermissionMenuResult{}, err
-	}
+	roleIDs := identity.RoleIDs()
 	isAdmin, err := service.IsAdmin(ctx, roleIDs)
 	if err != nil {
 		return dto.PermissionMenuResult{}, err
 	}
-	permissions, err := service.permissions(ctx, roleIDs, isAdmin)
+	rows, err := service.visibleMenuRows(ctx, roleIDs, isAdmin)
 	if err != nil {
 		return dto.PermissionMenuResult{}, err
+	}
+	permissions := make(map[string]struct{})
+	menus := make([]dto.MenuListItem, len(rows))
+	for index, row := range rows {
+		menus[index] = menuListItem(row)
+		if row.Perms == nil {
+			continue
+		}
+		for _, permission := range strings.Split(*row.Perms, ",") {
+			if permission = strings.TrimSpace(permission); permission != "" {
+				permissions[permission] = struct{}{}
+			}
+		}
 	}
 	perms := make([]string, 0, len(permissions))
 	for permission := range permissions {
 		perms = append(perms, permission)
 	}
 	sort.Strings(perms)
-	menus, err := service.flatVisibleMenus(ctx, roleIDs, isAdmin)
-	if err != nil {
-		return dto.PermissionMenuResult{}, err
-	}
 
 	return dto.PermissionMenuResult{Perms: perms, Menus: menus}, nil
 }
 
 // 当前角色可见的扁平菜单列表
 func (service *PermissionService) flatVisibleMenus(ctx context.Context, roleIDs []uint64, isAdmin bool) ([]dto.MenuListItem, error) {
-	if !isAdmin && len(roleIDs) == 0 {
-		return []dto.MenuListItem{}, nil
-	}
-	model, err := service.menu.Model(ctx)
+	rows, err := service.visibleMenuRows(ctx, roleIDs, isAdmin)
 	if err != nil {
 		return nil, err
-	}
-	if !isAdmin {
-		menuIDs, idErr := service.menuService.menuIDsByRoles(ctx, roleIDs)
-		if idErr != nil {
-			return nil, idErr
-		}
-		if len(menuIDs) == 0 {
-			return []dto.MenuListItem{}, nil
-		}
-		model = model.WhereIn("id", menuIDs)
-	}
-	var rows []menuRow
-	if err = model.OrderAsc("orderNum").OrderAsc("id").Scan(&rows); err != nil {
-		return nil, exception.WrapCore(err, "查询菜单列表失败")
 	}
 	items := make([]dto.MenuListItem, len(rows))
 	for index, row := range rows {
@@ -587,6 +576,37 @@ func (service *PermissionService) flatVisibleMenus(ctx context.Context, roleIDs 
 	}
 
 	return items, nil
+}
+
+func (service *PermissionService) visibleMenuRows(ctx context.Context, roleIDs []uint64, isAdmin bool) ([]menuRow, error) {
+	if !isAdmin && len(roleIDs) == 0 {
+		return []menuRow{}, nil
+	}
+	model, err := service.menu.Model(ctx)
+	if err != nil {
+		return nil, err
+	}
+	model = model.As("m")
+	if !isAdmin {
+		model = model.
+			InnerJoin(service.menuService.roleMenu.Descriptor().Table(), "rm", "rm.menuId = m.id").
+			WhereIn("rm.roleId", roleIDs)
+	}
+	var rows []menuRow
+	if err = model.Fields("m.*").OrderAsc("m.orderNum").OrderAsc("m.id").Scan(&rows); err != nil {
+		return nil, exception.WrapCore(err, "查询菜单列表失败")
+	}
+	uniqueRows := make([]menuRow, 0, len(rows))
+	seen := make(map[uint64]struct{}, len(rows))
+	for _, row := range rows {
+		if _, exists := seen[row.ID]; exists {
+			continue
+		}
+		seen[row.ID] = struct{}{}
+		uniqueRows = append(uniqueRows, row)
+	}
+
+	return uniqueRows, nil
 }
 
 func validPermissionBase[E any](service *coreservice.Base[E, uint64]) bool {

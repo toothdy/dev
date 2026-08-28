@@ -29,7 +29,7 @@ func NewCommHandler(
 }
 
 // 当前管理员个人信息
-func (handler *CommHandler) Person(ctx context.Context) (*dto.UserInfoResult, error) {
+func (handler *CommHandler) Person(ctx context.Context) (*dto.PersonResult, error) {
 	if handler == nil || handler.user == nil {
 		return nil, exception.Core("Base 个人信息接口未初始化")
 	}

@@ -344,7 +344,7 @@ func (service *UserService) Move(ctx context.Context, request *dto.UserMoveReq) 
 }
 
 // 当前已认证管理员的个人资料
-func (service *UserService) Person(ctx context.Context) (*dto.UserInfoResult, error) {
+func (service *UserService) Person(ctx context.Context) (*dto.PersonResult, error) {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
 		return nil, err
@@ -353,10 +353,7 @@ func (service *UserService) Person(ctx context.Context) (*dto.UserInfoResult, er
 	if err != nil || row == nil {
 		return nil, err
 	}
-	result := userInfoResult(*row)
-	if err = service.enrichUserInfo(ctx, &result); err != nil {
-		return nil, err
-	}
+	result := personResult(*row)
 
 	return &result, nil
 }
@@ -610,6 +607,16 @@ func userPageOrder(descriptor coreentity.Metadata, order, sort string) (string, 
 
 func userInfoResult(row userRow) dto.UserInfoResult {
 	return dto.UserInfoResult{
+		ID: row.ID, CreateTime: row.CreateTime, UpdateTime: row.UpdateTime,
+		DepartmentID: row.DepartmentID, UserID: row.UserID, Name: row.Name,
+		Username: row.Username, PasswordV: row.PasswordV, NickName: row.NickName,
+		HeadImg: row.HeadImg, Phone: row.Phone, Email: row.Email, Remark: row.Remark,
+		Status: row.Status, SocketID: row.SocketID,
+	}
+}
+
+func personResult(row userRow) dto.PersonResult {
+	return dto.PersonResult{
 		ID: row.ID, CreateTime: row.CreateTime, UpdateTime: row.UpdateTime,
 		DepartmentID: row.DepartmentID, UserID: row.UserID, Name: row.Name,
 		Username: row.Username, PasswordV: row.PasswordV, NickName: row.NickName,

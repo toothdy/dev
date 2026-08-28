@@ -83,8 +83,22 @@ func (service *LoginService) Login(ctx context.Context, request dto.LoginReq) (d
 	if err != nil {
 		return dto.TokenResult{}, err
 	}
-	if candidate == nil {
+	if candidate == nil || candidate.Status != 1 {
 		return dto.TokenResult{}, loginCredentialError()
+	}
+	result, err := service.password.Verify(request.Password, candidate.Password)
+	if err != nil {
+		return dto.TokenResult{}, err
+	}
+	if !result.Valid {
+		return dto.TokenResult{}, loginCredentialError()
+	}
+	var rehashedPassword string
+	if result.NeedsRehash {
+		rehashedPassword, err = service.password.Hash(request.Password)
+		if err != nil {
+			return dto.TokenResult{}, err
+		}
 	}
 
 	var pair auth.Pair
@@ -93,14 +107,8 @@ func (service *LoginService) Login(ctx context.Context, request dto.LoginReq) (d
 		if lockErr != nil {
 			return lockErr
 		}
-		if current == nil || current.Username != request.Username || current.Status != 1 {
-			return loginCredentialError()
-		}
-		result, verifyErr := service.password.Verify(request.Password, current.Password)
-		if verifyErr != nil {
-			return verifyErr
-		}
-		if !result.Valid {
+		if current == nil || current.Username != candidate.Username || current.Status != 1 ||
+			current.Password != candidate.Password || current.PasswordV != candidate.PasswordV {
 			return loginCredentialError()
 		}
 		principal, principalErr := service.adminPrincipal(txCtx, current)
@@ -110,8 +118,8 @@ func (service *LoginService) Login(ctx context.Context, request dto.LoginReq) (d
 		if principalErr != nil {
 			return principalErr
 		}
-		if result.NeedsRehash {
-			if rehashErr := service.rehashPassword(txCtx, current.ID, request.Password); rehashErr != nil {
+		if rehashedPassword != "" {
+			if rehashErr := service.updatePasswordHash(txCtx, current.ID, rehashedPassword); rehashErr != nil {
 				return rehashErr
 			}
 		}
@@ -267,17 +275,13 @@ func (service *LoginService) adminPrincipal(ctx context.Context, user *loginUser
 	}, nil
 }
 
-func (service *LoginService) rehashPassword(ctx context.Context, userID uint64, plain string) error {
-	encoded, err := service.password.Hash(plain)
-	if err != nil {
-		return err
-	}
+func (service *LoginService) updatePasswordHash(ctx context.Context, userID uint64, encoded string) error {
 	model, err := service.user.Model(ctx)
 	if err != nil {
 		return err
 	}
 	if _, err = model.Data(loginPasswordUpdate{Password: encoded}).Where("id", userID).Update(); err != nil {
-		return exception.WrapCore(err, "升级用户密码摘要失败")
+		return exception.WrapCore(err, "更新用户密码摘要失败")
 	}
 
 	return nil

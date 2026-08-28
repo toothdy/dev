@@ -1,5 +1,7 @@
 cool:
   auth:
+    bcrypt:
+      cost: 10
     jwt:
       issuer: cool-admin-go-next
       audience: cool-admin

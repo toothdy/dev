@@ -170,7 +170,14 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 	writeImports(&source, imports)
 	writeSeedDeclarations(&source, modules)
 	writeDescriptorDeclarations(&source, fragments, imports)
-	writeInfrastructureDeclarations(&source, fragments, hasOutbox, len(controllers) > 0 || hasSeed, hasAuthProviders(graph.Providers()))
+	writeInfrastructureDeclarations(
+		&source,
+		fragments,
+		hasOutbox,
+		len(controllers) > 0 || hasSeed,
+		hasAuthProviders(graph.Providers()),
+		hasFrameworkProvider(graph.Providers(), authBcryptPackagePath, "Verifier"),
+	)
 	writeBaseProviderDeclarations(&source, fragments, imports)
 	writeServiceAdapterDeclarations(&source, services, imports)
 	writeControllerDeclarations(&source, controllers, imports)
@@ -671,7 +678,7 @@ func writeDescriptorDeclarations(source *strings.Builder, fragments []Descriptor
 	}
 }
 
-func writeInfrastructureDeclarations(source *strings.Builder, fragments []DescriptorFragment, hasOutbox, hasHTTP, hasAuth bool) {
+func writeInfrastructureDeclarations(source *strings.Builder, fragments []DescriptorFragment, hasOutbox, hasHTTP, hasAuth, hasBcrypt bool) {
 	source.WriteString("type infrastructureConfig struct {\n")
 	source.WriteString("\tCool struct {\n")
 	source.WriteString("\t\tCRUD crud.Config `json:\"crud\"`\n")
@@ -680,10 +687,15 @@ func writeInfrastructureDeclarations(source *strings.Builder, fragments []Descri
 	source.WriteString("\t\t\tHTTP apphttp.Config `json:\"http\"`\n")
 	source.WriteString("\t\t\tGRPC coolgrpc.Config `json:\"grpc\"`\n")
 	source.WriteString("\t\t} `json:\"transports\"`\n")
-	if hasAuth {
+	if hasAuth || hasBcrypt {
 		source.WriteString("\t\tAuth struct {\n")
-		source.WriteString("\t\t\tJWT auth.JWTConfig `json:\"jwt\"`\n")
-		source.WriteString("\t\t\tSession auth.SessionConfig `json:\"session\"`\n")
+		if hasAuth {
+			source.WriteString("\t\t\tJWT auth.JWTConfig `json:\"jwt\"`\n")
+			source.WriteString("\t\t\tSession auth.SessionConfig `json:\"session\"`\n")
+		}
+		if hasBcrypt {
+			source.WriteString("\t\t\tBcrypt authbcrypt.Config `json:\"bcrypt\"`\n")
+		}
 		source.WriteString("\t\t} `json:\"auth\"`\n")
 	}
 	source.WriteString("\t} `json:\"cool\"`\n")
@@ -699,6 +711,9 @@ func writeInfrastructureDeclarations(source *strings.Builder, fragments []Descri
 	if hasAuth {
 		source.WriteString("\tdefaults.Cool.Auth.JWT = auth.DefaultJWTConfig()\n")
 		source.WriteString("\tdefaults.Cool.Auth.Session = auth.DefaultSessionConfig()\n")
+	}
+	if hasBcrypt {
+		source.WriteString("\tdefaults.Cool.Auth.Bcrypt = authbcrypt.Config{Cost: authbcrypt.DefaultCost}\n")
 	}
 	source.WriteString("\tresult, err := configuration.Load(ctx, defaults, source)\n")
 	source.WriteString("\tif err != nil {\n\t\treturn infrastructureConfig{}, exception.WrapCore(err, \"基础设施配置无效\")\n\t}\n")
@@ -1137,7 +1152,7 @@ func writeGeneratedFunction(
 		source.WriteString("\tif err != nil { return assembly, exception.WrapCore(err, \"构造 Auth 服务失败\") }\n")
 	}
 	if hasFrameworkProvider(graph.Providers(), authBcryptPackagePath, "Verifier") {
-		source.WriteString("\tbcryptVerifier, err := authbcrypt.New(authbcrypt.Config{})\n")
+		source.WriteString("\tbcryptVerifier, err := authbcrypt.New(infrastructure.Cool.Auth.Bcrypt)\n")
 		source.WriteString("\tif err != nil { return assembly, exception.WrapCore(err, \"构造 bcrypt 验证器失败\") }\n")
 	}
 	for _, current := range components {

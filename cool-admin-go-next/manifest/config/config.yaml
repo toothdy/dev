@@ -1,5 +1,7 @@
 cool: # Cool 应用配置
   auth:
+    bcrypt:
+      cost: 12
     jwt:
       issuer: cool-admin-go-next
       audience: cool-admin

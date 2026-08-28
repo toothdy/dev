@@ -58,6 +58,8 @@ func isBusinessAdminPath(path string) bool {
 	}
 	for _, excluded := range []string{
 		"/admin/base/open/",
+		"/admin/base/comm/person/",
+		"/admin/base/comm/permmenu/",
 		"/admin/base/comm/program",
 		"/admin/base/open/eps",
 		"/admin/base/open/captcha",
