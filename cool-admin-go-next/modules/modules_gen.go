@@ -15,11 +15,11 @@ import (
 	authbcrypt "github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt"
 	dto "github.com/toothdy/cool-admin-go-next/cool-next/codegen"
 	app "github.com/toothdy/cool-admin-go-next/cool-next/core/app"
-	apphttp "github.com/toothdy/cool-admin-go-next/cool-next/core/app/http"
-	configuration "github.com/toothdy/cool-admin-go-next/cool-next/core/configuration"
+	config "github.com/toothdy/cool-admin-go-next/cool-next/core/config"
 	corecontroller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	exception "github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	apphttp "github.com/toothdy/cool-admin-go-next/cool-next/core/http"
 	module "github.com/toothdy/cool-admin-go-next/cool-next/core/module"
 	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
@@ -1139,7 +1139,7 @@ type infrastructureConfig struct {
 	Redis    map[string]gredis.Config   `json:"redis"`
 }
 
-func generatedInfrastructureConfig(ctx context.Context, source configuration.Source) (infrastructureConfig, error) {
+func generatedInfrastructureConfig(ctx context.Context, source config.Source) (infrastructureConfig, error) {
 	defaults := infrastructureConfig{}
 	defaults.Cool.CRUD = crud.DefaultConfig()
 	defaults.Cool.Outbox = outbox.DefaultConfig()
@@ -1148,7 +1148,7 @@ func generatedInfrastructureConfig(ctx context.Context, source configuration.Sou
 	defaults.Cool.Auth.JWT = auth.DefaultJWTConfig()
 	defaults.Cool.Auth.Session = auth.DefaultSessionConfig()
 	defaults.Cool.Auth.Bcrypt = authbcrypt.Config{Cost: authbcrypt.DefaultCost}
-	result, err := configuration.Load(ctx, defaults, source)
+	result, err := config.Load(ctx, defaults, source)
 	if err != nil {
 		return infrastructureConfig{}, exception.WrapCore(err, "基础设施配置无效")
 	}
@@ -1956,7 +1956,7 @@ func generatedGraph() module.Graph {
 			{Kind: module.ProviderKindComponent, Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewInfo", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService"},
 			{Kind: module.ProviderKindComponent, Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewRegistry", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.Registry"},
 			{Kind: module.ProviderKindComponent, Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewScheduler", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.Scheduler"},
-			{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/app/http", Name: "New", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/core/app/http.Transport"},
+			{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/http", Name: "New", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/core/http.Transport"},
 			{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/grpc.Transport"},
 		},
 		Components: []module.ComponentDefinition{
@@ -1996,7 +1996,7 @@ func generatedGraph() module.Graph {
 			{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewScheduler"},
 			{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/schedule", Name: "NewTaskJob"},
 			{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewInfo"},
-			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/app/http", Name: "New"},
+			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/http", Name: "New"},
 			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New"},
 		},
 		Lifecycles: []module.LifecycleDefinition{
@@ -2036,11 +2036,11 @@ func generatedGraph() module.Graph {
 			{Component: module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewScheduler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/schedule", Name: "NewTaskJob"}, Initializer: false, Starter: true, Stopper: true, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewInfo"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
-			{Component: module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/app/http", Name: "New"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
+			{Component: module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/http", Name: "New"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 		},
 		Transports: []module.ComponentDefinition{
-			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/app/http", Name: "New"},
+			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/http", Name: "New"},
 			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New"},
 		},
 		Dependencies: []module.DependencyDefinition{
@@ -3441,7 +3441,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 HTTP Transport 失败")
 	}
-	assembly.AddTransport(module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/app/http", Name: "New"}, httpTransport, app.Hooks{})
+	assembly.AddTransport(module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/http", Name: "New"}, httpTransport, app.Hooks{})
 	grpcTransport, err := coolgrpc.New(infrastructure.Cool.Transports.GRPC, GRPCRegistrar(), nil, nil)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 gRPC Transport 失败")

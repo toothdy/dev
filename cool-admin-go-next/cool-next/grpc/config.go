@@ -6,7 +6,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/configuration"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/config"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 )
 
@@ -34,8 +34,8 @@ func DefaultConfig() Config {
 }
 
 // 合并并校验 gRPC 配置
-func LoadConfig(ctx context.Context, source configuration.Source) (Config, error) {
-	result, err := configuration.Load(ctx, DefaultConfig(), source)
+func LoadConfig(ctx context.Context, source config.Source) (Config, error) {
+	result, err := config.Load(ctx, DefaultConfig(), source)
 	if err != nil {
 		return Config{}, exception.WrapCore(err, "gRPC Transport 配置无效")
 	}

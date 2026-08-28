@@ -3,7 +3,7 @@ package module
 import (
 	"context"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/configuration"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/config"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 
 	"fmt"
@@ -17,11 +17,11 @@ type Compiled[T any] struct {
 	order             int
 	middlewares       []ComponentRef
 	globalMiddlewares []ComponentRef
-	config            *configuration.Result[T]
+	config            *config.Result[T]
 }
 
 // 编译模块声明和配置
-func Compile[T any](ctx context.Context, identity Identity, declaration Declaration[T], source configuration.Source) (*Compiled[T], error) {
+func Compile[T any](ctx context.Context, identity Identity, declaration Declaration[T], source config.Source) (*Compiled[T], error) {
 	if err := validateIdentity(identity); err != nil {
 		return nil, exception.WrapCore(err, "模块身份无效")
 	}
@@ -29,7 +29,7 @@ func Compile[T any](ctx context.Context, identity Identity, declaration Declarat
 		return nil, exception.WrapCore(err, fmt.Sprintf("模块 %s 声明无效", identity.Key()))
 	}
 
-	config, err := configuration.Load(ctx, declaration.Defaults, source)
+	config, err := config.Load(ctx, declaration.Defaults, source)
 	if err != nil {
 		return nil, exception.WrapCore(err, fmt.Sprintf("模块 %s 配置无效", identity.Key()))
 	}

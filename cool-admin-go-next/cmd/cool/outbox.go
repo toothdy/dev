@@ -21,7 +21,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/app"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/configuration"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/config"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
 	outboxstore "github.com/toothdy/cool-admin-go-next/cool-next/outbox/store"
@@ -352,7 +352,7 @@ func openOutboxStore(ctx context.Context, cwd string) (outboxOperations, error) 
 	}
 	defaults := outboxRuntimeConfig{}
 	defaults.Cool.Outbox.DatabaseGroup = "default"
-	result, err := configuration.Load(ctx, defaults, configuration.Source{Main: selected, LookupEnv: os.LookupEnv})
+	result, err := config.Load(ctx, defaults, config.Source{Main: selected, LookupEnv: os.LookupEnv})
 	if err != nil {
 		return nil, fmt.Errorf("Outbox 配置无效: %w", err)
 	}

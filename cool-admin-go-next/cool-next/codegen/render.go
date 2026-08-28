@@ -18,8 +18,8 @@ const authPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/auth"
 const authBcryptPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt"
 const routePackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 const appPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/core/app"
-const appHTTPPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/core/app/http"
-const configurationPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/core/configuration"
+const appHTTPPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/core/http"
+const configPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/core/config"
 const exceptionPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 const epsPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/eps"
 const grpcPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/grpc"
@@ -79,7 +79,7 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 	imports.add(modulePackagePath, "module")
 	imports.add(appPackagePath, "app")
 	imports.add(appHTTPPackagePath, "apphttp")
-	imports.add(configurationPackagePath, "configuration")
+	imports.add(configPackagePath, "config")
 	imports.add(exceptionPackagePath, "exception")
 	imports.add(grpcPackagePath, "coolgrpc")
 	imports.add(grpcxPackagePath, "grpcx")
@@ -702,7 +702,7 @@ func writeInfrastructureDeclarations(source *strings.Builder, fragments []Descri
 	source.WriteString("\tDatabase map[string]gdb.ConfigGroup `json:\"database\"`\n")
 	source.WriteString("\tRedis map[string]gredis.Config `json:\"redis\"`\n")
 	source.WriteString("}\n\n")
-	source.WriteString("func generatedInfrastructureConfig(ctx context.Context, source configuration.Source) (infrastructureConfig, error) {\n")
+	source.WriteString("func generatedInfrastructureConfig(ctx context.Context, source config.Source) (infrastructureConfig, error) {\n")
 	source.WriteString("\tdefaults := infrastructureConfig{}\n")
 	source.WriteString("\tdefaults.Cool.CRUD = crud.DefaultConfig()\n")
 	source.WriteString("\tdefaults.Cool.Outbox = outbox.DefaultConfig()\n")
@@ -715,7 +715,7 @@ func writeInfrastructureDeclarations(source *strings.Builder, fragments []Descri
 	if hasBcrypt {
 		source.WriteString("\tdefaults.Cool.Auth.Bcrypt = authbcrypt.Config{Cost: authbcrypt.DefaultCost}\n")
 	}
-	source.WriteString("\tresult, err := configuration.Load(ctx, defaults, source)\n")
+	source.WriteString("\tresult, err := config.Load(ctx, defaults, source)\n")
 	source.WriteString("\tif err != nil {\n\t\treturn infrastructureConfig{}, exception.WrapCore(err, \"基础设施配置无效\")\n\t}\n")
 	source.WriteString("\tconfig := result.Value()\n")
 	source.WriteString("\tfor group, node := range config.Redis {\n")

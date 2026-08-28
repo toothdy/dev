@@ -249,7 +249,6 @@ func (permissionSessionStore) RotateRefresh(context.Context, string, string, aut
 
 func (permissionSessionStore) Revoke(context.Context, string) error { return nil }
 
-
 func (permissionSessionStore) RevokeUsers(context.Context, auth.Kind, []uint64) error { return nil }
 
 func seedPermissionMenus(t *testing.T, runtime *coredb.Runtime, rows ...permissionMenuTestRow) {
