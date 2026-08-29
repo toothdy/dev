@@ -61,6 +61,24 @@
 - 删除没有生产调用、只被测试覆盖的公开包装方法。
 - 删除构造成功后各方法重复执行的内部依赖校验。
 - 缩短快照、角色和菜单相关局部名称。
+- 将仅在 `service` 包内调用的领域方法改为非导出短名：
+
+| 原名称 | 新名称 |
+| --- | --- |
+| `RolesByUsers` | `roles` |
+| `RoleSnapshot` | `roleSnap` |
+| `ValidateRoleSnapshot` | `checkSnap` |
+| `PrepareRoleChange` | `prepRoles` |
+| `LockRoles` | `lockRoles` |
+| `LockUsers` | `lockUsers` |
+| `ReplaceRoles` | `setRoles` |
+| `DeleteUserRoles` | `delRoles` |
+| `AdminRoleIDs` | `adminRoles` |
+| `EnsureAdminTransition` | `checkAdmin` |
+| `EnsureNotLastAdmin` | `keepAdmin` |
+| `RevokeUsers` | `revoke` |
+
+- 保持 `Authorize`、`RoleIDs`、`IsAdmin` 和 `PermissionMenu` 等实际对外入口不变。
 - 保留授权判断、关系快照、最后管理员校验和 Session 撤销。
 
 ### department.go
