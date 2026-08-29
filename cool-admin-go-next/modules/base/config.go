@@ -44,8 +44,8 @@ func ModuleConfig() module.Declaration[Config] {
 		Description: "基础的权限管理功能，包括登录，权限校验",
 		Order:       10,
 		GlobalMiddlewares: []module.ComponentRef{
-			module.Ref("middleware.global.NewLogHandler"),
-			module.Ref("middleware.global.NewTranslateHandler"),
+			module.Ref("middleware.NewLogHandler"),
+			module.Ref("middleware.NewTranslateHandler"),
 		},
 		Defaults: Config{
 			Upload: UploadConfig{

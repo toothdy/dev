@@ -37,7 +37,7 @@ import (
 	app2 "github.com/toothdy/cool-admin-go-next/modules/base/controller/app"
 	dto2 "github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	entity "github.com/toothdy/cool-admin-go-next/modules/base/entity"
-	global "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global"
+	middleware "github.com/toothdy/cool-admin-go-next/modules/base/middleware"
 	schedule "github.com/toothdy/cool-admin-go-next/modules/base/schedule"
 	service "github.com/toothdy/cool-admin-go-next/modules/base/service"
 	dict "github.com/toothdy/cool-admin-go-next/modules/dict"
@@ -1781,7 +1781,7 @@ func GRPCRegistrar() coolgrpc.GRPCRegistrar { return generatedGRPCRegistrar{} }
 func generatedGraph() module.Graph {
 	return module.MustBuildGraph(module.GraphInput{
 		Modules: []module.ModuleDefinition{
-			{Key: "base", Name: "权限管理", Description: "基础的权限管理功能，包括登录，权限校验", Order: 10, GlobalMiddlewares: []module.ComponentRef{"middleware.global.NewLogHandler", "middleware.global.NewTranslateHandler"}},
+			{Key: "base", Name: "权限管理", Description: "基础的权限管理功能，包括登录，权限校验", Order: 10, GlobalMiddlewares: []module.ComponentRef{"middleware.NewLogHandler", "middleware.NewTranslateHandler"}},
 			{Key: "dict", Name: "字典管理", Description: "数据字典等", Order: 0},
 			{Key: "task", Name: "任务调度", Description: "任务调度模块，支持分布式任务，由redis整个集群的任务", Order: 0},
 			{Key: ".framework", Name: "Cool Framework", Description: "应用基础设施"},
@@ -1923,8 +1923,8 @@ func generatedGraph() module.Graph {
 			{Kind: module.ProviderKindDescriptor, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu", Type: "entity.Descriptor[entity.RoleMenu, uint64]"},
 			{Kind: module.ProviderKindDescriptor, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser", Type: "entity.Descriptor[entity.User, uint64]"},
 			{Kind: module.ProviderKindDescriptor, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole", Type: "entity.Descriptor[entity.UserRole, uint64]"},
-			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewLogHandler", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/middleware/global.LogHandler"},
-			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewTranslateHandler", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/middleware/global.TranslateHandler"},
+			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware", Name: "NewLogHandler", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/middleware.LogHandler"},
+			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware", Name: "NewTranslateHandler", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/middleware.TranslateHandler"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/schedule", Name: "NewLogJob", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/schedule.LogJob"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewCaptcha", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.CaptchaService"},
 			{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewConf", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ConfService"},
@@ -1971,7 +1971,7 @@ func generatedGraph() module.Graph {
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewConf"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLog"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewLogHandler"},
-			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewLogHandler"},
+			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware", Name: "NewLogHandler"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/schedule", Name: "NewLogJob"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewMenuToolHandler"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewParam"},
@@ -1982,7 +1982,7 @@ func generatedGraph() module.Graph {
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewOpenHandler"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewRole"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewTranslate"},
-			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewTranslateHandler"},
+			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware", Name: "NewTranslateHandler"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUpload"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewUploadHandler"},
 			{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Name: "NewCommHandler"},
@@ -2011,7 +2011,7 @@ func generatedGraph() module.Graph {
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewConf"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLog"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewLogHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
-			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewLogHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
+			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware", Name: "NewLogHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/schedule", Name: "NewLogJob"}, Initializer: false, Starter: true, Stopper: true, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewMenuToolHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewParam"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
@@ -2022,7 +2022,7 @@ func generatedGraph() module.Graph {
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewOpenHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewRole"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewTranslate"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
-			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewTranslateHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
+			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware", Name: "NewTranslateHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUpload"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewUploadHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Name: "NewCommHandler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
@@ -2050,7 +2050,7 @@ func generatedGraph() module.Graph {
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLog"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewConf", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ConfService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLog"}, ParameterIndex: 2, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser", Type: "*service.Base[entity.User, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewLogHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLog", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.LogService"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewLogHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLog", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.LogService"}},
+			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware", Name: "NewLogHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLog", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.LogService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/schedule", Name: "NewLogJob"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewLog", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.LogService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/schedule", Name: "NewLogJob"}, ParameterIndex: 1, Provider: module.ProviderDefinition{Kind: module.ProviderKindConfig, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base", Name: "Config", Type: "github.com/toothdy/cool-admin-go-next/modules/base.Config"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewMenu"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/db", Name: "Runtime", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/db.Runtime"}},
@@ -2093,7 +2093,7 @@ func generatedGraph() module.Graph {
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewRole"}, ParameterIndex: 3, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu", Type: "*service.Base[entity.RoleMenu, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewRole"}, ParameterIndex: 4, Provider: module.ProviderDefinition{Kind: module.ProviderKindBase, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/entity", Name: "basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment", Type: "*service.Base[entity.RoleDepartment, uint64]"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewRole"}, ParameterIndex: 5, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/auth", Name: "Store", Type: "github.com/toothdy/cool-admin-go-next/cool-next/auth.Store"}},
-			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewTranslateHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewTranslate", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.TranslateService"}},
+			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware", Name: "NewTranslateHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewTranslate", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.TranslateService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUpload"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindConfig, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base", Name: "Config", Type: "github.com/toothdy/cool-admin-go-next/modules/base.Config"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Name: "NewUploadHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewUpload", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UploadService"}},
 			{Consumer: module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Name: "NewCommHandler"}, ParameterIndex: 0, Provider: module.ProviderDefinition{Kind: module.ProviderKindComponent, Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewParam", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService"}},
@@ -2314,10 +2314,10 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Name: "NewLogHandler"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler := global.NewLogHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog)
-	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler := app.Hooks{}
-	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewLogHandler"}
-	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewLogHandler := middleware.NewLogHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog)
+	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewLogHandler := app.Hooks{}
+	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewLogHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware", Name: "NewLogHandler"}
+	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewLogHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewLogHandler)
 	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_scheduleNewLogJob, err := schedule.NewLogJob(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog, config0.Config())
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/schedule.NewLogJob 失败")
@@ -2381,10 +2381,10 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate := app.Hooks{}
 	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Name: "NewTranslate"}
 	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate)
-	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler := global.NewTranslateHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate)
-	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler := app.Hooks{}
-	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware/global", Name: "NewTranslateHandler"}
-	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler)
+	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewTranslateHandler := middleware.NewTranslateHandler(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewTranslate)
+	hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewTranslateHandler := app.Hooks{}
+	definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewTranslateHandler := module.ComponentDefinition{Module: "base", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/middleware", Name: "NewTranslateHandler"}
+	assembly.AddComponent(definition_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewTranslateHandler, hooks_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewTranslateHandler)
 	component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUpload, err := service.NewUpload(config0.Config())
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造组件 github.com/toothdy/cool-admin-go-next/modules/base/service.NewUpload 失败")
@@ -2582,8 +2582,8 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 			return exception.Core("HTTP Server 未初始化")
 		}
 		server.Use(corecontroller.NewResponseMiddleware(nil))
-		server.Use(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewLogHandler.Handle)
-		server.Use(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middleware_globalNewTranslateHandler.Handle)
+		server.Use(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewLogHandler.Handle)
+		server.Use(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewTranslateHandler.Handle)
 		if gmode.IsDevelop() {
 			contextMiddleware_baseGET_admin_base_coding_getModuleTree, err := apphttp.NewContextMiddleware(authService, "/admin/base/coding/getModuleTree", false)
 			if err != nil {
