@@ -13,7 +13,7 @@ import (
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/recycle"
 	baseentity "github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
@@ -111,7 +111,7 @@ func TestFlatVisibleMenusReturnsOrderedMenusWithoutNesting(t *testing.T) {
 	}
 }
 
-func newPermissionMenuTestService(t *testing.T) (*PermissionService, *coredb.Runtime) {
+func newPermissionMenuTestService(t *testing.T) (*PermissionService, *db.Runtime) {
 	t.Helper()
 
 	menuDescriptor, err := coreentity.Compile[baseentity.Menu, uint64](baseentity.MenuSchema())
@@ -123,7 +123,7 @@ func newPermissionMenuTestService(t *testing.T) (*PermissionService, *coredb.Run
 		t.Fatal(err)
 	}
 	group := "permission_menu_" + strings.ReplaceAll(t.Name(), "/", "_")
-	runtime, err := coredb.New(t.Context(), coredb.Config{
+	runtime, err := db.New(t.Context(), db.Config{
 		Group: group,
 		Nodes: gdb.ConfigGroup{{
 			Type: "sqlite",
@@ -178,7 +178,7 @@ func newPermissionMenuTestService(t *testing.T) (*PermissionService, *coredb.Run
 	}, runtime
 }
 
-func newPermissionRoleTestService(t *testing.T) (*PermissionService, *coredb.Runtime) {
+func newPermissionRoleTestService(t *testing.T) (*PermissionService, *db.Runtime) {
 	t.Helper()
 
 	userDescriptor, err := coreentity.Compile[baseentity.User, uint64](baseentity.UserSchema())
@@ -194,7 +194,7 @@ func newPermissionRoleTestService(t *testing.T) (*PermissionService, *coredb.Run
 		t.Fatal(err)
 	}
 	group := "permission_role_" + strings.ReplaceAll(t.Name(), "/", "_")
-	runtime, err := coredb.New(t.Context(), coredb.Config{
+	runtime, err := db.New(t.Context(), db.Config{
 		Group: group,
 		Nodes: gdb.ConfigGroup{{Type: "sqlite", Link: fmt.Sprintf("sqlite::@file(%s)", filepath.Join(t.TempDir(), "permission-role.sqlite"))}},
 	})
@@ -251,7 +251,7 @@ func (permissionSessionStore) Revoke(context.Context, string) error { return nil
 
 func (permissionSessionStore) RevokeUsers(context.Context, auth.Kind, []uint64) error { return nil }
 
-func seedPermissionMenus(t *testing.T, runtime *coredb.Runtime, rows ...permissionMenuTestRow) {
+func seedPermissionMenus(t *testing.T, runtime *db.Runtime, rows ...permissionMenuTestRow) {
 	t.Helper()
 
 	for _, row := range rows {
@@ -268,7 +268,7 @@ func seedPermissionMenus(t *testing.T, runtime *coredb.Runtime, rows ...permissi
 	}
 }
 
-func seedPermissionRoleMenus(t *testing.T, runtime *coredb.Runtime, rows ...[2]uint64) {
+func seedPermissionRoleMenus(t *testing.T, runtime *db.Runtime, rows ...[2]uint64) {
 	t.Helper()
 
 	for _, row := range rows {

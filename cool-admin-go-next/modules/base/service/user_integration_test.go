@@ -16,7 +16,7 @@ import (
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/recycle"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
@@ -46,7 +46,7 @@ func (store *userSessionStore) RevokeUsers(_ context.Context, _ auth.Kind, ids [
 
 type userTestFixture struct {
 	service    *UserService
-	runtime    *coredb.Runtime
+	runtime    *db.Runtime
 	descriptor coreentity.Descriptor[entity.User, uint64]
 	sessions   *userSessionStore
 }
@@ -137,7 +137,7 @@ func TestUserMutationDomain(t *testing.T) {
 
 func newUserTestFixture(t *testing.T) userTestFixture {
 	t.Helper()
-	runtime, err := coredb.New(t.Context(), coredb.Config{
+	runtime, err := db.New(t.Context(), db.Config{
 		Group: "user_" + strings.ReplaceAll(t.Name(), "/", "_"),
 		Nodes: gdb.ConfigGroup{{Type: "sqlite", Link: fmt.Sprintf("sqlite::@file(%s)", filepath.Join(t.TempDir(), "user.sqlite"))}},
 	})
@@ -199,7 +199,7 @@ func newUserTestFixture(t *testing.T) userTestFixture {
 
 func userTestBase[E any](
 	t *testing.T,
-	runtime *coredb.Runtime,
+	runtime *db.Runtime,
 	recycler *recycle.Store,
 	schema coreentity.Schema,
 ) (*coreservice.Base[E, uint64], coreentity.Descriptor[E, uint64]) {
@@ -270,7 +270,7 @@ func userUpdateInput(
 	return input
 }
 
-func assertUserRoles(t *testing.T, runtime *coredb.Runtime, userID uint64, want []uint64) {
+func assertUserRoles(t *testing.T, runtime *db.Runtime, userID uint64, want []uint64) {
 	t.Helper()
 	var rows []roleIDRow
 	if err := runtime.DB().Model("base_sys_user_role").Ctx(t.Context()).Fields("roleId").Where("userId", userID).OrderAsc("roleId").Scan(&rows); err != nil {

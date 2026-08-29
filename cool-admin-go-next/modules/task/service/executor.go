@@ -9,8 +9,8 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
-	task "github.com/toothdy/cool-admin-go-next/modules/task"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/modules/task"
 	"github.com/toothdy/cool-admin-go-next/modules/task/entity"
 )
 
@@ -57,7 +57,7 @@ type logWrite struct {
 
 // 任务执行、结果落库与日志清理
 type Executor struct {
-	runtime  *coredb.Runtime
+	runtime  *db.Runtime
 	infoBase *coreservice.Base[entity.Info, uint64]
 	logBase  *coreservice.Base[entity.Log, uint64]
 	registry *Registry
@@ -66,7 +66,7 @@ type Executor struct {
 
 // 任务执行器
 func NewExecutor(
-	runtime *coredb.Runtime,
+	runtime *db.Runtime,
 	infoBase *coreservice.Base[entity.Info, uint64],
 	logBase *coreservice.Base[entity.Log, uint64],
 	registry *Registry,

@@ -13,7 +13,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
@@ -47,7 +47,7 @@ type RolePageResult struct {
 // 角色及其权威菜单、部门关系
 type RoleService struct {
 	*coreservice.Base[entity.Role, uint64]
-	runtime        *coredb.Runtime
+	runtime        *db.Runtime
 	userRole       *coreservice.Base[entity.UserRole, uint64]
 	roleMenu       *coreservice.Base[entity.RoleMenu, uint64]
 	roleDepartment *coreservice.Base[entity.RoleDepartment, uint64]
@@ -56,7 +56,7 @@ type RoleService struct {
 
 // 角色业务服务
 func NewRole(
-	runtime *coredb.Runtime,
+	runtime *db.Runtime,
 	role *coreservice.Base[entity.Role, uint64],
 	userRole *coreservice.Base[entity.UserRole, uint64],
 	roleMenu *coreservice.Base[entity.RoleMenu, uint64],

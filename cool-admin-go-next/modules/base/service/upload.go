@@ -18,7 +18,7 @@ import (
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	base "github.com/toothdy/cool-admin-go-next/modules/base"
+	"github.com/toothdy/cool-admin-go-next/modules/base"
 )
 
 const (

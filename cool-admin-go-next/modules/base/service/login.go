@@ -11,7 +11,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
@@ -37,7 +37,7 @@ var errLoginRolesMissing = errors.New("登录用户未配置角色")
 
 // 后台登录、刷新和退出能力
 type LoginService struct {
-	runtime    *coredb.Runtime
+	runtime    *db.Runtime
 	user       *coreservice.Base[entity.User, uint64]
 	captcha    *CaptchaService
 	password   *bcrypt.Verifier
@@ -48,7 +48,7 @@ type LoginService struct {
 
 // 后台登录服务
 func NewLogin(
-	runtime *coredb.Runtime,
+	runtime *db.Runtime,
 	user *coreservice.Base[entity.User, uint64],
 	captcha *CaptchaService,
 	password *bcrypt.Verifier,

@@ -25,7 +25,7 @@ func TestUserPageOrder(t *testing.T) {
 		{name: "默认排序", wantColumn: "id", wantDescending: true},
 		{name: "创建时间倒序", order: "createTime", sort: "desc", wantColumn: "createTime", wantDescending: true},
 		{name: "实体字段正序", order: "email", sort: "asc", wantColumn: "email"},
-		{name: "隐藏字段", order: entity.PasswordFieldName, sort: "asc", wantError: true},
+		{name: "隐藏字段", order: "password", sort: "asc", wantError: true},
 		{name: "临时字段", order: "roleIdList", sort: "asc", wantError: true},
 		{name: "非法字段", order: "id DESC", sort: "asc", wantError: true},
 		{name: "非法方向", order: "id", sort: "descending", wantError: true},

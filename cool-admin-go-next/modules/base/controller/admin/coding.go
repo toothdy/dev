@@ -7,7 +7,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/codegen"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	base "github.com/toothdy/cool-admin-go-next/modules/base"
+	"github.com/toothdy/cool-admin-go-next/modules/base"
 )
 
 // 批量创建 Go 文件的请求

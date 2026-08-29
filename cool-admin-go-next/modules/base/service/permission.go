@@ -10,7 +10,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
@@ -72,7 +72,7 @@ type PermissionService struct {
 
 // 后台权限服务
 func NewPermission(
-	runtime *coredb.Runtime,
+	runtime *db.Runtime,
 	user *coreservice.Base[entity.User, uint64],
 	userRole *coreservice.Base[entity.UserRole, uint64],
 	role *coreservice.Base[entity.Role, uint64],

@@ -592,7 +592,7 @@ func userPageOrder(descriptor coreentity.Metadata, order, sort string) (string, 
 		return descriptor.Primary().Column(), true, nil
 	}
 	field, exists := descriptor.JSON(order)
-	if !exists || !field.Persistent() || order == entity.PasswordFieldName {
+	if !exists || !field.Persistent() || order == "password" {
 		return "", false, exception.Validate("用户排序字段无效")
 	}
 	switch sort {

@@ -23,8 +23,8 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/app"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/config"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
-	outboxstore "github.com/toothdy/cool-admin-go-next/cool-next/outbox/store"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/outbox/store"
 )
 
 const (
@@ -53,8 +53,8 @@ const outboxReplayHelpText = `用法: cool outbox replay --message-id <uuidv7> [
 type outboxCommand func(context.Context, []string, string, io.Writer, io.Writer) int
 
 type outboxOperations interface {
-	List(context.Context, outboxstore.ListFilter) ([]outboxstore.Metadata, error)
-	Show(context.Context, string) (outboxstore.Metadata, error)
+	List(context.Context, store.ListFilter) ([]store.Metadata, error)
+	Show(context.Context, string) (store.Metadata, error)
 	ReplayDead(context.Context, string) error
 }
 
@@ -176,11 +176,11 @@ func runOutboxList(
 	if !isValid {
 		return outboxUsageError(stderr, outboxListHelpText, "--status 必须是 pending、retry、leased、sent 或 dead")
 	}
-	if *limit <= 0 || *limit > outboxstore.MaxListLimit {
+	if *limit <= 0 || *limit > store.MaxListLimit {
 		return outboxUsageError(
 			stderr,
 			outboxListHelpText,
-			fmt.Sprintf("--limit 必须在 1 到 %d 之间", outboxstore.MaxListLimit),
+			fmt.Sprintf("--limit 必须在 1 到 %d 之间", store.MaxListLimit),
 		)
 	}
 	trimmedTopic := strings.TrimSpace(*topic)
@@ -191,7 +191,7 @@ func runOutboxList(
 	if err != nil {
 		return outboxFailure(stderr, err)
 	}
-	records, err := storage.List(ctx, outboxstore.ListFilter{Status: status, Topic: trimmedTopic, Limit: *limit})
+	records, err := storage.List(ctx, store.ListFilter{Status: status, Topic: trimmedTopic, Limit: *limit})
 	if err != nil {
 		return outboxFailure(stderr, err)
 	}
@@ -224,7 +224,7 @@ func runOutboxShow(
 		}
 		return exitUsage
 	}
-	if flags.NArg() != 0 || !outboxstore.IsValidMessageID(*messageID) {
+	if flags.NArg() != 0 || !store.IsValidMessageID(*messageID) {
 		return outboxUsageError(stderr, outboxShowHelpText, "--message-id 必须是规范的小写 UUIDv7")
 	}
 	storage, err := dependencies.open(ctx, cwd)
@@ -263,7 +263,7 @@ func runOutboxReplay(
 		}
 		return exitUsage
 	}
-	if flags.NArg() != 0 || !outboxstore.IsValidMessageID(*messageID) {
+	if flags.NArg() != 0 || !store.IsValidMessageID(*messageID) {
 		return outboxUsageError(stderr, outboxReplayHelpText, "--message-id 必须是规范的小写 UUIDv7")
 	}
 	trimmedOperator := strings.TrimSpace(*operator)
@@ -298,9 +298,9 @@ func runOutboxReplay(
 		return outboxFailure(stderr, err)
 	}
 	audit.OldStatus = string(record.Status)
-	if record.Status != outboxstore.Dead {
+	if record.Status != store.Dead {
 		dependencies.audit.Info(operationCtx, audit)
-		return outboxFailure(stderr, outboxstore.ErrReplayRejected)
+		return outboxFailure(stderr, store.ErrReplayRejected)
 	}
 	if *isDryRun {
 		audit.Result = "dry_run"
@@ -309,7 +309,7 @@ func runOutboxReplay(
 			OperationID: operationID,
 			MessageID:   record.MessageID,
 			OldStatus:   string(record.Status),
-			NewStatus:   string(outboxstore.Retry),
+			NewStatus:   string(store.Retry),
 			DryRun:      true,
 		}); err != nil {
 			return outboxFailure(stderr, err)
@@ -327,7 +327,7 @@ func runOutboxReplay(
 		OperationID: operationID,
 		MessageID:   record.MessageID,
 		OldStatus:   string(record.Status),
-		NewStatus:   string(outboxstore.Retry),
+		NewStatus:   string(store.Retry),
 	}); err != nil {
 		return outboxFailure(stderr, err)
 	}
@@ -362,11 +362,11 @@ func openOutboxStore(ctx context.Context, cwd string) (outboxOperations, error) 
 	if group == "" || !exists || len(nodes) == 0 {
 		return nil, fmt.Errorf("Outbox 数据库组 %q 未配置", group)
 	}
-	runtime, err := coredb.New(ctx, coredb.Config{Group: group, Nodes: nodes})
+	runtime, err := db.New(ctx, db.Config{Group: group, Nodes: nodes})
 	if err != nil {
 		return nil, err
 	}
-	storage, err := outboxstore.New(runtime)
+	storage, err := store.New(runtime)
 	if err != nil {
 		return nil, err
 	}
@@ -480,17 +480,17 @@ func getOutboxConfigValue(mapping *yaml.Node, name string) (*yaml.Node, error) {
 	return result, nil
 }
 
-func parseOutboxStatus(value string) (outboxstore.Status, bool) {
-	status := outboxstore.Status(strings.TrimSpace(value))
+func parseOutboxStatus(value string) (store.Status, bool) {
+	status := store.Status(strings.TrimSpace(value))
 	switch status {
-	case outboxstore.Pending, outboxstore.Retry, outboxstore.Leased, outboxstore.Sent, outboxstore.Dead:
+	case store.Pending, store.Retry, store.Leased, store.Sent, store.Dead:
 		return status, true
 	default:
 		return "", false
 	}
 }
 
-func safeOutboxOutput(record outboxstore.Metadata) outboxOutput {
+func safeOutboxOutput(record store.Metadata) outboxOutput {
 	var lastError *string
 	if record.LastError != nil {
 		value := safeOutboxText(*record.LastError)
@@ -539,12 +539,12 @@ func outboxUsageError(stderr io.Writer, help, message string) int {
 func outboxFailure(stderr io.Writer, err error) int {
 	message := "Outbox 命令失败"
 	switch {
-	case errors.Is(err, outboxstore.ErrNotFound):
-		message = outboxstore.ErrNotFound.Error()
-	case errors.Is(err, outboxstore.ErrReplayRejected):
-		message = outboxstore.ErrReplayRejected.Error()
-	case errors.Is(err, outboxstore.ErrReplayConflict):
-		message = outboxstore.ErrReplayConflict.Error()
+	case errors.Is(err, store.ErrNotFound):
+		message = store.ErrNotFound.Error()
+	case errors.Is(err, store.ErrReplayRejected):
+		message = store.ErrReplayRejected.Error()
+	case errors.Is(err, store.ErrReplayConflict):
+		message = store.ErrReplayConflict.Error()
 	case errors.Is(err, context.Canceled):
 		message = context.Canceled.Error()
 	case errors.Is(err, context.DeadlineExceeded):

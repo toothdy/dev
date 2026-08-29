@@ -12,7 +12,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
-	base "github.com/toothdy/cool-admin-go-next/modules/base"
+	"github.com/toothdy/cool-admin-go-next/modules/base"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
 

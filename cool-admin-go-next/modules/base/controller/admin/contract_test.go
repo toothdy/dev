@@ -9,7 +9,7 @@ import (
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/codegen"
-	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 )
 
 type routeContract struct {
@@ -18,7 +18,7 @@ type routeContract struct {
 	permission      string
 	developmentOnly bool
 	ignoreToken     bool
-	kind            coreroute.Kind
+	kind            route.Kind
 }
 
 func TestAdminRouteContract(t *testing.T) {

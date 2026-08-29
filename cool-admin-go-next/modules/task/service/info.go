@@ -7,7 +7,7 @@ import (
 	"github.com/gogf/gf/v2/util/guid"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/modules/task/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/task/entity"
 )
@@ -47,14 +47,14 @@ type statusTypeWrite struct {
 // 任务信息 CRUD 与调度联动
 type InfoService struct {
 	*coreservice.Base[entity.Info, uint64]
-	runtime   *coredb.Runtime
+	runtime   *db.Runtime
 	logBase   *coreservice.Base[entity.Log, uint64]
 	scheduler *Scheduler
 }
 
 // 任务信息业务服务
 func NewInfo(
-	runtime *coredb.Runtime,
+	runtime *db.Runtime,
 	infoBase *coreservice.Base[entity.Info, uint64],
 	logBase *coreservice.Base[entity.Log, uint64],
 	scheduler *Scheduler,

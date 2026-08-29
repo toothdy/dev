@@ -2,12 +2,12 @@ package service
 
 import "strings"
 
-// Base 菜单和消息翻译
+// 翻译服务
 type TranslateService struct {
 	translations map[string]map[string]string
 }
 
-// Base 翻译服务
+// 翻译服务
 func NewTranslate() *TranslateService {
 	return &TranslateService{translations: map[string]map[string]string{
 		"en": {

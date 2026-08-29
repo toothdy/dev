@@ -11,7 +11,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/seed"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
@@ -50,7 +50,7 @@ type menuExportRow struct {
 // 菜单树及角色菜单关系
 type MenuService struct {
 	*coreservice.Base[entity.Menu, uint64]
-	runtime  *coredb.Runtime
+	runtime  *db.Runtime
 	role     *coreservice.Base[entity.Role, uint64]
 	roleMenu *coreservice.Base[entity.RoleMenu, uint64]
 	userRole *coreservice.Base[entity.UserRole, uint64]
@@ -59,7 +59,7 @@ type MenuService struct {
 
 // 菜单业务服务
 func NewMenu(
-	runtime *coredb.Runtime,
+	runtime *db.Runtime,
 	menu *coreservice.Base[entity.Menu, uint64],
 	role *coreservice.Base[entity.Role, uint64],
 	roleMenu *coreservice.Base[entity.RoleMenu, uint64],

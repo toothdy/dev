@@ -7,7 +7,7 @@ import (
 
 	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 )
 
 // 模块的嵌入种子与可写入实体
@@ -25,12 +25,12 @@ func NewDefinition(key string, data Data, descriptors ...coreentity.RuntimeDescr
 // 框架启动阶段统一导入模块种子
 type Runtime struct {
 	definitions []Definition
-	runtime     *coredb.Runtime
+	runtime     *db.Runtime
 	store       *Store
 }
 
 // 框架种子运行时
-func NewRuntime(runtime *coredb.Runtime, definitions ...Definition) (*Runtime, error) {
+func NewRuntime(runtime *db.Runtime, definitions ...Definition) (*Runtime, error) {
 	store, err := NewStore(runtime)
 	if err != nil {
 		return nil, err
