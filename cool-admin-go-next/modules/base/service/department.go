@@ -63,63 +63,66 @@ func NewDepartment(
 }
 
 // 新增部门
-func (service *DepartmentService) Add(ctx context.Context, input coreservice.AddInput[entity.Department]) (coreservice.AddResult[uint64], error) {
-	if service == nil || service.boundary == nil {
-		return coreservice.AddResult[uint64]{}, exception.Core("部门服务未初始化")
+func (s *DepartmentService) Add(ctx context.Context, input coreservice.AddInput[entity.Department]) (coreservice.AddResult[uint64], error) {
+	values := input.Many()
+	if !input.IsMany() {
+		values = []*coreservice.Mutable[entity.Department]{input.One()}
 	}
-	parentIDs, err := departmentAddParentIDs(input)
-	if err != nil {
-		return coreservice.AddResult[uint64]{}, err
+	parents := make([]uint64, 0, len(values))
+	for _, value := range values {
+		if parentID, exists := deptParentID(value); exists && parentID != nil {
+			parents = append(parents, *parentID)
+		}
 	}
-	if err = service.LockDepartments(ctx, parentIDs); err != nil {
+	if err := s.lockDepts(ctx, parents); err != nil {
 		return coreservice.AddResult[uint64]{}, err
 	}
 
-	return service.Base.Add(ctx, input)
+	return s.Base.Add(ctx, input)
 }
 
 // 更新部门
-func (service *DepartmentService) Update(ctx context.Context, input coreservice.UpdateInput[entity.Department, uint64]) error {
-	if service == nil || service.boundary == nil {
-		return exception.Core("部门服务未初始化")
+func (s *DepartmentService) Update(ctx context.Context, input coreservice.UpdateInput[entity.Department, uint64]) error {
+	var items []coreservice.UpdateItem[entity.Department, uint64]
+	if input.IsMany() {
+		items = input.Many()
+	} else {
+		items = []coreservice.UpdateItem[entity.Department, uint64]{input.One()}
 	}
-	items := departmentUpdateItems(input)
 	ids := make([]uint64, 0, len(items)*2)
 	for _, item := range items {
 		ids = append(ids, item.ID())
-		if parentID, exists, err := departmentMutableParentID(item.Mutable()); err != nil {
-			return err
-		} else if exists && parentID != nil {
+		if parentID, exists := deptParentID(item.Mutable()); exists && parentID != nil {
 			ids = append(ids, *parentID)
 		}
 	}
-	if err := service.LockDepartments(ctx, ids); err != nil {
+	if err := s.lockDepts(ctx, ids); err != nil {
 		return err
 	}
 
-	return service.Base.Update(ctx, input)
+	return s.Base.Update(ctx, input)
 }
 
 // 按 Vue 顶层数组契约更新部门排序和父级
-func (service *DepartmentService) Order(ctx context.Context, request dto.DepartmentOrderReq) error {
-	if service == nil || service.boundary == nil || len(request) == 0 {
+func (s *DepartmentService) Order(ctx context.Context, req dto.DepartmentOrderReq) error {
+	if len(req) == 0 {
 		return exception.Validate("部门排序参数无效")
 	}
-	ids := make([]uint64, 0, len(request)*2)
-	for _, item := range request {
+	ids := make([]uint64, 0, len(req)*2)
+	for _, item := range req {
 		ids = append(ids, item.ID)
 		if item.ParentID != nil {
 			ids = append(ids, *item.ParentID)
 		}
 	}
-	if err := service.LockDepartments(ctx, ids); err != nil {
+	if err := s.lockDepts(ctx, ids); err != nil {
 		return err
 	}
-	model, err := service.Base.Model(ctx)
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return err
 	}
-	for _, item := range request {
+	for _, item := range req {
 		data := departmentOrderWrite{OrderNum: item.OrderNum}
 		if item.ParentID == nil {
 			data.ParentID = gdb.Raw("NULL")
@@ -135,28 +138,28 @@ func (service *DepartmentService) Order(ctx context.Context, request dto.Departm
 }
 
 // 当前用户可见的部门列表
-func (service *DepartmentService) List(ctx context.Context) ([]dto.DepartmentListItem, error) {
+func (s *DepartmentService) List(ctx context.Context) ([]dto.DepartmentListItem, error) {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	model, err := service.Base.Model(ctx)
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
-	isAdmin, err := service.permission.IsAdmin(ctx, identity.RoleIDs())
+	isAdmin, err := s.permission.IsAdmin(ctx, identity.RoleIDs())
 	if err != nil {
 		return nil, err
 	}
 	if !isAdmin {
-		departmentIDs, idErr := service.departmentIDsByRoles(ctx, identity.RoleIDs())
+		deptIDs, idErr := s.deptIDs(ctx, identity.RoleIDs())
 		if idErr != nil {
 			return nil, idErr
 		}
-		if len(departmentIDs) == 0 {
+		if len(deptIDs) == 0 {
 			model = model.Where("userId", identity.UserID)
 		} else {
-			model = model.WhereIn("id", departmentIDs).WhereOr("userId", identity.UserID)
+			model = model.WhereIn("id", deptIDs).WhereOr("userId", identity.UserID)
 		}
 	}
 	var rows []departmentRow
@@ -169,7 +172,7 @@ func (service *DepartmentService) List(ctx context.Context) ([]dto.DepartmentLis
 			parentIDs = append(parentIDs, *row.ParentID)
 		}
 	}
-	parentNames, err := service.Names(ctx, parentIDs)
+	parentNames, err := s.Names(ctx, parentIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -187,63 +190,64 @@ func (service *DepartmentService) List(ctx context.Context) ([]dto.DepartmentLis
 }
 
 // 删除部门树，并按请求迁移或删除归属用户
-func (service *DepartmentService) Delete(ctx context.Context, request dto.DepartmentDeleteReq) error {
-	if service == nil || service.boundary == nil {
-		return exception.Core("部门服务未初始化")
-	}
-	ids := auth.NormalizeIDs(request.IDs)
+func (s *DepartmentService) Delete(ctx context.Context, req dto.DepartmentDeleteReq) error {
+	ids := auth.NormalizeIDs(req.IDs)
 	if len(ids) == 0 {
 		return exception.Validate("部门 ID 不能为空")
 	}
-	if request.DeleteUser {
-		adminRoleIDs, err := service.permission.AdminRoleIDs(ctx)
+	if req.DeleteUser {
+		adminRoles, err := s.permission.AdminRoleIDs(ctx)
 		if err != nil {
 			return err
 		}
-		if err = service.permission.LockRoles(ctx, adminRoleIDs); err != nil {
+		if err = s.permission.LockRoles(ctx, adminRoles); err != nil {
 			return err
 		}
 	}
-	trees, err := service.lockedDeleteTrees(ctx, ids)
+	trees, err := s.lockTrees(ctx, ids)
 	if err != nil {
 		return err
 	}
-	allIDs := departmentTreeIDs(trees)
-	userIDs, err := service.userIDsByDepartments(ctx, allIDs)
+	allIDs := make([]uint64, 0)
+	for _, tree := range trees {
+		allIDs = append(allIDs, tree.IDs...)
+	}
+	allIDs = auth.NormalizeIDs(allIDs)
+	userIDs, err := s.userIDs(ctx, allIDs)
 	if err != nil {
 		return err
 	}
 	if len(userIDs) > 0 {
-		if err = service.permission.LockUsers(ctx, userIDs); err != nil {
+		if err = s.permission.LockUsers(ctx, userIDs); err != nil {
 			return err
 		}
-		if request.DeleteUser {
-			if err = service.permission.EnsureNotLastAdmin(ctx, userIDs); err != nil {
+		if req.DeleteUser {
+			if err = s.permission.EnsureNotLastAdmin(ctx, userIDs); err != nil {
 				return err
 			}
 		}
-		if err = service.permission.RevokeUsers(ctx, userIDs); err != nil {
+		if err = s.permission.RevokeUsers(ctx, userIDs); err != nil {
 			return err
 		}
 	}
-	if request.DeleteUser && len(userIDs) > 0 {
-		model, modelErr := service.user.Model(ctx)
+	if req.DeleteUser && len(userIDs) > 0 {
+		model, modelErr := s.user.Model(ctx)
 		if modelErr != nil {
 			return modelErr
 		}
-		if modelErr = service.permission.DeleteUserRoles(ctx, userIDs); modelErr != nil {
+		if modelErr = s.permission.DeleteUserRoles(ctx, userIDs); modelErr != nil {
 			return modelErr
 		}
 		if _, modelErr = model.WhereIn("id", userIDs).Delete(); modelErr != nil {
 			return exception.WrapCore(modelErr, "删除部门用户失败")
 		}
 	} else if len(userIDs) > 0 {
-		model, modelErr := service.user.Model(ctx)
+		model, modelErr := s.user.Model(ctx)
 		if modelErr != nil {
 			return modelErr
 		}
 		for _, tree := range trees {
-			data, dataErr := service.departmentUserData(tree.ParentID)
+			data, dataErr := s.userData(tree.ParentID)
 			if dataErr != nil {
 				return dataErr
 			}
@@ -252,28 +256,28 @@ func (service *DepartmentService) Delete(ctx context.Context, request dto.Depart
 			}
 		}
 	}
-	model, err := service.roleDepartment.Model(ctx)
+	model, err := s.roleDepartment.Model(ctx)
 	if err != nil {
 		return err
 	}
 	if _, err = model.WhereIn("departmentId", allIDs).Delete(); err != nil {
 		return exception.WrapCore(err, "清理部门角色关系失败")
 	}
-	deleteInput, err := coreservice.NewDeleteInput[entity.Department](service.Descriptor(), allIDs)
+	deleteInput, err := coreservice.NewDeleteInput[entity.Department](s.Descriptor(), allIDs)
 	if err != nil {
 		return err
 	}
 
-	return service.Base.Delete(ctx, deleteInput)
+	return s.Base.Delete(ctx, deleteInput)
 }
 
 // 按稳定 ID 顺序锁定并校验部门存在
-func (service *DepartmentService) LockDepartments(ctx context.Context, ids []uint64) error {
-	return service.boundary.LockTable(ctx, service.Descriptor().Table(), ids, "锁定部门失败")
+func (s *DepartmentService) lockDepts(ctx context.Context, ids []uint64) error {
+	return s.boundary.LockTable(ctx, s.Descriptor().Table(), ids, "锁定部门失败")
 }
 
-func (service *DepartmentService) lockedDeleteTrees(ctx context.Context, roots []uint64) ([]departmentDeleteTree, error) {
-	model, err := service.Base.Model(ctx)
+func (s *DepartmentService) lockTrees(ctx context.Context, roots []uint64) ([]departmentDeleteTree, error) {
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -282,13 +286,13 @@ func (service *DepartmentService) lockedDeleteTrees(ctx context.Context, roots [
 		return nil, exception.WrapCore(err, "查询部门树失败")
 	}
 	allIDs := make([]uint64, len(rows))
-	for index, row := range rows {
-		allIDs[index] = row.ID
+	for i, row := range rows {
+		allIDs[i] = row.ID
 	}
-	if err = service.LockDepartments(ctx, allIDs); err != nil {
+	if err = s.lockDepts(ctx, allIDs); err != nil {
 		return nil, err
 	}
-	model, err = service.Base.Model(ctx)
+	model, err = s.Base.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -304,32 +308,32 @@ func (service *DepartmentService) lockedDeleteTrees(ctx context.Context, roots [
 			return nil, exception.Validate("部门不存在")
 		}
 	}
-	return buildDepartmentDeleteTrees(rows, roots), nil
+	return buildDeptTrees(rows, roots), nil
 }
 
-func (service *DepartmentService) userIDsByDepartments(ctx context.Context, departmentIDs []uint64) ([]uint64, error) {
-	model, err := service.user.Model(ctx)
+func (s *DepartmentService) userIDs(ctx context.Context, deptIDs []uint64) ([]uint64, error) {
+	model, err := s.user.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var rows []struct {
 		ID uint64 `orm:"id"`
 	}
-	if err = model.Fields("id").WhereIn("departmentId", departmentIDs).Scan(&rows); err != nil {
+	if err = model.Fields("id").WhereIn("departmentId", deptIDs).Scan(&rows); err != nil {
 		return nil, exception.WrapCore(err, "查询部门用户失败")
 	}
 	ids := make([]uint64, len(rows))
-	for index, row := range rows {
-		ids[index] = row.ID
+	for i, row := range rows {
+		ids[i] = row.ID
 	}
 	return auth.NormalizeIDs(ids), nil
 }
 
-func (service *DepartmentService) departmentIDsByRoles(ctx context.Context, roleIDs []uint64) ([]uint64, error) {
+func (s *DepartmentService) deptIDs(ctx context.Context, roleIDs []uint64) ([]uint64, error) {
 	if len(roleIDs) == 0 {
 		return nil, nil
 	}
-	model, err := service.roleDepartment.Model(ctx)
+	model, err := s.roleDepartment.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -340,23 +344,23 @@ func (service *DepartmentService) departmentIDsByRoles(ctx context.Context, role
 		return nil, exception.WrapCore(err, "查询角色部门失败")
 	}
 	ids := make([]uint64, len(rows))
-	for index, row := range rows {
-		ids[index] = row.DepartmentID
+	for i, row := range rows {
+		ids[i] = row.DepartmentID
 	}
 	return auth.NormalizeIDs(ids), nil
 }
 
 // 当前用户按角色可见的部门 ID
-func (service *DepartmentService) VisibleIDs(ctx context.Context, userID uint64, roleIDs []uint64) ([]uint64, error) {
-	isAdmin, err := service.permission.IsAdmin(ctx, roleIDs)
+func (s *DepartmentService) VisibleIDs(ctx context.Context, userID uint64, roleIDs []uint64) ([]uint64, error) {
+	isAdmin, err := s.permission.IsAdmin(ctx, roleIDs)
 	if err != nil || isAdmin {
 		return nil, err
 	}
-	ids, err := service.departmentIDsByRoles(ctx, roleIDs)
+	ids, err := s.deptIDs(ctx, roleIDs)
 	if err != nil {
 		return nil, err
 	}
-	model, err := service.Base.Model(ctx)
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -372,16 +376,16 @@ func (service *DepartmentService) VisibleIDs(ctx context.Context, userID uint64,
 		return nil, exception.WrapCore(err, "查询可见部门失败")
 	}
 	result := make([]uint64, len(rows))
-	for index, row := range rows {
-		result[index] = row.ID
+	for i, row := range rows {
+		result[i] = row.ID
 	}
 
 	return auth.NormalizeIDs(result), nil
 }
 
 // 查询单个部门名称
-func (service *DepartmentService) Name(ctx context.Context, departmentID uint64) (string, error) {
-	names, err := service.Names(ctx, []uint64{departmentID})
+func (s *DepartmentService) Name(ctx context.Context, departmentID uint64) (string, error) {
+	names, err := s.Names(ctx, []uint64{departmentID})
 	if err != nil {
 		return "", err
 	}
@@ -390,13 +394,13 @@ func (service *DepartmentService) Name(ctx context.Context, departmentID uint64)
 }
 
 // 批量查询部门名称
-func (service *DepartmentService) Names(ctx context.Context, departmentIDs []uint64) (map[uint64]string, error) {
+func (s *DepartmentService) Names(ctx context.Context, departmentIDs []uint64) (map[uint64]string, error) {
 	ids := auth.NormalizeIDs(departmentIDs)
 	result := make(map[uint64]string, len(ids))
 	if len(ids) == 0 {
 		return result, nil
 	}
-	model, err := service.Base.Model(ctx)
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -414,18 +418,8 @@ func (service *DepartmentService) Names(ctx context.Context, departmentIDs []uin
 	return result, nil
 }
 
-func departmentUpdateItems(input coreservice.UpdateInput[entity.Department, uint64]) []coreservice.UpdateItem[entity.Department, uint64] {
-	if input.IsMany() {
-		return input.Many()
-	}
-	return []coreservice.UpdateItem[entity.Department, uint64]{input.One()}
-}
-
-func (service *DepartmentService) departmentUserData(parentID *uint64) (any, error) {
-	value := service.user.Descriptor().NewDO()
-	if value == nil {
-		return nil, exception.Core("用户 DO 无效")
-	}
+func (s *DepartmentService) userData(parentID *uint64) (any, error) {
+	value := s.user.Descriptor().NewDO()
 	if parentID == nil {
 		if err := value.SetColumn("departmentId", nil); err != nil {
 			return nil, err
@@ -436,43 +430,20 @@ func (service *DepartmentService) departmentUserData(parentID *uint64) (any, err
 	return value.DBData(), nil
 }
 
-func departmentAddParentIDs(input coreservice.AddInput[entity.Department]) ([]uint64, error) {
-	values := input.Many()
-	if !input.IsMany() {
-		values = []*coreservice.Mutable[entity.Department]{input.One()}
-	}
-	ids := make([]uint64, 0, len(values))
-	for _, value := range values {
-		parentID, exists, err := departmentMutableParentID(value)
-		if err != nil {
-			return nil, err
-		}
-		if exists && parentID != nil {
-			ids = append(ids, *parentID)
-		}
-	}
-	return auth.NormalizeIDs(ids), nil
-}
-
-func departmentMutableParentID(value *coreservice.Mutable[entity.Department]) (*uint64, bool, error) {
-	if value == nil || !value.Has("parentId") {
-		return nil, false, nil
+func deptParentID(value *coreservice.Mutable[entity.Department]) (*uint64, bool) {
+	if !value.Has("parentId") {
+		return nil, false
 	}
 	if value.IsNull("parentId") {
-		return nil, true, nil
+		return nil, true
 	}
 	current, _ := value.Get("parentId")
-	switch parentID := current.(type) {
-	case uint64:
-		return &parentID, true, nil
-	case *uint64:
-		return parentID, true, nil
-	default:
-		return nil, true, exception.Validate("部门父级无效")
-	}
+	parentID := current.(uint64)
+
+	return &parentID, true
 }
 
-func buildDepartmentDeleteTrees(rows []departmentRow, roots []uint64) []departmentDeleteTree {
+func buildDeptTrees(rows []departmentRow, roots []uint64) []departmentDeleteTree {
 	parents := make(map[uint64]*uint64, len(rows))
 	children := make(map[uint64][]uint64)
 	selected := make(map[uint64]struct{}, len(roots))
@@ -508,18 +479,10 @@ func buildDepartmentDeleteTrees(rows []departmentRow, roots []uint64) []departme
 	trees := make([]departmentDeleteTree, 0, len(effective))
 	for _, root := range effective {
 		ids := []uint64{root}
-		for index := 0; index < len(ids); index++ {
-			ids = append(ids, children[ids[index]]...)
+		for i := 0; i < len(ids); i++ {
+			ids = append(ids, children[ids[i]]...)
 		}
 		trees = append(trees, departmentDeleteTree{RootID: root, ParentID: parents[root], IDs: auth.NormalizeIDs(ids)})
 	}
 	return trees
-}
-
-func departmentTreeIDs(trees []departmentDeleteTree) []uint64 {
-	ids := make([]uint64, 0)
-	for _, tree := range trees {
-		ids = append(ids, tree.IDs...)
-	}
-	return auth.NormalizeIDs(ids)
 }

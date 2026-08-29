@@ -63,6 +63,15 @@ func (base *Base[E, ID]) Descriptor() entity.Descriptor[E, ID] {
 	return base.descriptor
 }
 
+// 返回当前实体使用的 ORM 管理器
+func (base *Base[E, ID]) GetOrmManager() gdb.DB {
+	if base == nil {
+		return nil
+	}
+
+	return base.database
+}
+
 // 返回当前框架事务
 func (base *Base[E, ID]) Tx(ctx context.Context) (gdb.TX, error) {
 	if err := base.validate(ctx); err != nil {
@@ -82,7 +91,7 @@ func (base *Base[E, ID]) Tx(ctx context.Context) (gdb.TX, error) {
 	return transaction, nil
 }
 
-// 返回绑定当前事务或框架数据库组的 Model
+// 返回绑定当前事务或框架数据库组的实体 Model
 func (base *Base[E, ID]) Model(ctx context.Context) (*gdb.Model, error) {
 	if err := base.validate(ctx); err != nil {
 		return nil, err
@@ -239,26 +248,44 @@ func (base *Base[E, ID]) List(ctx context.Context, query Query) ([]Record, error
 
 // 分页查询记录
 func (base *Base[E, ID]) Page(ctx context.Context, query Query) (PageResult, error) {
-	if err := validateReadQuery(query); err != nil {
-		return PageResult{}, err
-	}
 	model, err := base.queryModel(ctx, crud.ActionPage)
 	if err != nil {
 		return PageResult{}, err
 	}
-	result, total, err := model.Page(query.page, query.size).AllAndCount(false)
+	var result gdb.Result
+	pagination, err := renderPage(model, query, &result)
 	if err != nil {
-		return PageResult{}, exception.WrapCore(err, "分页查询实体失败")
+		return PageResult{}, err
 	}
 
 	return PageResult{
-		List: base.recordsFromDatabase(result),
-		Pagination: Pagination{
-			Page:  query.page,
-			Size:  query.size,
-			Total: int64(total),
-		},
+		List:       base.recordsFromDatabase(result),
+		Pagination: pagination,
 	}, nil
+}
+
+// 操作 Model 获得分页数据
+func (base *Base[E, ID]) EntityRenderPage(
+	ctx context.Context,
+	model *gdb.Model,
+	query Query,
+	destination any,
+) (Pagination, error) {
+	if err := base.validate(ctx); err != nil {
+		return Pagination{}, err
+	}
+	if scope, exists := crud.CurrentOperation(ctx); exists {
+		if scope.Plan().Action() != crud.ActionPage {
+			return Pagination{}, exception.Core("当前 CRUD 动作不是分页查询")
+		}
+		var err error
+		model, err = scope.Plan().ApplyQuery(ctx, model)
+		if err != nil {
+			return Pagination{}, exception.WrapCore(err, "应用分页查询计划失败")
+		}
+	}
+
+	return renderPage(model, query, destination)
 }
 
 func (base *Base[E, ID]) queryModel(ctx context.Context, action crud.Action) (*gdb.Model, error) {
@@ -366,6 +393,24 @@ func (base *Base[E, ID]) validate(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func renderPage(model *gdb.Model, query Query, destination any) (Pagination, error) {
+	if err := validateReadQuery(query); err != nil {
+		return Pagination{}, err
+	}
+	if model == nil {
+		return Pagination{}, exception.Validate("分页 ORM Model 不能为空")
+	}
+	if isNil(destination) || reflect.TypeOf(destination).Kind() != reflect.Pointer {
+		return Pagination{}, exception.Validate("分页查询目标必须是非 nil 指针")
+	}
+	total := 0
+	if err := model.Page(query.page, query.size).ScanAndCount(destination, &total, false); err != nil {
+		return Pagination{}, exception.WrapCore(err, "分页查询实体失败")
+	}
+
+	return Pagination{Page: query.page, Size: query.size, Total: int64(total)}, nil
 }
 
 func validateReadQuery(query Query) error {

@@ -76,9 +76,7 @@ func CompilePlan(
 		return nil, exception.Core("CRUD 动作无效")
 	}
 	autoSortFields := (input.Action == ActionList || input.Action == ActionPage) &&
-		len(input.Fields.SortFields) == 0 &&
-		!hasColumnRef(input.Fields.DefaultSort) &&
-		input.Fields.DefaultOrder == ""
+		len(input.Fields.SortFields) == 0
 	fields, err := compileFieldPolicy(resolver, input.Entity, input.Fields, autoSortFields)
 	if err != nil {
 		return nil, err
@@ -317,6 +315,12 @@ func compileSortFields(
 	if !hasDefaultSort {
 		if input.DefaultOrder != "" {
 			return exception.Core("默认排序方向必须与默认排序字段同时配置")
+		}
+		if autoSortFields {
+			policy.defaultSort = &planOrder{
+				column:    makePlanColumn(root, metadata.Primary()),
+				direction: Descending,
+			}
 		}
 
 		return nil

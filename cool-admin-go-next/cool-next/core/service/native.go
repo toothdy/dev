@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 
+	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	dbtx "github.com/toothdy/cool-admin-go-next/cool-next/db/tx"
 )
@@ -19,6 +21,8 @@ var forbiddenNativeTokens = map[string]bool{
 	"REVOKE": true, "SETVAL": true, "TRUNCATE": true, "UPDATE": true,
 	"UPSERT": true, "VACUUM": true,
 }
+
+var nativeOrderPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 // 已校验的只读原生查询
 type NativeStatement struct {
@@ -94,6 +98,78 @@ func (base *Base[E, ID]) NativeQuery(
 	}
 
 	return nil
+}
+
+// 执行只读原生 SQL 获得分页数据
+func (base *Base[E, ID]) SQLRenderPage(
+	ctx context.Context,
+	statement NativeStatement,
+	query Query,
+	destination any,
+	autoSort ...bool,
+) (Pagination, error) {
+	if err := base.validate(ctx); err != nil {
+		return Pagination{}, err
+	}
+	if statement.query == "" {
+		return Pagination{}, exception.Validate("原生查询语句无效")
+	}
+	arguments := make([]any, len(statement.arguments))
+	for index, argument := range statement.arguments {
+		arguments[index] = cloneData(argument)
+	}
+	rawSQL := strings.TrimSuffix(statement.query, ";")
+	transaction, group, exists := dbtx.Current(ctx)
+	var pageModel *gdb.Model
+	if exists {
+		if group != base.group {
+			return Pagination{}, exception.Core(fmt.Sprintf("事务数据库组不匹配: 当前 %s，请求 %s", group, base.group))
+		}
+		if transaction == nil {
+			return Pagination{}, exception.Core("当前框架事务无效")
+		}
+		pageModel = transaction.Raw("SELECT * FROM ("+rawSQL+") AS a", arguments...).Ctx(ctx)
+	} else {
+		pageModel = base.database.Raw("SELECT * FROM ("+rawSQL+") AS a", arguments...).Ctx(ctx)
+	}
+	if len(autoSort) == 0 || autoSort[0] {
+		var err error
+		pageModel, err = applyNativePageOrder(pageModel, query)
+		if err != nil {
+			return Pagination{}, err
+		}
+	}
+
+	return renderPage(pageModel, query, destination)
+}
+
+func applyNativePageOrder(model *gdb.Model, query Query) (*gdb.Model, error) {
+	orders := []string{"id"}
+	directions := []string{"desc"}
+	if query.request != nil && (query.request.Has("order") || query.request.Has("sort")) {
+		var valid bool
+		orders, valid = query.request.Strings("order")
+		if !valid {
+			return nil, exception.Validate("原生分页排序字段无效")
+		}
+		directions, valid = query.request.Strings("sort")
+		if !valid || len(orders) == 0 || len(orders) != len(directions) {
+			return nil, exception.Validate("原生分页排序参数无效")
+		}
+	}
+	for index, order := range orders {
+		if !nativeOrderPattern.MatchString(order) {
+			return nil, exception.Validate("原生分页排序字段无效")
+		}
+		direction := strings.ToLower(directions[index])
+		if direction != "asc" && direction != "desc" {
+			return nil, exception.Validate("原生分页排序方向无效")
+		}
+		column := model.QuoteWord("a") + "." + model.QuoteWord(order)
+		model = model.Order(column, direction)
+	}
+
+	return model, nil
 }
 
 func scanNativeSQL(query string) ([]string, error) {

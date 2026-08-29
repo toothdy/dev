@@ -35,15 +35,15 @@ func TestDepartmentDomainQueriesAndLocks(t *testing.T) {
 	}
 
 	err = fixture.runtime.Runner().Within(t.Context(), func(ctx context.Context) error {
-		return fixture.service.department.LockDepartments(ctx, []uint64{6, 5, 5, 0})
+		return fixture.service.department.lockDepts(ctx, []uint64{6, 5, 5, 0})
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	err = fixture.runtime.Runner().Within(t.Context(), func(ctx context.Context) error {
-		return fixture.service.department.LockDepartments(ctx, []uint64{999})
+		return fixture.service.department.lockDepts(ctx, []uint64{999})
 	})
 	if err == nil {
-		t.Fatal("LockDepartments() missing department error = nil")
+		t.Fatal("lockDepts() missing department error = nil")
 	}
 }

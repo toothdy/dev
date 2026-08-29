@@ -588,6 +588,9 @@ func (compiler *queryPlanCompiler) compileFieldEqs(matches []FieldEq, request *Q
 		} else {
 			reflected := reflect.ValueOf(value)
 			if reflected.Kind() == reflect.Slice || reflected.Kind() == reflect.Array {
+				if reflected.Len() == 0 {
+					continue
+				}
 				values, valueErr := normalizePlanCollection(value, column.goType)
 				if valueErr != nil {
 					return exception.Validate(fmt.Sprintf("请求参数 %s 的集合值无效", match.RequestParam))

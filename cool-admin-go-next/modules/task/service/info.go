@@ -176,18 +176,19 @@ func (service *InfoService) Log(ctx context.Context, request *dto.LogRequest) (L
 		query = query.Where("a.status", *request.Status)
 	}
 	page, size := logWindow(request)
-	records, total, err := query.OrderDesc("a.id").Page(page, size).AllAndCount(false)
+	pageQuery, err := coreservice.NewQuery(nil, page, size)
 	if err != nil {
-		return LogResult{}, exception.WrapCore(err, "查询任务日志失败")
+		return LogResult{}, err
 	}
-	items := make([]LogItem, 0, len(records))
-	if err = records.Structs(&items); err != nil {
-		return LogResult{}, exception.WrapCore(err, "解析任务日志失败")
+	var items []LogItem
+	pagination, err := service.logBase.EntityRenderPage(ctx, query.OrderDesc("a.id"), pageQuery, &items)
+	if err != nil {
+		return LogResult{}, err
 	}
 
 	return LogResult{
 		List:       items,
-		Pagination: coreservice.Pagination{Page: page, Size: size, Total: int64(total)},
+		Pagination: pagination,
 	}, nil
 }
 

@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"strconv"
 
 	"github.com/gogf/gf/v2/database/gdb"
@@ -12,7 +10,6 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
-	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
@@ -80,16 +77,16 @@ func NewRole(
 }
 
 // 按菜单、部门顺序锁定并校验角色权限资源存在
-func (service *RoleService) lockRolePermissions(ctx context.Context, menuIDs, departmentIDs []uint64) error {
-	if err := service.boundary.LockTable(ctx, menuTable, menuIDs, "锁定授权菜单失败"); err != nil {
+func (s *RoleService) lockPerms(ctx context.Context, menuIDs, deptIDs []uint64) error {
+	if err := s.boundary.LockTable(ctx, menuTable, menuIDs, "锁定授权菜单失败"); err != nil {
 		return err
 	}
 
-	return service.boundary.LockTable(ctx, departmentTable, departmentIDs, "锁定授权部门失败")
+	return s.boundary.LockTable(ctx, departmentTable, deptIDs, "锁定授权部门失败")
 }
 
 // 新建角色并同步菜单、部门权限关系
-func (service *RoleService) Add(
+func (s *RoleService) Add(
 	ctx context.Context,
 	input coreservice.AddInput[entity.Role],
 ) (coreservice.AddResult[uint64], error) {
@@ -97,132 +94,100 @@ func (service *RoleService) Add(
 	if value == nil {
 		return coreservice.AddResult[uint64]{}, exception.Validate("角色新增只支持单条记录")
 	}
-	permissions, err := roleMutablePermissions(value)
-	if err != nil {
-		return coreservice.AddResult[uint64]{}, err
-	}
-
-	return service.AddWithPermissions(ctx, input, permissions)
-}
-
-// 更新角色并同步已提交的权限关系
-func (service *RoleService) Update(
-	ctx context.Context,
-	input coreservice.UpdateInput[entity.Role, uint64],
-) error {
-	items := roleUpdateItems(input)
-	if len(items) != 1 {
-		return exception.Validate("角色更新只支持单条记录")
-	}
-	permissions, err := roleSubmittedPermissions(items[0].Mutable())
-	if err != nil {
-		return err
-	}
-
-	return service.UpdateWithPermissions(ctx, input, permissions)
-}
-
-// 在同一事务中新建角色及权限关系
-func (service *RoleService) AddWithPermissions(
-	ctx context.Context,
-	input coreservice.AddInput[entity.Role],
-	permissions dto.RolePermissionInput,
-) (coreservice.AddResult[uint64], error) {
-	if service == nil || service.runtime == nil {
-		return coreservice.AddResult[uint64]{}, exception.Core("角色服务未初始化")
+	perms := dto.RolePermissionInput{}
+	if submitted := rolePerms(value); submitted != nil {
+		perms = *submitted
 	}
 	var result coreservice.AddResult[uint64]
-	err := service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		value := input.One()
-		if value == nil {
-			return exception.Validate("角色新增只支持单条记录")
-		}
-		if err := setRoleCompatibilityFields(value, permissions); err != nil {
+	err := s.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
+		if err := setRolePerms(value, perms); err != nil {
 			return err
 		}
-		if err := service.lockRolePermissions(txCtx, permissions.MenuIDList, permissions.DepartmentIDList); err != nil {
+		if err := s.lockPerms(txCtx, perms.MenuIDList, perms.DepartmentIDList); err != nil {
 			return err
 		}
 		var addErr error
-		result, addErr = service.Base.Add(txCtx, input)
+		result, addErr = s.Base.Add(txCtx, input)
 		if addErr != nil {
 			return addErr
 		}
 
-		return service.replacePermissions(txCtx, result.One(), permissions)
+		return s.replacePerms(txCtx, result.One(), perms)
 	})
 
 	return result, err
 }
 
 // 更新角色及可选权限关系，并撤销受影响用户 Session
-func (service *RoleService) UpdateWithPermissions(
+func (s *RoleService) Update(
 	ctx context.Context,
 	input coreservice.UpdateInput[entity.Role, uint64],
-	permissions *dto.RolePermissionInput,
 ) error {
-	if service == nil || service.runtime == nil {
-		return exception.Core("角色服务未初始化")
+	var items []coreservice.UpdateItem[entity.Role, uint64]
+	if input.IsMany() {
+		items = input.Many()
+	} else {
+		items = []coreservice.UpdateItem[entity.Role, uint64]{input.One()}
 	}
+	if len(items) != 1 {
+		return exception.Validate("角色更新只支持单条记录")
+	}
+	item := items[0]
+	perms := rolePerms(item.Mutable())
 
-	return service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		items := roleUpdateItems(input)
-		if len(items) != 1 {
-			return exception.Validate("角色更新只支持单条记录")
-		}
-		item := items[0]
+	return s.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
 		var (
-			err                    error
-			preservedMenuIDs       bool
-			preservedDepartmentIDs bool
+			err      error
+			keepMenu bool
+			keepDept bool
 		)
-		if permissions != nil {
-			resolved := *permissions
+		if perms != nil {
+			resolved := *perms
 			if !item.Mutable().Has("menuIdList") {
-				preservedMenuIDs = true
-				resolved.MenuIDList, err = roleRelationIDs(txCtx, service.roleMenu, "menuId", item.ID())
+				keepMenu = true
+				resolved.MenuIDList, err = roleRelationIDs(txCtx, s.roleMenu, "menuId", item.ID())
 				if err != nil {
 					return err
 				}
 			}
 			if !item.Mutable().Has("departmentIdList") {
-				preservedDepartmentIDs = true
-				resolved.DepartmentIDList, err = roleRelationIDs(txCtx, service.roleDepartment, "departmentId", item.ID())
+				keepDept = true
+				resolved.DepartmentIDList, err = roleRelationIDs(txCtx, s.roleDepartment, "departmentId", item.ID())
 				if err != nil {
 					return err
 				}
 			}
-			permissions = &resolved
-			if err = setRoleCompatibilityFields(item.Mutable(), resolved); err != nil {
+			perms = &resolved
+			if err = setRolePerms(item.Mutable(), resolved); err != nil {
 				return err
 			}
-			if err = service.lockRolePermissions(txCtx, resolved.MenuIDList, resolved.DepartmentIDList); err != nil {
+			if err = s.lockPerms(txCtx, resolved.MenuIDList, resolved.DepartmentIDList); err != nil {
 				return err
 			}
 		}
-		if err := service.boundary.LockTable(txCtx, service.Descriptor().Table(), []uint64{item.ID()}, "锁定授权角色失败"); err != nil {
+		if err := s.boundary.LockTable(txCtx, s.Descriptor().Table(), []uint64{item.ID()}, "锁定授权角色失败"); err != nil {
 			return err
 		}
-		row, err := service.roleByID(txCtx, item.ID())
+		row, err := s.roleByID(txCtx, item.ID())
 		if err != nil || row == nil {
 			return err
 		}
-		if permissions != nil {
-			if preservedMenuIDs {
-				current, relationErr := roleRelationIDs(txCtx, service.roleMenu, "menuId", item.ID())
+		if perms != nil {
+			if keepMenu {
+				current, relationErr := roleRelationIDs(txCtx, s.roleMenu, "menuId", item.ID())
 				if relationErr != nil {
 					return relationErr
 				}
-				if relationErr = auth.ValidateSnapshot(permissions.MenuIDList, current, "角色菜单权限已变更，请重试"); relationErr != nil {
+				if relationErr = auth.ValidateSnapshot(perms.MenuIDList, current, "角色菜单权限已变更，请重试"); relationErr != nil {
 					return relationErr
 				}
 			}
-			if preservedDepartmentIDs {
-				current, relationErr := roleRelationIDs(txCtx, service.roleDepartment, "departmentId", item.ID())
+			if keepDept {
+				current, relationErr := roleRelationIDs(txCtx, s.roleDepartment, "departmentId", item.ID())
 				if relationErr != nil {
 					return relationErr
 				}
-				if relationErr = auth.ValidateSnapshot(permissions.DepartmentIDList, current, "角色部门权限已变更，请重试"); relationErr != nil {
+				if relationErr = auth.ValidateSnapshot(perms.DepartmentIDList, current, "角色部门权限已变更，请重试"); relationErr != nil {
 					return relationErr
 				}
 			}
@@ -230,18 +195,18 @@ func (service *RoleService) UpdateWithPermissions(
 		if err = protectAdminRoleUpdate(*row, item.Mutable()); err != nil {
 			return err
 		}
-		userIDs, err := service.userIDs(txCtx, []uint64{item.ID()})
+		userIDs, err := s.userIDs(txCtx, []uint64{item.ID()})
 		if err != nil {
 			return err
 		}
-		if err = service.boundary.LockUsersAndRevoke(txCtx, userTable, userIDs, auth.AdminKind, "锁定授权用户失败"); err != nil {
+		if err = s.boundary.LockUsersAndRevoke(txCtx, userTable, userIDs, auth.AdminKind, "锁定授权用户失败"); err != nil {
 			return err
 		}
-		if err = service.Base.Update(txCtx, input); err != nil {
+		if err = s.Base.Update(txCtx, input); err != nil {
 			return err
 		}
-		if permissions != nil {
-			return service.replacePermissions(txCtx, item.ID(), *permissions)
+		if perms != nil {
+			return s.replacePerms(txCtx, item.ID(), *perms)
 		}
 
 		return nil
@@ -249,46 +214,42 @@ func (service *RoleService) UpdateWithPermissions(
 }
 
 // 删除角色及全部关系，并保护平台管理员角色
-func (service *RoleService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
-	if service == nil || service.runtime == nil {
-		return exception.Core("角色服务未初始化")
-	}
-
-	return service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
+func (s *RoleService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+	return s.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
 		roleIDs := auth.NormalizeIDs(input.IDs())
-		menuIDs, departmentIDs, err := service.permissionResourceIDs(txCtx, roleIDs)
+		menuIDs, deptIDs, err := s.permIDs(txCtx, roleIDs)
 		if err != nil {
 			return err
 		}
-		if err = service.lockRolePermissions(txCtx, menuIDs, departmentIDs); err != nil {
+		if err = s.lockPerms(txCtx, menuIDs, deptIDs); err != nil {
 			return err
 		}
-		if err := service.boundary.LockTable(txCtx, service.Descriptor().Table(), roleIDs, "锁定授权角色失败"); err != nil {
+		if err := s.boundary.LockTable(txCtx, s.Descriptor().Table(), roleIDs, "锁定授权角色失败"); err != nil {
 			return err
 		}
-		lockedMenuIDs, lockedDepartmentIDs, err := service.permissionResourceIDs(txCtx, roleIDs)
+		lockedMenu, lockedDept, err := s.permIDs(txCtx, roleIDs)
 		if err != nil {
 			return err
 		}
-		if err = auth.ValidateSnapshot(menuIDs, lockedMenuIDs, "角色权限已变更，请重试"); err != nil {
+		if err = auth.ValidateSnapshot(menuIDs, lockedMenu, "角色权限已变更，请重试"); err != nil {
 			return err
 		}
-		if err = auth.ValidateSnapshot(departmentIDs, lockedDepartmentIDs, "角色权限已变更，请重试"); err != nil {
+		if err = auth.ValidateSnapshot(deptIDs, lockedDept, "角色权限已变更，请重试"); err != nil {
 			return err
 		}
-		if err := service.ensureNoAdminRole(txCtx, roleIDs); err != nil {
+		if err := s.rejectAdminRole(txCtx, roleIDs); err != nil {
 			return err
 		}
-		userIDs, err := service.userIDs(txCtx, roleIDs)
+		userIDs, err := s.userIDs(txCtx, roleIDs)
 		if err != nil {
 			return err
 		}
-		if err = service.boundary.LockUsersAndRevoke(txCtx, userTable, userIDs, auth.AdminKind, "锁定授权用户失败"); err != nil {
+		if err = s.boundary.LockUsersAndRevoke(txCtx, userTable, userIDs, auth.AdminKind, "锁定授权用户失败"); err != nil {
 			return err
 		}
 		for _, relation := range []interface {
 			Model(context.Context) (*gdb.Model, error)
-		}{service.userRole, service.roleMenu, service.roleDepartment} {
+		}{s.userRole, s.roleMenu, s.roleDepartment} {
 			model, modelErr := relation.Model(txCtx)
 			if modelErr != nil {
 				return modelErr
@@ -298,40 +259,45 @@ func (service *RoleService) Delete(ctx context.Context, input coreservice.Delete
 			}
 		}
 
-		return service.Base.Delete(txCtx, input)
+		return s.Base.Delete(txCtx, input)
 	})
 }
 
 // 角色详情及权威权限关系
-func (service *RoleService) Info(ctx context.Context, roleID uint64) (*dto.RoleInfoResult, error) {
-	row, err := service.roleByID(ctx, roleID)
+func (s *RoleService) Info(ctx context.Context, roleID uint64) (*dto.RoleInfoResult, error) {
+	row, err := s.roleByID(ctx, roleID)
 	if err != nil || row == nil {
 		return nil, err
 	}
-	row.MenuIDList, err = roleRelationIDs(ctx, service.roleMenu, "menuId", roleID)
+	row.MenuIDList, err = roleRelationIDs(ctx, s.roleMenu, "menuId", roleID)
 	if err != nil {
 		return nil, err
 	}
-	row.DepartmentIDList, err = roleRelationIDs(ctx, service.roleDepartment, "departmentId", roleID)
+	row.DepartmentIDList, err = roleRelationIDs(ctx, s.roleDepartment, "departmentId", roleID)
 	if err != nil {
 		return nil, err
 	}
-	result := roleInfoResult(*row)
+	result := dto.RoleInfoResult{
+		ID: row.ID, CreateTime: row.CreateTime, UpdateTime: row.UpdateTime,
+		UserID: row.UserID, Name: row.Name, Label: row.Label, Remark: row.Remark,
+		Relevance: row.Relevance, MenuIDList: row.MenuIDList,
+		DepartmentIDList: row.DepartmentIDList,
+	}
 
 	return &result, nil
 }
 
 // 当前管理员可见的非平台管理员角色
-func (service *RoleService) List(ctx context.Context) ([]dto.RoleInfoResult, error) {
+func (s *RoleService) List(ctx context.Context) ([]dto.RoleInfoResult, error) {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	model, err := service.Base.Model(ctx)
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
-	model, err = service.visibleRoleModel(ctx, model, identity)
+	model, err = s.visibleRoles(ctx, model, identity)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +307,7 @@ func (service *RoleService) List(ctx context.Context) ([]dto.RoleInfoResult, err
 	}
 	result := make([]dto.RoleInfoResult, 0, len(rows))
 	for _, row := range rows {
-		info, infoErr := service.Info(ctx, row.ID)
+		info, infoErr := s.Info(ctx, row.ID)
 		if infoErr != nil {
 			return nil, infoErr
 		}
@@ -352,43 +318,29 @@ func (service *RoleService) List(ctx context.Context) ([]dto.RoleInfoResult, err
 }
 
 // 当前管理员可见的角色分页
-func (service *RoleService) Page(ctx context.Context, query coreservice.Query) (RolePageResult, error) {
-	if service == nil || query.PageNumber() <= 0 || query.PageSize() <= 0 {
-		return RolePageResult{}, exception.Validate("角色分页参数无效")
-	}
+func (s *RoleService) Page(ctx context.Context, query coreservice.Query) (RolePageResult, error) {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
 		return RolePageResult{}, err
 	}
-	model, err := service.Base.Model(ctx)
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return RolePageResult{}, err
 	}
-	scope, exists := crud.CurrentOperation(ctx)
-	if !exists || scope.Plan().Action() != crud.ActionPage {
-		return RolePageResult{}, exception.Core("当前上下文不存在角色分页计划")
-	}
-	model, err = scope.Plan().ApplyQuery(ctx, model)
-	if err != nil {
-		return RolePageResult{}, exception.WrapCore(err, "应用角色分页查询失败")
-	}
-	model, err = service.visibleRoleModel(ctx, model, identity)
+	model, err = s.visibleRoles(ctx, model, identity)
 	if err != nil {
 		return RolePageResult{}, err
-	}
-	result, total, err := model.Page(query.PageNumber(), query.PageSize()).AllAndCount(false)
-	if err != nil {
-		return RolePageResult{}, exception.WrapCore(err, "查询角色分页失败")
 	}
 	var rows []struct {
 		ID uint64 `orm:"id"`
 	}
-	if err = result.Structs(&rows); err != nil {
-		return RolePageResult{}, exception.WrapCore(err, "解析角色分页失败")
+	pagination, err := s.EntityRenderPage(ctx, model, query, &rows)
+	if err != nil {
+		return RolePageResult{}, err
 	}
 	items := make([]dto.RoleInfoResult, 0, len(rows))
 	for _, row := range rows {
-		info, infoErr := service.Info(ctx, row.ID)
+		info, infoErr := s.Info(ctx, row.ID)
 		if infoErr != nil {
 			return RolePageResult{}, infoErr
 		}
@@ -397,17 +349,17 @@ func (service *RoleService) Page(ctx context.Context, query coreservice.Query) (
 
 	return RolePageResult{
 		List:       items,
-		Pagination: coreservice.Pagination{Page: query.PageNumber(), Size: query.PageSize(), Total: int64(total)},
+		Pagination: pagination,
 	}, nil
 }
 
-func (service *RoleService) visibleRoleModel(
+func (s *RoleService) visibleRoles(
 	ctx context.Context,
 	model *gdb.Model,
 	identity auth.AdminIdentity,
 ) (*gdb.Model, error) {
 	model = model.Where("label IS NULL OR label <> ?", adminRoleLabel)
-	isAdmin, err := service.isAdminIdentity(ctx, identity)
+	isAdmin, err := s.isAdmin(ctx, identity)
 	if err != nil {
 		return nil, err
 	}
@@ -418,55 +370,52 @@ func (service *RoleService) visibleRoleModel(
 	return model, nil
 }
 
-func (service *RoleService) replacePermissions(
+func (s *RoleService) replacePerms(
 	ctx context.Context,
 	roleID uint64,
-	permissions dto.RolePermissionInput,
+	perms dto.RolePermissionInput,
 ) error {
-	if err := replaceRoleRelation(ctx, service.roleMenu, "menuId", roleID, permissions.MenuIDList); err != nil {
+	if err := replaceRoleRelation(ctx, s.roleMenu, "menuId", roleID, perms.MenuIDList); err != nil {
 		return err
 	}
 
-	return replaceRoleRelation(ctx, service.roleDepartment, "departmentId", roleID, permissions.DepartmentIDList)
+	return replaceRoleRelation(ctx, s.roleDepartment, "departmentId", roleID, perms.DepartmentIDList)
 }
 
-func (service *RoleService) permissionResourceIDs(
+func (s *RoleService) permIDs(
 	ctx context.Context,
 	roleIDs []uint64,
 ) ([]uint64, []uint64, error) {
-	menuIDs, err := roleRelationIDsForRoles(ctx, service.roleMenu, "menuId", roleIDs)
+	menuIDs, err := roleRelationIDsForRoles(ctx, s.roleMenu, "menuId", roleIDs)
 	if err != nil {
 		return nil, nil, err
 	}
-	departmentIDs, err := roleRelationIDsForRoles(ctx, service.roleDepartment, "departmentId", roleIDs)
+	deptIDs, err := roleRelationIDsForRoles(ctx, s.roleDepartment, "departmentId", roleIDs)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return menuIDs, departmentIDs, nil
+	return menuIDs, deptIDs, nil
 }
 
-func (service *RoleService) roleByID(ctx context.Context, roleID uint64) (*roleRow, error) {
-	model, err := service.Base.Model(ctx)
+func (s *RoleService) roleByID(ctx context.Context, roleID uint64) (*roleRow, error) {
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var row *roleRow
 	if err = model.Where("id", roleID).Scan(&row); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
 		return nil, exception.WrapCore(err, "查询角色失败")
 	}
 
 	return row, nil
 }
 
-func (service *RoleService) userIDs(ctx context.Context, roleIDs []uint64) ([]uint64, error) {
+func (s *RoleService) userIDs(ctx context.Context, roleIDs []uint64) ([]uint64, error) {
 	if len(roleIDs) == 0 {
 		return nil, nil
 	}
-	model, err := service.userRole.Model(ctx)
+	model, err := s.userRole.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -477,15 +426,15 @@ func (service *RoleService) userIDs(ctx context.Context, roleIDs []uint64) ([]ui
 		return nil, exception.WrapCore(err, "查询角色用户失败")
 	}
 	ids := make([]uint64, len(rows))
-	for index, row := range rows {
-		ids[index] = row.UserID
+	for i, row := range rows {
+		ids[i] = row.UserID
 	}
 
 	return auth.NormalizeIDs(ids), nil
 }
 
-func (service *RoleService) ensureNoAdminRole(ctx context.Context, roleIDs []uint64) error {
-	model, err := service.Base.Model(ctx)
+func (s *RoleService) rejectAdminRole(ctx context.Context, roleIDs []uint64) error {
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return err
 	}
@@ -500,11 +449,11 @@ func (service *RoleService) ensureNoAdminRole(ctx context.Context, roleIDs []uin
 	return nil
 }
 
-func (service *RoleService) isAdminIdentity(ctx context.Context, identity auth.AdminIdentity) (bool, error) {
+func (s *RoleService) isAdmin(ctx context.Context, identity auth.AdminIdentity) (bool, error) {
 	if len(identity.RoleIDs()) == 0 {
 		return false, nil
 	}
-	model, err := service.Base.Model(ctx)
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -533,64 +482,33 @@ func protectAdminRoleUpdate(row roleRow, mutable *coreservice.Mutable[entity.Rol
 	return nil
 }
 
-func setRoleCompatibilityFields(
+func setRolePerms(
 	mutable *coreservice.Mutable[entity.Role],
-	permissions dto.RolePermissionInput,
+	perms dto.RolePermissionInput,
 ) error {
-	if err := mutable.Set("menuIdList", auth.NormalizeIDs(permissions.MenuIDList)); err != nil {
+	if err := mutable.Set("menuIdList", auth.NormalizeIDs(perms.MenuIDList)); err != nil {
 		return err
 	}
 
-	return mutable.Set("departmentIdList", auth.NormalizeIDs(permissions.DepartmentIDList))
+	return mutable.Set("departmentIdList", auth.NormalizeIDs(perms.DepartmentIDList))
 }
 
-func roleMutablePermissions(
-	mutable *coreservice.Mutable[entity.Role],
-) (dto.RolePermissionInput, error) {
-	permissions, err := roleSubmittedPermissions(mutable)
-	if err != nil {
-		return dto.RolePermissionInput{}, err
+func rolePerms(mutable *coreservice.Mutable[entity.Role]) *dto.RolePermissionInput {
+	perms := new(dto.RolePermissionInput)
+	has := false
+	if value, ok := mutable.Get("menuIdList"); ok {
+		perms.MenuIDList = value.([]uint64)
+		has = true
 	}
-	if permissions == nil {
-		return dto.RolePermissionInput{}, nil
+	if value, ok := mutable.Get("departmentIdList"); ok {
+		perms.DepartmentIDList = value.([]uint64)
+		has = true
 	}
-
-	return *permissions, nil
-}
-
-func roleSubmittedPermissions(
-	mutable *coreservice.Mutable[entity.Role],
-) (*dto.RolePermissionInput, error) {
-	if mutable == nil {
-		return nil, exception.Validate("角色权限参数无效")
-	}
-	var (
-		permissions dto.RolePermissionInput
-		hasValue    bool
-	)
-	for _, field := range []struct {
-		name   string
-		target *[]uint64
-	}{
-		{name: "menuIdList", target: &permissions.MenuIDList},
-		{name: "departmentIdList", target: &permissions.DepartmentIDList},
-	} {
-		value, exists := mutable.Get(field.name)
-		if !exists {
-			continue
-		}
-		ids, ok := value.([]uint64)
-		if !ok {
-			return nil, exception.Validate("角色权限字段无效")
-		}
-		*field.target = ids
-		hasValue = true
-	}
-	if !hasValue {
-		return nil, nil
+	if !has {
+		return nil
 	}
 
-	return &permissions, nil
+	return perms
 }
 
 func replaceRoleRelation[E any](
@@ -609,13 +527,13 @@ func replaceRoleRelation[E any](
 	}
 	ids = auth.NormalizeIDs(ids)
 	rows := make([]roleRelationWrite, len(ids))
-	for index, id := range ids {
-		rows[index].RoleID = roleID
+	for i, id := range ids {
+		rows[i].RoleID = roleID
 		switch column {
 		case "menuId":
-			rows[index].MenuID = id
+			rows[i].MenuID = id
 		case "departmentId":
-			rows[index].DepartmentID = id
+			rows[i].DepartmentID = id
 		default:
 			return exception.Core("角色关系字段无效")
 		}
@@ -646,8 +564,8 @@ func roleRelationIDs[E any](
 		return nil, exception.WrapCore(err, "查询角色关系失败")
 	}
 	ids := make([]uint64, len(rows))
-	for index, row := range rows {
-		ids[index] = row.ID
+	for i, row := range rows {
+		ids[i] = row.ID
 	}
 
 	return ids, nil
@@ -674,26 +592,9 @@ func roleRelationIDsForRoles[E any](
 		return nil, exception.WrapCore(err, "查询角色关系失败")
 	}
 	ids := make([]uint64, len(rows))
-	for index, row := range rows {
-		ids[index] = row.ID
+	for i, row := range rows {
+		ids[i] = row.ID
 	}
 
 	return auth.NormalizeIDs(ids), nil
-}
-
-func roleInfoResult(row roleRow) dto.RoleInfoResult {
-	return dto.RoleInfoResult{
-		ID: row.ID, CreateTime: row.CreateTime, UpdateTime: row.UpdateTime,
-		UserID: row.UserID, Name: row.Name, Label: row.Label, Remark: row.Remark,
-		Relevance: row.Relevance, MenuIDList: row.MenuIDList,
-		DepartmentIDList: row.DepartmentIDList,
-	}
-}
-
-func roleUpdateItems(input coreservice.UpdateInput[entity.Role, uint64]) []coreservice.UpdateItem[entity.Role, uint64] {
-	if input.IsMany() {
-		return input.Many()
-	}
-
-	return []coreservice.UpdateItem[entity.Role, uint64]{input.One()}
 }

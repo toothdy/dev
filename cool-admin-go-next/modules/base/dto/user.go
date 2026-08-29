@@ -8,17 +8,6 @@ type UserMoveReq struct {
 	UserIDs      []uint64 `json:"userIds" v:"required"`
 }
 
-// 用户分页固定筛选请求
-type UserPageReq struct {
-	Page          int      `json:"page"`
-	Size          int      `json:"size"`
-	DepartmentIDs []uint64 `json:"departmentIds"`
-	KeyWord       string   `json:"keyWord"`
-	Status        *int32   `json:"status"`
-	Order         string   `json:"order"`
-	Sort          string   `json:"sort"`
-}
-
 // 当前用户可修改的个人资料白名单
 type PersonUpdateReq struct {
 	Name        *string `json:"name"`

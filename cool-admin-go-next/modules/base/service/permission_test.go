@@ -44,8 +44,20 @@ func TestPermissionRoleDomainOperations(t *testing.T) {
 	}
 
 	if err = runtime.Runner().Within(t.Context(), func(ctx context.Context) error {
-		if lockErr := service.LockUserRoleChanges(ctx, []uint64{1}, []uint64{30, 30, 0}); lockErr != nil {
-			return lockErr
+		users := []uint64{1}
+		before, changeErr := service.PrepareRoleChange(ctx, users, []uint64{30, 30, 0})
+		if changeErr != nil {
+			return changeErr
+		}
+		if changeErr = service.LockUsers(ctx, users); changeErr != nil {
+			return changeErr
+		}
+		after, changeErr := service.RoleSnapshot(ctx, users)
+		if changeErr != nil {
+			return changeErr
+		}
+		if changeErr = service.ValidateRoleSnapshot(before, after); changeErr != nil {
+			return changeErr
 		}
 		if replaceErr := service.ReplaceRoles(ctx, 1, []uint64{30, 30, 0}); replaceErr != nil {
 			return replaceErr
@@ -69,7 +81,7 @@ func TestPermissionRoleDomainOperations(t *testing.T) {
 	}
 }
 
-func TestFlatVisibleMenusReturnsOrderedMenusWithoutNesting(t *testing.T) {
+func TestVisibleMenusReturnsOrderedUniqueRows(t *testing.T) {
 	service, runtime := newPermissionMenuTestService(t)
 	seedPermissionMenus(t, runtime,
 		permissionMenuTestRow{id: 1, orderNum: 30},
@@ -92,7 +104,7 @@ func TestFlatVisibleMenusReturnsOrderedMenusWithoutNesting(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			menus, err := service.flatVisibleMenus(t.Context(), testCase.roleIDs, testCase.isAdmin)
+			menus, err := service.visibleMenus(t.Context(), testCase.roleIDs, testCase.isAdmin)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -102,9 +114,6 @@ func TestFlatVisibleMenusReturnsOrderedMenusWithoutNesting(t *testing.T) {
 			for index, menu := range menus {
 				if menu.ID != testCase.wantIDs[index] {
 					t.Fatalf("menu[%d].ID = %d, want %d", index, menu.ID, testCase.wantIDs[index])
-				}
-				if len(menu.ChildMenus) != 0 {
-					t.Fatalf("menu[%d].ChildMenus = %#v, want flat item", index, menu.ChildMenus)
 				}
 			}
 		})

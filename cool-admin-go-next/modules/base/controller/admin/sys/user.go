@@ -19,6 +19,16 @@ func AdminSysUserController(user *service.UserService) controller.Definition {
 			API:     controller.AllAPI(),
 			Entity:  entity.User{},
 			Service: user,
+			PageQueryOp: controller.StaticQuery(controller.QueryOp{
+				KeyWordLikeFields: []controller.ColumnRef{
+					controller.Field("name"),
+					controller.Field("username"),
+				},
+				FieldEq: []controller.FieldEq{
+					controller.Eq(controller.Field("status")),
+					controller.EqFrom(controller.Field("departmentId"), "departmentIds"),
+				},
+			}),
 			InsertParam: controller.Insert(func(ctx context.Context, input *coreservice.Mutable[entity.User]) error {
 				identity, err := auth.Admin(ctx)
 				if err != nil {

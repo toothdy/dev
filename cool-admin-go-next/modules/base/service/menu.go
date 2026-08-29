@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"sort"
 
 	"github.com/gogf/gf/v2/database/gdb"
@@ -79,51 +77,54 @@ func NewMenu(
 }
 
 // 新增菜单
-func (service *MenuService) Add(ctx context.Context, input coreservice.AddInput[entity.Menu]) (coreservice.AddResult[uint64], error) {
-	if service == nil || service.runtime == nil {
-		return coreservice.AddResult[uint64]{}, exception.Core("菜单服务未初始化")
-	}
+func (s *MenuService) Add(ctx context.Context, input coreservice.AddInput[entity.Menu]) (coreservice.AddResult[uint64], error) {
 	var result coreservice.AddResult[uint64]
-	err := service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		parentIDs, parentErr := menuAddParentIDs(input)
-		if parentErr != nil {
-			return parentErr
+	err := s.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
+		values := input.Many()
+		if !input.IsMany() {
+			values = []*coreservice.Mutable[entity.Menu]{input.One()}
 		}
-		if parentErr = service.lockMenus(txCtx, parentIDs); parentErr != nil {
-			return parentErr
+		parents := make([]uint64, 0, len(values))
+		for _, value := range values {
+			if parentID, exists := menuParentID(value); exists && parentID != nil && *parentID != 0 {
+				parents = append(parents, *parentID)
+			}
 		}
-		result, parentErr = service.Base.Add(txCtx, input)
-		return parentErr
+		if err := s.lockMenus(txCtx, parents); err != nil {
+			return err
+		}
+		var err error
+		result, err = s.Base.Add(txCtx, input)
+		return err
 	})
 	return result, err
 }
 
 // 更新菜单并撤销受影响用户 Session
-func (service *MenuService) Update(ctx context.Context, input coreservice.UpdateInput[entity.Menu, uint64]) error {
-	if service == nil || service.runtime == nil {
-		return exception.Core("菜单服务未初始化")
-	}
-	return service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		items := menuUpdateItems(input)
-		targetIDs := make([]uint64, 0, len(items))
-		lockIDs := make([]uint64, 0, len(items)*2)
+func (s *MenuService) Update(ctx context.Context, input coreservice.UpdateInput[entity.Menu, uint64]) error {
+	return s.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
+		var items []coreservice.UpdateItem[entity.Menu, uint64]
+		if input.IsMany() {
+			items = input.Many()
+		} else {
+			items = []coreservice.UpdateItem[entity.Menu, uint64]{input.One()}
+		}
+		targets := make([]uint64, 0, len(items))
+		locks := make([]uint64, 0, len(items)*2)
 		parents := make(map[uint64]*uint64, len(items))
 		for _, item := range items {
-			targetIDs = append(targetIDs, item.ID())
-			lockIDs = append(lockIDs, item.ID())
-			parentID, exists, parentErr := menuMutableParentID(item.Mutable())
-			if parentErr != nil {
-				return parentErr
-			}
+			targets = append(targets, item.ID())
+			locks = append(locks, item.ID())
+			parentID, exists := menuParentID(item.Mutable())
 			if exists {
 				parents[item.ID()] = parentID
 				if parentID != nil && *parentID != 0 {
-					lockIDs = append(lockIDs, *parentID)
+					locks = append(locks, *parentID)
 				}
 			}
 		}
 		if len(parents) > 0 {
-			model, err := service.Base.Model(txCtx)
+			model, err := s.Base.Model(txCtx)
 			if err != nil {
 				return err
 			}
@@ -134,93 +135,87 @@ func (service *MenuService) Update(ctx context.Context, input coreservice.Update
 				return exception.WrapCore(err, "查询菜单树失败")
 			}
 			for _, row := range rows {
-				lockIDs = append(lockIDs, row.ID)
+				locks = append(locks, row.ID)
 			}
 		}
-		if err := service.lockMenus(txCtx, lockIDs); err != nil {
+		if err := s.lockMenus(txCtx, locks); err != nil {
 			return err
 		}
-		if err := service.validateMenuParents(txCtx, parents); err != nil {
+		if err := s.checkParents(txCtx, parents); err != nil {
 			return err
 		}
-		users, err := service.userIDsByMenus(txCtx, auth.NormalizeIDs(targetIDs))
+		users, err := s.userIDs(txCtx, auth.NormalizeIDs(targets))
 		if err != nil {
 			return err
 		}
-		if err = service.boundary.LockUsersAndRevoke(txCtx, userTable, users, auth.AdminKind, "锁定授权用户失败"); err != nil {
+		if err = s.boundary.LockUsersAndRevoke(txCtx, userTable, users, auth.AdminKind, "锁定授权用户失败"); err != nil {
 			return err
 		}
-		return service.Base.Update(txCtx, input)
+		return s.Base.Update(txCtx, input)
 	})
 }
 
 // 递归删除菜单和角色关系
-func (service *MenuService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
-	if service == nil || service.runtime == nil {
-		return exception.Core("菜单服务未初始化")
-	}
-	return service.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		ids, err := service.lockedDescendantIDs(txCtx, input.IDs())
+func (s *MenuService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+	return s.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
+		ids, err := s.lockTree(txCtx, input.IDs())
 		if err != nil {
 			return err
 		}
-		users, err := service.userIDsByMenus(txCtx, ids)
+		users, err := s.userIDs(txCtx, ids)
 		if err != nil {
 			return err
 		}
-		if err = service.boundary.LockUsersAndRevoke(txCtx, userTable, users, auth.AdminKind, "锁定授权用户失败"); err != nil {
+		if err = s.boundary.LockUsersAndRevoke(txCtx, userTable, users, auth.AdminKind, "锁定授权用户失败"); err != nil {
 			return err
 		}
-		model, err := service.roleMenu.Model(txCtx)
+		model, err := s.roleMenu.Model(txCtx)
 		if err != nil {
 			return err
 		}
 		if _, err = model.WhereIn("menuId", ids).Delete(); err != nil {
 			return exception.WrapCore(err, "清理菜单角色关系失败")
 		}
-		deleteInput, err := coreservice.NewDeleteInput[entity.Menu](service.Descriptor(), ids)
+		deleteInput, err := coreservice.NewDeleteInput[entity.Menu](s.Descriptor(), ids)
 		if err != nil {
 			return err
 		}
-		return service.Base.Delete(txCtx, deleteInput)
+		return s.Base.Delete(txCtx, deleteInput)
 	})
 }
 
 // 菜单详情
-func (service *MenuService) Info(ctx context.Context, menuID uint64) (*dto.MenuListItem, error) {
-	model, err := service.Base.Model(ctx)
+func (s *MenuService) Info(ctx context.Context, menuID uint64) (*dto.MenuListItem, error) {
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var row *menuRow
 	if err = model.Where("id", menuID).Scan(&row); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
 		return nil, exception.WrapCore(err, "查询菜单失败")
 	}
 	if row == nil {
 		return nil, nil
 	}
-	item := menuListItem(*row)
-	item.ParentName, err = service.parentName(ctx, row.ParentID)
+	item := menuItem(*row)
+	item.ParentName, err = s.parentName(ctx, row.ParentID)
 	return &item, err
 }
 
 // 当前用户可见的菜单树
-func (service *MenuService) List(ctx context.Context) ([]dto.MenuListItem, error) {
+func (s *MenuService) List(ctx context.Context) ([]dto.MenuListItem, error) {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	model, err := service.Base.Model(ctx)
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if isAdmin, adminErr := service.isAdmin(ctx, identity.RoleIDs()); adminErr != nil {
+	if isAdmin, adminErr := s.isAdmin(ctx, identity.RoleIDs()); adminErr != nil {
 		return nil, adminErr
 	} else if !isAdmin {
-		menuIDs, idErr := service.menuIDsByRoles(ctx, identity.RoleIDs())
+		menuIDs, idErr := s.menuIDs(ctx, identity.RoleIDs())
 		if idErr != nil {
 			return nil, idErr
 		}
@@ -233,18 +228,15 @@ func (service *MenuService) List(ctx context.Context) ([]dto.MenuListItem, error
 	if err = model.OrderAsc("orderNum").OrderAsc("id").Scan(&rows); err != nil {
 		return nil, exception.WrapCore(err, "查询菜单列表失败")
 	}
-	return buildMenuItems(rows), nil
+	return menuItems(rows), nil
 }
 
 // 导出选中的菜单树，不含维护字段
-func (service *MenuService) Export(ctx context.Context, ids []uint64) ([]dto.MenuTree, error) {
-	if service == nil || service.Base == nil {
-		return nil, exception.Core("菜单服务未初始化")
-	}
+func (s *MenuService) Export(ctx context.Context, ids []uint64) ([]dto.MenuTree, error) {
 	if len(ids) == 0 {
 		return []dto.MenuTree{}, nil
 	}
-	model, err := service.Base.Model(ctx)
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -263,26 +255,23 @@ func (service *MenuService) Export(ctx context.Context, ids []uint64) ([]dto.Men
 		return rows[left].ID < rows[right].ID
 	})
 
-	return buildMenuTree(rows), nil
+	return menuTree(rows), nil
 }
 
 // 在调用方事务中插入菜单树，并用实际新 ID 重建父子关系
-func (service *MenuService) Import(ctx context.Context, menus []dto.MenuTree) error {
-	if service == nil || service.Base == nil {
-		return exception.Core("菜单服务未初始化")
-	}
-	if _, err := service.Tx(ctx); err != nil {
+func (s *MenuService) Import(ctx context.Context, menus []dto.MenuTree) error {
+	if _, err := s.Tx(ctx); err != nil {
 		return err
 	}
-	model, err := service.Base.Model(ctx)
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return err
 	}
 
-	return service.importMenuTree(model, menus, nil)
+	return s.importTree(model, menus, nil)
 }
 
-func buildMenuTree(rows []menuExportRow) []dto.MenuTree {
+func menuTree(rows []menuExportRow) []dto.MenuTree {
 	children := make(map[uint64][]menuExportRow)
 	roots := make([]menuExportRow, 0)
 	for _, row := range rows {
@@ -295,7 +284,7 @@ func buildMenuTree(rows []menuExportRow) []dto.MenuTree {
 	var walk func(menuExportRow, map[uint64]bool) dto.MenuTree
 	walk = func(row menuExportRow, ancestors map[uint64]bool) dto.MenuTree {
 		if ancestors[row.ID] {
-			return menuTreeNode(row, nil)
+			return treeNode(row, nil)
 		}
 		ancestors[row.ID] = true
 		nested := children[row.ID]
@@ -305,7 +294,7 @@ func buildMenuTree(rows []menuExportRow) []dto.MenuTree {
 		}
 		delete(ancestors, row.ID)
 
-		return menuTreeNode(row, items)
+		return treeNode(row, items)
 	}
 	result := make([]dto.MenuTree, 0, len(roots))
 	for _, root := range roots {
@@ -315,7 +304,7 @@ func buildMenuTree(rows []menuExportRow) []dto.MenuTree {
 	return result
 }
 
-func menuTreeNode(row menuExportRow, children []dto.MenuTree) dto.MenuTree {
+func treeNode(row menuExportRow, children []dto.MenuTree) dto.MenuTree {
 	return dto.MenuTree{
 		Name: row.Name, Router: row.Router, Perms: row.Perms, Type: row.Type, Icon: row.Icon,
 		OrderNum: row.OrderNum, ViewPath: row.ViewPath, KeepAlive: row.KeepAlive, IsShow: row.IsShow,
@@ -323,7 +312,7 @@ func menuTreeNode(row menuExportRow, children []dto.MenuTree) dto.MenuTree {
 	}
 }
 
-func (service *MenuService) importMenuTree(model *gdb.Model, menus []dto.MenuTree, parentID *uint64) error {
+func (s *MenuService) importTree(model *gdb.Model, menus []dto.MenuTree, parentID *uint64) error {
 	for _, menu := range menus {
 		fields := map[string]any{
 			"name": menu.Name, "router": stringValue(menu.Router), "perms": stringValue(menu.Perms),
@@ -335,7 +324,7 @@ func (service *MenuService) importMenuTree(model *gdb.Model, menus []dto.MenuTre
 		} else {
 			fields["parentId"] = *parentID
 		}
-		do, err := seed.NewDO(service.Descriptor(), fields, true)
+		do, err := seed.NewDO(s.Descriptor(), fields, true)
 		if err != nil {
 			return exception.WrapCore(err, "构造导入节点失败")
 		}
@@ -347,7 +336,7 @@ func (service *MenuService) importMenuTree(model *gdb.Model, menus []dto.MenuTre
 			return exception.Core("导入节点未返回有效 ID")
 		}
 		id := uint64(insertedID)
-		if err = service.importMenuTree(model, menu.ChildMenus, &id); err != nil {
+		if err = s.importTree(model, menu.ChildMenus, &id); err != nil {
 			return err
 		}
 	}
@@ -363,36 +352,16 @@ func stringValue(value *string) any {
 	return *value
 }
 
-func (service *MenuService) lockMenus(ctx context.Context, ids []uint64) error {
-	ids = auth.NormalizeIDs(ids)
-	if len(ids) == 0 {
-		return nil
-	}
-	if err := service.boundary.LockTable(ctx, service.Descriptor().Table(), ids, "锁定授权菜单失败"); err != nil {
-		return err
-	}
-	model, err := service.Base.Model(ctx)
-	if err != nil {
-		return err
-	}
-	var rows []struct {
-		ID uint64 `orm:"id"`
-	}
-	if err = model.Fields("id").WhereIn("id", ids).OrderAsc("id").Scan(&rows); err != nil {
-		return exception.WrapCore(err, "查询锁定菜单失败")
-	}
-	if len(rows) != len(ids) {
-		return exception.Validate("菜单不存在")
-	}
-	return nil
+func (s *MenuService) lockMenus(ctx context.Context, ids []uint64) error {
+	return s.boundary.LockTable(ctx, s.Descriptor().Table(), ids, "锁定授权菜单失败")
 }
 
-func (service *MenuService) lockedDescendantIDs(ctx context.Context, roots []uint64) ([]uint64, error) {
+func (s *MenuService) lockTree(ctx context.Context, roots []uint64) ([]uint64, error) {
 	roots = auth.NormalizeIDs(roots)
 	if len(roots) == 0 {
 		return nil, exception.Validate("菜单 ID 不能为空")
 	}
-	if err := service.lockMenus(ctx, roots); err != nil {
+	if err := s.lockMenus(ctx, roots); err != nil {
 		return nil, err
 	}
 	seen := make(map[uint64]struct{}, len(roots))
@@ -401,7 +370,7 @@ func (service *MenuService) lockedDescendantIDs(ctx context.Context, roots []uin
 	}
 	level := roots
 	for len(level) > 0 {
-		model, err := service.Base.Model(ctx)
+		model, err := s.Base.Model(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -411,25 +380,25 @@ func (service *MenuService) lockedDescendantIDs(ctx context.Context, roots []uin
 		if err = model.Fields("id").WhereIn("parentId", level).OrderAsc("id").Scan(&children); err != nil {
 			return nil, exception.WrapCore(err, "查询菜单子节点失败")
 		}
-		candidateIDs := make([]uint64, 0, len(children))
+		candidates := make([]uint64, 0, len(children))
 		for _, child := range children {
 			if _, exists := seen[child.ID]; !exists {
-				candidateIDs = append(candidateIDs, child.ID)
+				candidates = append(candidates, child.ID)
 			}
 		}
-		candidateIDs = auth.NormalizeIDs(candidateIDs)
-		if len(candidateIDs) == 0 {
+		candidates = auth.NormalizeIDs(candidates)
+		if len(candidates) == 0 {
 			break
 		}
-		if err = service.lockMenus(ctx, candidateIDs); err != nil {
+		if err = s.lockMenus(ctx, candidates); err != nil {
 			return nil, err
 		}
-		model, err = service.Base.Model(ctx)
+		model, err = s.Base.Model(ctx)
 		if err != nil {
 			return nil, err
 		}
-		var lockedChildren []menuRow
-		if err = model.Fields("id", "parentId").WhereIn("id", candidateIDs).OrderAsc("id").Scan(&lockedChildren); err != nil {
+		var locked []menuRow
+		if err = model.Fields("id", "parentId").WhereIn("id", candidates).OrderAsc("id").Scan(&locked); err != nil {
 			return nil, exception.WrapCore(err, "查询锁定菜单子节点失败")
 		}
 		parents := make(map[uint64]struct{}, len(level))
@@ -437,7 +406,7 @@ func (service *MenuService) lockedDescendantIDs(ctx context.Context, roots []uin
 			parents[parentID] = struct{}{}
 		}
 		level = level[:0]
-		for _, child := range lockedChildren {
+		for _, child := range locked {
 			if child.ParentID == nil {
 				continue
 			}
@@ -455,11 +424,11 @@ func (service *MenuService) lockedDescendantIDs(ctx context.Context, roots []uin
 	return auth.NormalizeIDs(ids), nil
 }
 
-func (service *MenuService) validateMenuParents(ctx context.Context, changes map[uint64]*uint64) error {
+func (s *MenuService) checkParents(ctx context.Context, changes map[uint64]*uint64) error {
 	if len(changes) == 0 {
 		return nil
 	}
-	model, err := service.Base.Model(ctx)
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return err
 	}
@@ -500,43 +469,20 @@ func (service *MenuService) validateMenuParents(ctx context.Context, changes map
 	return nil
 }
 
-func menuAddParentIDs(input coreservice.AddInput[entity.Menu]) ([]uint64, error) {
-	values := input.Many()
-	if !input.IsMany() {
-		values = []*coreservice.Mutable[entity.Menu]{input.One()}
-	}
-	ids := make([]uint64, 0, len(values))
-	for _, value := range values {
-		parentID, exists, err := menuMutableParentID(value)
-		if err != nil {
-			return nil, err
-		}
-		if exists && parentID != nil && *parentID != 0 {
-			ids = append(ids, *parentID)
-		}
-	}
-	return auth.NormalizeIDs(ids), nil
-}
-
-func menuMutableParentID(value *coreservice.Mutable[entity.Menu]) (*uint64, bool, error) {
-	if value == nil || !value.Has("parentId") {
-		return nil, false, nil
+func menuParentID(value *coreservice.Mutable[entity.Menu]) (*uint64, bool) {
+	if !value.Has("parentId") {
+		return nil, false
 	}
 	if value.IsNull("parentId") {
-		return nil, true, nil
+		return nil, true
 	}
 	current, _ := value.Get("parentId")
-	switch parentID := current.(type) {
-	case uint64:
-		return &parentID, true, nil
-	case *uint64:
-		return parentID, true, nil
-	default:
-		return nil, true, exception.Validate("菜单父级无效")
-	}
+	parentID := current.(uint64)
+
+	return &parentID, true
 }
 
-func (service *MenuService) userIDsByMenus(ctx context.Context, menuIDs []uint64) ([]uint64, error) {
+func (s *MenuService) userIDs(ctx context.Context, menuIDs []uint64) ([]uint64, error) {
 	if len(menuIDs) == 0 {
 		return nil, nil
 	}
@@ -547,21 +493,21 @@ func (service *MenuService) userIDsByMenus(ctx context.Context, menuIDs []uint64
 	var rows []struct {
 		UserID uint64 `orm:"userId"`
 	}
-	if err = service.Base.NativeQuery(ctx, statement, &rows); err != nil {
+	if err = s.Base.NativeQuery(ctx, statement, &rows); err != nil {
 		return nil, exception.WrapCore(err, "查询菜单用户失败")
 	}
 	ids := make([]uint64, len(rows))
-	for index, row := range rows {
-		ids[index] = row.UserID
+	for i, row := range rows {
+		ids[i] = row.UserID
 	}
 	return auth.NormalizeIDs(ids), nil
 }
 
-func (service *MenuService) menuIDsByRoles(ctx context.Context, roleIDs []uint64) ([]uint64, error) {
+func (s *MenuService) menuIDs(ctx context.Context, roleIDs []uint64) ([]uint64, error) {
 	if len(roleIDs) == 0 {
 		return nil, nil
 	}
-	model, err := service.roleMenu.Model(ctx)
+	model, err := s.roleMenu.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -572,14 +518,14 @@ func (service *MenuService) menuIDsByRoles(ctx context.Context, roleIDs []uint64
 		return nil, exception.WrapCore(err, "查询角色菜单失败")
 	}
 	ids := make([]uint64, len(rows))
-	for index, row := range rows {
-		ids[index] = row.MenuID
+	for i, row := range rows {
+		ids[i] = row.MenuID
 	}
 	return auth.NormalizeIDs(ids), nil
 }
 
-func (service *MenuService) isAdmin(ctx context.Context, roleIDs []uint64) (bool, error) {
-	model, err := service.role.Model(ctx)
+func (s *MenuService) isAdmin(ctx context.Context, roleIDs []uint64) (bool, error) {
+	model, err := s.role.Model(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -590,11 +536,11 @@ func (service *MenuService) isAdmin(ctx context.Context, roleIDs []uint64) (bool
 	return count > 0, nil
 }
 
-func (service *MenuService) parentName(ctx context.Context, parentID *uint64) (*string, error) {
+func (s *MenuService) parentName(ctx context.Context, parentID *uint64) (*string, error) {
 	if parentID == nil || *parentID == 0 {
 		return nil, nil
 	}
-	model, err := service.Base.Model(ctx)
+	model, err := s.Base.Model(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -602,9 +548,6 @@ func (service *MenuService) parentName(ctx context.Context, parentID *uint64) (*
 		Name string `orm:"name"`
 	}
 	if err = model.Fields("name").Where("id", *parentID).Scan(&row); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
 		return nil, exception.WrapCore(err, "查询菜单父节点失败")
 	}
 	if row == nil {
@@ -613,12 +556,12 @@ func (service *MenuService) parentName(ctx context.Context, parentID *uint64) (*
 	return &row.Name, nil
 }
 
-func buildMenuItems(rows []menuRow) []dto.MenuListItem {
+func menuItems(rows []menuRow) []dto.MenuListItem {
 	items := make(map[uint64]dto.MenuListItem, len(rows))
 	children := make(map[uint64][]uint64)
 	roots := make([]uint64, 0)
 	for _, row := range rows {
-		items[row.ID] = menuListItem(row)
+		items[row.ID] = menuItem(row)
 		if row.ParentID == nil || *row.ParentID == 0 {
 			roots = append(roots, row.ID)
 			continue
@@ -640,13 +583,6 @@ func buildMenuItems(rows []menuRow) []dto.MenuListItem {
 	return result
 }
 
-func menuListItem(row menuRow) dto.MenuListItem {
+func menuItem(row menuRow) dto.MenuListItem {
 	return dto.MenuListItem{ID: row.ID, CreateTime: row.CreateTime, UpdateTime: row.UpdateTime, ParentID: row.ParentID, Name: row.Name, Router: row.Router, Perms: row.Perms, Type: row.Type, Icon: row.Icon, OrderNum: row.OrderNum, ViewPath: row.ViewPath, KeepAlive: row.KeepAlive, IsShow: row.IsShow}
-}
-
-func menuUpdateItems(input coreservice.UpdateInput[entity.Menu, uint64]) []coreservice.UpdateItem[entity.Menu, uint64] {
-	if input.IsMany() {
-		return input.Many()
-	}
-	return []coreservice.UpdateItem[entity.Menu, uint64]{input.One()}
 }
