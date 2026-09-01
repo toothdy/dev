@@ -146,16 +146,16 @@ func (*definition) definition() {}
 // Admin 创建后台 Controller Builder 省略 path 或传空字符串等价
 // 都表示不指定显式前缀由 cool generate 按源文件所在目录自动推导
 func Admin(path ...string) Builder {
-	return newBuilder(AreaAdmin, controllerPathArgument(path))
+	return newBuilder(AreaAdmin, pathArg(path))
 }
 
 // App 创建应用端 Controller Builder 省略 path 或传空字符串等价
 // 都表示不指定显式前缀由 cool generate 按源文件所在目录自动推导
 func App(path ...string) Builder {
-	return newBuilder(AreaApp, controllerPathArgument(path))
+	return newBuilder(AreaApp, pathArg(path))
 }
 
-func controllerPathArgument(path []string) string {
+func pathArg(path []string) string {
 	if len(path) > 1 {
 		panicCore("Controller 路径最多只能传一个")
 	}
@@ -190,7 +190,7 @@ func NonTransactional() TransactionPolicy {
 // API CRUD API 列表副本
 func API(values ...APIType) []APIType {
 	result := append([]APIType(nil), values...)
-	validateAPIs(result)
+	checkAPIs(result)
 
 	return result
 }
@@ -208,8 +208,8 @@ func (current *builder) Options(options RouterOptions) Builder {
 	if current.hasOptions {
 		panicCore("Controller 不能重复声明 Options")
 	}
-	validateRouterOptions(options)
-	current.options = cloneRouterOptions(options)
+	checkOptions(options)
+	current.options = cloneOptions(options)
 	current.hasOptions = true
 
 	return current
@@ -223,7 +223,7 @@ func (current *builder) Curd(option CurdOption) Builder {
 	if current.hasCurd {
 		panicCore("Controller 不能重复声明 Curd")
 	}
-	validateCurdOption(option)
+	checkCurd(option)
 	cloned := cloneCurdOption(option)
 	current.curd = &cloned
 	current.hasCurd = true
@@ -237,7 +237,7 @@ func (current *builder) Route(routes ...Route) Builder {
 		panicCore("Controller Builder 不能为空")
 	}
 	for _, route := range routes {
-		validateRoute(route)
+		checkRoute(route)
 		current.routes = append(current.routes, cloneRoute(route))
 	}
 
@@ -251,7 +251,7 @@ func (current *builder) Build() Definition {
 	}
 	result := &definition{
 		area:    current.area,
-		options: cloneRouterOptions(current.options),
+		options: cloneOptions(current.options),
 		path:    current.path,
 		routes:  cloneRoutes(current.routes),
 	}
@@ -264,39 +264,39 @@ func (current *builder) Build() Definition {
 }
 
 func newBuilder(controllerArea Area, path string) Builder {
-	validateRelativePath(path, "Controller 路径")
+	checkRelPath(path, "Controller 路径")
 
 	return &builder{area: controllerArea, path: path}
 }
 
-func validateRouterOptions(options RouterOptions) {
+func checkOptions(options RouterOptions) {
 	if options.Sensitive != nil {
 		_ = *options.Sensitive
 	}
-	validateMiddleware(options.Middleware, "Controller Middleware")
-	validateAliases(options.Alias)
-	validateOptionalText(options.Description, "Controller Description")
-	validateOptionalText(options.TagName, "Controller TagName")
+	checkMiddleware(options.Middleware, "Controller Middleware")
+	checkAliases(options.Alias)
+	checkText(options.Description, "Controller Description")
+	checkText(options.TagName, "Controller TagName")
 }
 
-func validateRoute(value Route) {
-	validateHTTPMethod(value.Method)
-	validateRoutePath(value.Path)
-	validateOptionalText(value.Summary, "Route Summary")
-	validateOptionalText(value.Description, "Route Description")
+func checkRoute(value Route) {
+	checkMethod(value.Method)
+	checkRoutePath(value.Path)
+	checkText(value.Summary, "Route Summary")
+	checkText(value.Description, "Route Description")
 	if isNilValue(value.Handler.value) || reflect.TypeOf(value.Handler.value).Kind() != reflect.Func {
 		panicCore("Route Handler 无效")
 	}
 	if value.Bind != "" && value.Bind != BindAuto && value.Bind != BindJSON && value.Bind != BindQuery && value.Bind != BindForm && value.Bind != BindPath && value.Bind != BindFile {
 		panicCore("Route Bind %q 无效", value.Bind)
 	}
-	validateMiddleware(value.Middleware, "Route Middleware")
+	checkMiddleware(value.Middleware, "Route Middleware")
 	seenTags := make(map[string]bool, len(value.Tags))
 	for _, tag := range value.Tags {
 		if len(tag.URL) > 0 {
 			panicCore("自定义 Route 标签不能选择 CRUD API")
 		}
-		validateURLTag(tag, nil)
+		checkURLTag(tag, nil)
 		if seenTags[tag.Name] {
 			panicCore("Route 标签 %s 重复", tag.Name)
 		}
@@ -304,32 +304,32 @@ func validateRoute(value Route) {
 	}
 }
 
-func validateCurdOption(option CurdOption) {
-	validateRelativePath(option.Prefix, "Curd Prefix")
-	validateAPIs(option.API)
-	validateEntity(option.Entity)
-	validateService(option.Service)
+func checkCurd(option CurdOption) {
+	checkRelPath(option.Prefix, "Curd Prefix")
+	checkAPIs(option.API)
+	checkEntity(option.Entity)
+	checkService(option.Service)
 	if option.PageQueryOp != nil {
-		requireQueryProvider(option.PageQueryOp)
+		requireProvider(option.PageQueryOp)
 	}
 	if option.ListQueryOp != nil {
-		requireQueryProvider(option.ListQueryOp)
+		requireProvider(option.ListQueryOp)
 	}
 	if option.InsertParam != nil {
 		requireInsertParam(option.InsertParam)
 	}
 	if option.URLTag != nil {
-		validateURLTag(*option.URLTag, option.API)
+		checkURLTag(*option.URLTag, option.API)
 	}
 }
 
-func validateRelativePath(path, label string) {
+func checkRelPath(path, label string) {
 	if !coreroute.ValidRelativePath(path) {
 		panicCore("%s无效", label)
 	}
 }
 
-func validateRoutePath(value string) {
+func checkRoutePath(value string) {
 	if value == "" || strings.TrimSpace(value) != value || !strings.HasPrefix(value, "/") || strings.HasSuffix(value, "/") || strings.ContainsAny(value, "?#") {
 		panicCore("Route Path 无效")
 	}
@@ -340,7 +340,7 @@ func validateRoutePath(value string) {
 	}
 }
 
-func validateHTTPMethod(value string) {
+func checkMethod(value string) {
 	switch strings.ToUpper(strings.TrimSpace(value)) {
 	case http.MethodConnect, http.MethodDelete, http.MethodGet, http.MethodHead, http.MethodOptions,
 		http.MethodPatch, http.MethodPost, http.MethodPut, http.MethodTrace:
@@ -350,7 +350,7 @@ func validateHTTPMethod(value string) {
 	}
 }
 
-func validateAliases(values []string) {
+func checkAliases(values []string) {
 	seen := make(map[string]bool, len(values))
 	for _, value := range values {
 		if !token.IsIdentifier(value) {
@@ -363,7 +363,7 @@ func validateAliases(values []string) {
 	}
 }
 
-func validateMiddleware(values []MiddlewareRef, label string) {
+func checkMiddleware(values []MiddlewareRef, label string) {
 	seen := make(map[MiddlewareRef]bool, len(values))
 	for _, value := range values {
 		if !validComponentRef(value) {
@@ -389,7 +389,7 @@ func validComponentRef(value MiddlewareRef) bool {
 	return true
 }
 
-func validateOptionalText(value, label string) {
+func checkText(value, label string) {
 	if value == "" {
 		return
 	}
@@ -403,7 +403,7 @@ func validateOptionalText(value, label string) {
 	}
 }
 
-func validateAPIs(values []APIType) {
+func checkAPIs(values []APIType) {
 	seen := make(map[APIType]struct{}, len(values))
 	for _, value := range values {
 		if !isAPI(value) {
@@ -416,11 +416,11 @@ func validateAPIs(values []APIType) {
 	}
 }
 
-func validateURLTag(tag URLTag, enabled []APIType) {
+func checkURLTag(tag URLTag, enabled []APIType) {
 	if strings.TrimSpace(tag.Name) == "" {
 		panicCore("URLTag 名称不能为空")
 	}
-	validateAPIs(tag.URL)
+	checkAPIs(tag.URL)
 	if len(tag.URL) == 0 {
 		return
 	}
@@ -435,14 +435,14 @@ func validateURLTag(tag URLTag, enabled []APIType) {
 	}
 }
 
-func validateEntity(value any) {
+func checkEntity(value any) {
 	valueType := reflect.TypeOf(value)
 	if valueType == nil || valueType.Kind() != reflect.Struct || valueType.Name() == "" || valueType.PkgPath() == "" || !reflect.ValueOf(value).IsZero() {
 		panicCore("Curd Entity 必须是非指针具名 struct 零值")
 	}
 }
 
-func validateService(value any) {
+func checkService(value any) {
 	if isNilValue(value) || reflect.TypeOf(value).Kind() != reflect.Pointer {
 		panicCore("Curd Service 必须是非 nil 指针")
 	}
@@ -455,8 +455,8 @@ func cloneCurdOption(source CurdOption) CurdOption {
 	result.HiddenFields = append([]ColumnRef(nil), source.HiddenFields...)
 	result.ReadonlyFields = append([]ColumnRef(nil), source.ReadonlyFields...)
 	result.SortFields = append([]ColumnRef(nil), source.SortFields...)
-	result.PageQueryOp = cloneQueryProvider(source.PageQueryOp)
-	result.ListQueryOp = cloneQueryProvider(source.ListQueryOp)
+	result.PageQueryOp = cloneProvider(source.PageQueryOp)
+	result.ListQueryOp = cloneProvider(source.ListQueryOp)
 	if source.URLTag != nil {
 		tag := *source.URLTag
 		tag.URL = append([]APIType(nil), source.URLTag.URL...)
@@ -466,7 +466,7 @@ func cloneCurdOption(source CurdOption) CurdOption {
 	return result
 }
 
-func cloneRouterOptions(source RouterOptions) RouterOptions {
+func cloneOptions(source RouterOptions) RouterOptions {
 	result := source
 	result.Alias = append([]string(nil), source.Alias...)
 	result.Middleware = append([]MiddlewareRef(nil), source.Middleware...)

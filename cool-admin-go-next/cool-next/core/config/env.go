@@ -13,16 +13,16 @@ import (
 )
 
 // ${NAME} 格式占位符的合法命名规则
-var environmentNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+var envNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 // 从字符串提取 ${NAME} 占位符中的环境变量名
-func getEnvironmentName(value string) (name string, isPlaceholder bool, err error) {
+func envName(value string) (name string, isPlaceholder bool, err error) {
 	if !strings.HasPrefix(value, "${") || !strings.HasSuffix(value, "}") {
 		return "", false, nil
 	}
 
 	name = strings.TrimSuffix(strings.TrimPrefix(value, "${"), "}")
-	if !environmentNamePattern.MatchString(name) {
+	if !envNamePattern.MatchString(name) {
 		return "", false, fmt.Errorf("环境变量占位符名称无效")
 	}
 
@@ -30,9 +30,9 @@ func getEnvironmentName(value string) (name string, isPlaceholder bool, err erro
 }
 
 // 按 schema 类型将环境变量值解析为配置节点
-func parseEnvironmentNode(schema *configSchema, path, name string, lookupEnv LookupEnv) (*configNode, error) {
+func envNode(schema *configSchema, path, name string, lookupEnv LookupEnv) (*configNode, error) {
 	if schema.kind == schemaPointer {
-		child, err := parseEnvironmentNode(schema.element, path, name, lookupEnv)
+		child, err := envNode(schema.element, path, name, lookupEnv)
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +49,7 @@ func parseEnvironmentNode(schema *configSchema, path, name string, lookupEnv Loo
 		return nil, fmt.Errorf("配置 %s 引用的环境变量 %s 不存在", displayPath(path), name)
 	}
 
-	parsed, err := parseEnvironmentScalar(schema, value)
+	parsed, err := envScalar(schema, value)
 	if err != nil {
 		return nil, preserveCause(
 			fmt.Sprintf("配置 %s 的环境变量 %s 类型错误", displayPath(path), name),
@@ -60,7 +60,7 @@ func parseEnvironmentNode(schema *configSchema, path, name string, lookupEnv Loo
 }
 
 // 将环境变量字符串按 schema 类型解析为 reflect.Value
-func parseEnvironmentScalar(schema *configSchema, raw string) (reflect.Value, error) {
+func envScalar(schema *configSchema, raw string) (reflect.Value, error) {
 	value := reflect.New(schema.typ).Elem()
 	if schema.isDuration {
 		if raw == "" {

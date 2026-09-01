@@ -30,7 +30,7 @@ func (r *Runtime) LockRows(ctx context.Context, table string, ids []uint64) ([]u
 	if table == "" {
 		return nil, exception.Core("行锁目标表不能为空")
 	}
-	ids = normalizeLockIDs(ids)
+	ids = lockIDs(ids)
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -63,11 +63,11 @@ func (r *Runtime) LockRows(ctx context.Context, table string, ids []uint64) ([]u
 		locked[index] = row.ID
 	}
 
-	return normalizeLockIDs(locked), nil
+	return lockIDs(locked), nil
 }
 
 // 去零、去重并升序排列行锁 ID
-func normalizeLockIDs(ids []uint64) []uint64 {
+func lockIDs(ids []uint64) []uint64 {
 	result := make([]uint64, 0, len(ids))
 	for _, id := range ids {
 		if id != 0 {

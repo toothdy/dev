@@ -132,7 +132,7 @@ func (a *analysis) analyzeControllerFactory(
 		name:           function.Name.Name,
 		packageName:    pkg.packageInfo.Name,
 		packagePath:    pkg.packageInfo.PkgPath,
-		parameterTypes: controllerParameterTypes(signature),
+		parameterTypes: parameterTypes(signature),
 		path:           controllerPath,
 		position:       a.position(pkg, function.Pos()),
 		prefix:         controllerPath,
@@ -223,7 +223,7 @@ type controllerChain struct {
 
 func parseControllerChain(pkg *loadedPackage, expression ast.Expr) (controllerChain, bool) {
 	build, matches := unparenControllerExpr(expression).(*ast.CallExpr)
-	if !matches || len(build.Args) != 0 || !isPackageFunction(queryCalledFunction(pkg.packageInfo.TypesInfo, build.Fun), controllerPackagePath, "Build") {
+	if !matches || len(build.Args) != 0 || !packageFunction(calledFunction(pkg.packageInfo.TypesInfo, build.Fun), controllerPackagePath, "Build") {
 		return controllerChain{}, false
 	}
 	selector, matches := unparenControllerExpr(build.Fun).(*ast.SelectorExpr)
@@ -237,8 +237,8 @@ func parseControllerChain(pkg *loadedPackage, expression ast.Expr) (controllerCh
 		if !isCall {
 			return controllerChain{}, false
 		}
-		function := queryCalledFunction(pkg.packageInfo.TypesInfo, call.Fun)
-		if isPackageFunction(function, controllerPackagePath, "Curd") {
+		function := calledFunction(pkg.packageInfo.TypesInfo, call.Fun)
+		if packageFunction(function, controllerPackagePath, "Curd") {
 			if len(call.Args) != 1 {
 				return controllerChain{}, false
 			}
@@ -251,7 +251,7 @@ func parseControllerChain(pkg *loadedPackage, expression ast.Expr) (controllerCh
 			current = unparenControllerExpr(method.X)
 			continue
 		}
-		if isPackageFunction(function, controllerPackagePath, "Options") {
+		if packageFunction(function, controllerPackagePath, "Options") {
 			if len(call.Args) != 1 {
 				return controllerChain{}, false
 			}
@@ -264,7 +264,7 @@ func parseControllerChain(pkg *loadedPackage, expression ast.Expr) (controllerCh
 			current = unparenControllerExpr(method.X)
 			continue
 		}
-		if isPackageFunction(function, controllerPackagePath, "Route") {
+		if packageFunction(function, controllerPackagePath, "Route") {
 			if len(call.Args) == 0 {
 				return controllerChain{}, false
 			}
@@ -276,7 +276,7 @@ func parseControllerChain(pkg *loadedPackage, expression ast.Expr) (controllerCh
 			current = unparenControllerExpr(method.X)
 			continue
 		}
-		if !isPackageFunction(function, controllerPackagePath, "Admin") && !isPackageFunction(function, controllerPackagePath, "App") || len(call.Args) > 1 {
+		if !packageFunction(function, controllerPackagePath, "Admin") && !packageFunction(function, controllerPackagePath, "App") || len(call.Args) > 1 {
 			return controllerChain{}, false
 		}
 		chain.factory = call
@@ -580,7 +580,7 @@ func controllerInsertType(pkg *loadedPackage, function *ast.FuncDecl, literal *a
 		return nil, true
 	}
 	call, matches := localControllerValue(pkg, function, expression).(*ast.CallExpr)
-	if !matches || len(call.Args) != 1 || !isPackageFunction(queryCalledFunction(pkg.packageInfo.TypesInfo, call.Fun), controllerPackagePath, "Insert") {
+	if !matches || len(call.Args) != 1 || !packageFunction(calledFunction(pkg.packageInfo.TypesInfo, call.Fun), controllerPackagePath, "Insert") {
 		return nil, false
 	}
 	signature, matches := types.Unalias(pkg.packageInfo.TypesInfo.TypeOf(call.Args[0])).(*types.Signature)

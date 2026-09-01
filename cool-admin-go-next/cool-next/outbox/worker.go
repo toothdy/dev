@@ -108,7 +108,7 @@ func NewWorker(
 	if store == nil || publisher == nil {
 		return nil, gerror.New("outbox worker: Store 和 Publisher 不能为空")
 	}
-	if err := validateWorkerConfig(config); err != nil {
+	if err := checkWorker(config); err != nil {
 		return nil, err
 	}
 	id := newWorkerID()
@@ -320,7 +320,7 @@ func (worker *Worker) claim(ctx context.Context, isExpired bool, limit int) ([]c
 func (worker *Worker) publish(claimed claimedRecord) {
 	record := claimed.record
 	startedAt := time.Now()
-	message, err := envelopeFromRecord(record)
+	message, err := envelope(record)
 	if err != nil {
 		worker.finishFailure(record, startedAt, err)
 		return
@@ -491,7 +491,7 @@ func (worker *Worker) cleanup(ctx context.Context) error {
 	return nil
 }
 
-func validateWorkerConfig(config WorkerConfig) error {
+func checkWorker(config WorkerConfig) error {
 	if config.PollInterval <= 0 || config.BatchSize <= 0 || config.LeaseDuration <= 0 ||
 		config.PublishTimeout <= 0 || config.PublishMaxAttempts == 0 || config.PublishRetryBase <= 0 ||
 		config.PublishRetryMax <= 0 || config.Retention <= 0 {

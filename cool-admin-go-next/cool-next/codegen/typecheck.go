@@ -11,7 +11,7 @@ import (
 )
 
 // 使用候选源码覆盖目标并执行完整类型检查
-func validateCandidate(ctx context.Context, options PipelineOptions, candidate []byte) error {
+func checkCandidate(ctx context.Context, options PipelineOptions, candidate []byte) error {
 	paths, err := resolvePipelinePaths(options)
 	if err != nil {
 		return err
@@ -26,7 +26,7 @@ func validateCandidate(ctx context.Context, options PipelineOptions, candidate [
 	if err != nil {
 		return pipelineError("CG092", "加载生成候选失败", paths)
 	}
-	diagnostics := collectPackageDiagnostics(paths, loaded)
+	diagnostics := packageDiagnostics(paths, loaded)
 	if len(diagnostics) == 0 {
 		return nil
 	}
@@ -34,7 +34,7 @@ func validateCandidate(ctx context.Context, options PipelineOptions, candidate [
 	return &DiagnosticError{diagnostics: diagnostics}
 }
 
-func collectPackageDiagnostics(paths pipelinePaths, roots []*packages.Package) []Diagnostic {
+func packageDiagnostics(paths pipelinePaths, roots []*packages.Package) []Diagnostic {
 	seen := make(map[string]bool)
 	var diagnostics []Diagnostic
 	packages.Visit(roots, nil, func(current *packages.Package) {
@@ -49,8 +49,8 @@ func collectPackageDiagnostics(paths pipelinePaths, roots []*packages.Package) [
 			if hasDetailedError && packageError.Kind == packages.ListError && packageError.Pos == "" {
 				continue
 			}
-			position := stablePackagePosition(paths.dir, current.PkgPath, packageError.Pos)
-			message := stablePackageMessage(paths.dir, packageError.Msg)
+			position := stablePosition(paths.dir, current.PkgPath, packageError.Pos)
+			message := stableMessage(paths.dir, packageError.Msg)
 			key := fmt.Sprintf("%s:%d:%d:%s", position.File, position.Line, position.Column, message)
 			if seen[key] {
 				continue
@@ -62,7 +62,7 @@ func collectPackageDiagnostics(paths pipelinePaths, roots []*packages.Package) [
 	return diagnostics
 }
 
-func stablePackagePosition(root, packagePath, value string) Position {
+func stablePosition(root, packagePath, value string) Position {
 	position := parsePackagePosition(root, value)
 	if position.File == "" || position.File == "-" || filepath.IsAbs(position.File) || position.File == ".." || strings.HasPrefix(position.File, "../") {
 		return Position{File: packagePath, Line: 1, Column: 1}
@@ -70,7 +70,7 @@ func stablePackagePosition(root, packagePath, value string) Position {
 	return position
 }
 
-func stablePackageMessage(root, message string) string {
+func stableMessage(root, message string) string {
 	cleanedRoot := filepath.Clean(root)
 	message = strings.ReplaceAll(message, cleanedRoot, ".")
 	return strings.ReplaceAll(message, filepath.ToSlash(cleanedRoot), ".")

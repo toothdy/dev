@@ -48,7 +48,7 @@ func DerivePermission(fullPath string, ignoreToken bool) (string, error) {
 		}
 	}
 	for _, segment := range segments {
-		if !validPermissionSegment(segment) {
+		if !validSegment(segment) {
 			return "", exception.Core(fmt.Sprintf("后台路由 %q 的路径段 %q 不是合法权限标识", fullPath, segment))
 		}
 	}
@@ -57,7 +57,7 @@ func DerivePermission(fullPath string, ignoreToken bool) (string, error) {
 }
 
 // 权限标识段允许的字符形状
-func validPermissionSegment(value string) bool {
+func validSegment(value string) bool {
 	if value == "" {
 		return false
 	}
@@ -148,7 +148,7 @@ func Authorize(ctx context.Context, authorizer Authorizer, permission, resource 
 	if !exists {
 		return unauthenticatedError()
 	}
-	authorization, err := authorizationFromIdentity(identity, permission, resource)
+	authorization, err := toAuthz(identity, permission, resource)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func Authorize(ctx context.Context, authorizer Authorizer, permission, resource 
 }
 
 // 从已验证身份构造授权请求
-func authorizationFromIdentity(identity verifiedIdentity, permission, resource string) (Authorization, error) {
+func toAuthz(identity verifiedIdentity, permission, resource string) (Authorization, error) {
 	authorization := Authorization{
 		Subject:    identity.subject,
 		Permission: permission,
@@ -226,7 +226,7 @@ func (service *Service) authenticateProtocol(
 		return ctx, nil
 	}
 	if authorization == "" {
-		return ctx, invalidCredentialError()
+		return ctx, credentialErr()
 	}
 	rule := Rule{Permission: permission}
 	if strings.TrimSpace(permission) != "" {

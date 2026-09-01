@@ -51,10 +51,10 @@ type Option func(*messageOptions) error
 
 // 新的消息
 func New[T any](topic, messageType string, payload T, options ...Option) (Envelope, error) {
-	if err := validateMessageText("Topic", topic); err != nil {
+	if err := checkText("Topic", topic); err != nil {
 		return Envelope{}, err
 	}
-	if err := validateMessageText("Message Type", messageType); err != nil {
+	if err := checkText("Message Type", messageType); err != nil {
 		return Envelope{}, err
 	}
 
@@ -110,7 +110,7 @@ func WithVersion(version uint32) Option {
 // 允许的传输元数据
 func WithHeader(name, value string) Option {
 	return func(settings *messageOptions) error {
-		normalizedName, err := normalizeHeader(name)
+		normalizedName, err := headerName(name)
 		if err != nil {
 			return err
 		}
@@ -216,19 +216,19 @@ func (definition consumerDefinition[T]) subscription() Subscription {
 
 // 消费注册定义
 func Consume[T any](name, topic, messageType string, supportedVersions []uint32, handler ConsumerHandler[T]) (ConsumerDefinition, error) {
-	if err := validateConsumerName(name); err != nil {
+	if err := checkConsumerName(name); err != nil {
 		return nil, err
 	}
-	if err := validateMessageText("Topic", topic); err != nil {
+	if err := checkText("Topic", topic); err != nil {
 		return nil, err
 	}
-	if err := validateMessageText("Message Type", messageType); err != nil {
+	if err := checkText("Message Type", messageType); err != nil {
 		return nil, err
 	}
 	if handler == nil {
 		return nil, fmt.Errorf("outbox: Consumer Handler 不能为空")
 	}
-	versions, err := normalizeVersions(supportedVersions)
+	supported, err := versions(supportedVersions)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func Consume[T any](name, topic, messageType string, supportedVersions []uint32,
 		name:              name,
 		topic:             topic,
 		messageType:       messageType,
-		supportedVersions: versions,
+		supportedVersions: supported,
 		handler:           handler,
 	}, nil
 }
@@ -367,27 +367,27 @@ func isPermanent(err error) bool {
 
 // 由持久字段重建 Envelope
 func Restore(messageID MessageID, topic, messageType string, version uint32, key *string, payload []byte, headers map[string]string) (Envelope, error) {
-	if err := validateMessageID(messageID); err != nil {
+	if err := checkMessageID(messageID); err != nil {
 		return Envelope{}, err
 	}
-	if err := validateMessageText("Topic", topic); err != nil {
+	if err := checkText("Topic", topic); err != nil {
 		return Envelope{}, err
 	}
-	if err := validateMessageText("Message Type", messageType); err != nil {
+	if err := checkText("Message Type", messageType); err != nil {
 		return Envelope{}, err
 	}
 	if version == 0 {
 		return Envelope{}, fmt.Errorf("outbox: 消息版本必须为正整数")
 	}
 	if key != nil {
-		if err := validateKey(*key); err != nil {
+		if err := checkKey(*key); err != nil {
 			return Envelope{}, err
 		}
 	}
 	if !json.Valid(payload) {
 		return Envelope{}, fmt.Errorf("outbox: 消息载荷不是有效 JSON")
 	}
-	normalizedHeaders, err := normalizeHeaders(headers)
+	normalizedHeaders, err := cleanHeaders(headers)
 	if err != nil {
 		return Envelope{}, err
 	}
@@ -396,7 +396,7 @@ func Restore(messageID MessageID, topic, messageType string, version uint32, key
 }
 
 func newEnvelope(messageID MessageID, topic, messageType string, version uint32, key *string, payload []byte, headers map[string]string) (Envelope, error) {
-	if err := validateMessageID(messageID); err != nil {
+	if err := checkMessageID(messageID); err != nil {
 		return Envelope{}, err
 	}
 	if version == 0 || !json.Valid(payload) {
@@ -419,7 +419,7 @@ func newEnvelope(messageID MessageID, topic, messageType string, version uint32,
 	}, nil
 }
 
-func validateMessageText(label, value string) error {
+func checkText(label, value string) error {
 	if value == "" || strings.TrimSpace(value) != value {
 		return fmt.Errorf("outbox: %s 无效", label)
 	}
@@ -431,15 +431,15 @@ func validateMessageText(label, value string) error {
 	return nil
 }
 
-func validateKey(value string) error {
+func checkKey(value string) error {
 	if strings.TrimSpace(value) != value || value == "" || strings.ContainsAny(value, "\r\n") {
 		return fmt.Errorf("outbox: 消息 Key 无效")
 	}
 	return nil
 }
 
-func validateConsumerName(value string) error {
-	if err := validateMessageText("Consumer Name", value); err != nil {
+func checkConsumerName(value string) error {
+	if err := checkText("Consumer Name", value); err != nil {
 		return err
 	}
 	if strings.HasPrefix(value, "__cool_") {
@@ -448,7 +448,7 @@ func validateConsumerName(value string) error {
 	return nil
 }
 
-func normalizeVersions(values []uint32) ([]uint32, error) {
+func versions(values []uint32) ([]uint32, error) {
 	if len(values) == 0 {
 		return nil, fmt.Errorf("outbox: Consumer 支持版本不能为空")
 	}
@@ -466,7 +466,7 @@ func normalizeVersions(values []uint32) ([]uint32, error) {
 	return result, nil
 }
 
-func normalizeHeader(name string) (string, error) {
+func headerName(name string) (string, error) {
 	if strings.TrimSpace(name) != name || name == "" {
 		return "", fmt.Errorf("outbox: Header 名称无效")
 	}
@@ -489,10 +489,10 @@ func validHeaderValue(value string) bool {
 	return true
 }
 
-func normalizeHeaders(values map[string]string) (map[string]string, error) {
+func cleanHeaders(values map[string]string) (map[string]string, error) {
 	result := make(map[string]string, len(values))
 	for name, value := range values {
-		normalizedName, err := normalizeHeader(name)
+		normalizedName, err := headerName(name)
 		if err != nil {
 			return nil, err
 		}
@@ -555,7 +555,7 @@ func newMessageID(now func() time.Time, source io.Reader) (MessageID, error) {
 	return MessageID(text[:]), nil
 }
 
-func validateMessageID(value MessageID) error {
+func checkMessageID(value MessageID) error {
 	text := string(value)
 	if len(text) != 36 || text[8] != '-' || text[13] != '-' || text[18] != '-' || text[23] != '-' || text[14] != '7' {
 		return fmt.Errorf("outbox: Message ID 不是有效 UUIDv7")

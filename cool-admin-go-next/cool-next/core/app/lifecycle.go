@@ -66,14 +66,14 @@ func StartDefinition(ctx context.Context, definition Definition) (*Application, 
 		if validation.prefixErr != nil {
 			err = errors.Join(err, validation.prefixErr)
 		}
-		application.addAssemblyRollback(validation.prefix)
+		application.addRollback(validation.prefix)
 		return nil, application.rollback(ctx, err)
 	}
 	if assembly == nil {
 		return nil, application.rollback(ctx, exception.Core("生成装配返回空 Assembly"))
 	}
 	if validation.err != nil {
-		application.addAssemblyRollback(validation.prefix)
+		application.addRollback(validation.prefix)
 		return nil, application.rollback(ctx, validation.err)
 	}
 	transports := enabledTransports(validation.transports)
@@ -83,13 +83,13 @@ func StartDefinition(ctx context.Context, definition Definition) (*Application, 
 	return application, nil
 }
 
-func (application *Application) addAssemblyRollback(assembly *Assembly) {
+func (application *Application) addRollback(assembly *Assembly) {
 	for _, current := range assembly.components {
 		if current.transport != nil {
 			application.transports = append(application.transports, current.transport)
 		}
 		if current.hooks.Stopper != nil && current.hooks.Initializer == nil {
-			application.addStopper(current.definitionAsComponent(), current.hooks.Stopper)
+			application.addStopper(current.component(), current.hooks.Stopper)
 		}
 	}
 }
@@ -99,15 +99,15 @@ func (application *Application) startAssembly(ctx context.Context, components []
 	for _, current := range components {
 		if current.hooks.Initializer == nil {
 			if current.hooks.Stopper != nil {
-				application.addStopper(current.definitionAsComponent(), current.hooks.Stopper)
+				application.addStopper(current.component(), current.hooks.Stopper)
 			}
 			continue
 		}
 		if err = current.hooks.Initializer.OnInit(ctx); err != nil {
-			return componentError("初始化", current.definitionAsComponent(), err)
+			return componentError("初始化", current.component(), err)
 		}
 		if current.hooks.Stopper != nil {
-			application.addStopper(current.definitionAsComponent(), current.hooks.Stopper)
+			application.addStopper(current.component(), current.hooks.Stopper)
 		}
 	}
 	application.transports = transports
@@ -119,10 +119,10 @@ func (application *Application) startAssembly(ctx context.Context, components []
 			continue
 		}
 		if err = current.hooks.Starter.OnStart(ctx); err != nil {
-			return componentError("启动", current.definitionAsComponent(), err)
+			return componentError("启动", current.component(), err)
 		}
 	}
-	terminations, err := componentTerminations(components)
+	terminations, err := terminations(components)
 	if err != nil {
 		return err
 	}
@@ -138,8 +138,8 @@ func (application *Application) startAssembly(ctx context.Context, components []
 	return nil
 }
 
-func (component assembledComponent) definitionAsComponent() module.Component {
-	return module.ComponentFromDefinition(component.definition)
+func (component assembledComponent) component() module.Component {
+	return module.ComponentOf(component.definition)
 }
 
 func scanAssembly(graph module.Graph, assembly *Assembly, complete bool) assemblyValidation {
@@ -178,7 +178,7 @@ func scanAssembly(graph module.Graph, assembly *Assembly, complete bool) assembl
 		if index >= len(definitions) {
 			break
 		}
-		if module.ComponentFromDefinition(current.definition) != definitions[index] {
+		if module.ComponentOf(current.definition) != definitions[index] {
 			if complete && result.err == nil {
 				result.err = exception.Core("Assembly 与 Graph 组件顺序不一致")
 			}
@@ -269,11 +269,11 @@ func Run(ctx context.Context, definition Definition) error {
 	}
 	ctx, stopSignals := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stopSignals()
-	input, err := loadAssembleInput(ctx, definition)
+	input, err := loadInput(ctx)
 	if err != nil {
 		return err
 	}
-	ctx = withAssembleInput(ctx, input)
+	ctx = withInput(ctx, input)
 	application, err := StartDefinition(ctx, definition)
 	if err != nil {
 		return err
@@ -304,7 +304,7 @@ func (application *Application) Stop(ctx context.Context) error {
 		errorsByOrder := make([]error, 0, len(application.transports)+len(application.stoppers))
 		for index := len(application.transports) - 1; index >= 0; index-- {
 			transport := application.transports[index]
-			if err := stopWithinDeadline(shutdownCtx, transport.Stop); err != nil {
+			if err := stopBefore(shutdownCtx, transport.Stop); err != nil {
 				errorsByOrder = append(errorsByOrder, transportError("停止", transport.Name(), err))
 			}
 			if shutdownCtx.Err() != nil {
@@ -314,7 +314,7 @@ func (application *Application) Stop(ctx context.Context) error {
 		if shutdownCtx.Err() == nil {
 			for index := len(application.stoppers) - 1; index >= 0; index-- {
 				entry := application.stoppers[index]
-				if err := stopWithinDeadline(shutdownCtx, entry.stopper.OnStop); err != nil {
+				if err := stopBefore(shutdownCtx, entry.stopper.OnStop); err != nil {
 					errorsByOrder = append(errorsByOrder, componentError("停止", entry.component, err))
 				}
 				if shutdownCtx.Err() != nil {
@@ -360,14 +360,14 @@ func (application *Application) startTransports(ctx context.Context) ([]terminat
 	return terminations, nil
 }
 
-func componentTerminations(components []assembledComponent) ([]termination, error) {
+func terminations(components []assembledComponent) ([]termination, error) {
 	terminations := make([]termination, 0)
 	for _, current := range components {
 		if current.hooks.Supervisor == nil {
 			continue
 		}
 		terminated := current.hooks.Supervisor.Terminated()
-		component := current.definitionAsComponent()
+		component := current.component()
 		if terminated == nil {
 			return nil, componentError("监督", component, exception.Core("组件终止 Channel 为空"))
 		}
@@ -435,7 +435,7 @@ func shutdownContext(ctx context.Context) (context.Context, context.CancelFunc) 
 	return context.WithTimeout(base, timeout)
 }
 
-func stopWithinDeadline(ctx context.Context, stop func(context.Context) error) error {
+func stopBefore(ctx context.Context, stop func(context.Context) error) error {
 	result := make(chan error, 1)
 	go func() {
 		result <- stop(ctx)

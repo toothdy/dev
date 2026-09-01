@@ -142,12 +142,12 @@ func parseYAMLNode(source *yaml.Node, schema *configSchema, path string, lookupE
 		return &configNode{kind: valueNull, schema: schema}, nil
 	}
 	if source.Kind == yaml.ScalarNode && source.ShortTag() == "!!str" {
-		name, isPlaceholder, err := getEnvironmentName(source.Value)
+		name, isPlaceholder, err := envName(source.Value)
 		if err != nil {
 			return nil, fmt.Errorf("配置 %s 的环境变量占位符无效", displayPath(path))
 		}
 		if isPlaceholder {
-			return parseEnvironmentNode(schema, path, name, lookupEnv)
+			return envNode(schema, path, name, lookupEnv)
 		}
 	}
 	switch schema.kind {
@@ -224,14 +224,14 @@ func getYAMLPair(source *yaml.Node, index int, path string) (string, *yaml.Node,
 		keyNode.Anchor != "" || keyNode.Alias != nil {
 		return "", nil, fmt.Errorf("配置 %s 的对象 key 必须是普通字符串", displayPath(path))
 	}
-	if _, exists := findEarlierYAMLKey(source.Content[:index], keyNode.Value); exists {
+	if _, exists := findKey(source.Content[:index], keyNode.Value); exists {
 		return "", nil, fmt.Errorf("配置 %s 存在重复字段", joinPath(path, keyNode.Value))
 	}
 
 	return keyNode.Value, source.Content[index+1], nil
 }
 
-func findEarlierYAMLKey(content []*yaml.Node, key string) (int, bool) {
+func findKey(content []*yaml.Node, key string) (int, bool) {
 	for index := 0; index+1 < len(content); index += 2 {
 		if content[index].Value == key {
 			return index, true

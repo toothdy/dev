@@ -7,7 +7,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 )
 
-func compileRecordDescriptor() (entity.Descriptor[Record, uint64], error) {
+func recordDescriptor() (entity.Descriptor[Record, uint64], error) {
 	return entity.Compile[Record, uint64](entity.Schema{Indexes: []entity.Index{
 		entity.IndexOf("idx_cool_recycle_target", "databaseGroup", "tableName"),
 	}})

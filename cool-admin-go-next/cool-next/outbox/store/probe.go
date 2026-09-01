@@ -47,17 +47,17 @@ func (store *DatabaseStore) Probe(ctx context.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if err := store.validateCapabilities(); err != nil {
+	if err := store.checkCaps(); err != nil {
 		return err
 	}
-	if err := store.validateTableContract(ctx, schema.OutboxDefinition()); err != nil {
+	if err := store.checkTable(ctx, schema.OutboxDefinition()); err != nil {
 		return err
 	}
-	if err := store.validateTableContract(ctx, schema.InboxDefinition()); err != nil {
+	if err := store.checkTable(ctx, schema.InboxDefinition()); err != nil {
 		return err
 	}
 	if store.runtime.Dialect().Kind() == driver.MySQL {
-		if err := store.validateMySQLEngines(ctx); err != nil {
+		if err := store.checkMySQL(ctx); err != nil {
 			return err
 		}
 	}
@@ -65,7 +65,7 @@ func (store *DatabaseStore) Probe(ctx context.Context) error {
 	return store.probeDML(ctx)
 }
 
-func (store *DatabaseStore) validateCapabilities() error {
+func (store *DatabaseStore) checkCaps() error {
 	capabilities := store.runtime.Diagnostic().Capabilities
 	if !capabilities.Transactions || !capabilities.ConditionalWrite {
 		return gerror.New("outbox store: 数据库缺少事务或条件写入能力")
@@ -77,8 +77,8 @@ func (store *DatabaseStore) validateCapabilities() error {
 	return nil
 }
 
-func (store *DatabaseStore) validateTableContract(ctx context.Context, definition schema.Definition) error {
-	actual, err := store.inspectTableContract(ctx, definition.Name)
+func (store *DatabaseStore) checkTable(ctx context.Context, definition schema.Definition) error {
+	actual, err := store.inspectTable(ctx, definition.Name)
 	if err != nil {
 		return err
 	}
@@ -118,20 +118,20 @@ func (store *DatabaseStore) validateTableContract(ctx context.Context, definitio
 	return nil
 }
 
-func (store *DatabaseStore) inspectTableContract(ctx context.Context, tableName string) (tableContract, error) {
+func (store *DatabaseStore) inspectTable(ctx context.Context, tableName string) (tableContract, error) {
 	switch store.runtime.Dialect().Kind() {
 	case driver.MySQL:
-		return store.inspectMySQLContract(ctx, tableName)
+		return store.inspectMySQL(ctx, tableName)
 	case driver.PostgreSQL:
-		return store.inspectPostgreSQLContract(ctx, tableName)
+		return store.inspectPostgres(ctx, tableName)
 	case driver.SQLite:
-		return store.inspectSQLiteContract(ctx, tableName)
+		return store.inspectSQLite(ctx, tableName)
 	default:
 		return tableContract{}, gerror.Newf("outbox store: 不支持的数据库类型 %s", store.runtime.Dialect().Kind())
 	}
 }
 
-func (store *DatabaseStore) inspectMySQLContract(ctx context.Context, tableName string) (tableContract, error) {
+func (store *DatabaseStore) inspectMySQL(ctx context.Context, tableName string) (tableContract, error) {
 	var columns []metadataColumn
 	if err := store.runtime.DB().GetScan(
 		ctx,
@@ -165,10 +165,10 @@ func (store *DatabaseStore) inspectMySQLContract(ctx context.Context, tableName 
 		return tableContract{}, gerror.Wrapf(err, "outbox store: 读取 MySQL 表 %s 索引", tableName)
 	}
 
-	return collectTableContract(columns, primary, indexColumns), nil
+	return collectContract(columns, primary, indexColumns), nil
 }
 
-func (store *DatabaseStore) inspectPostgreSQLContract(ctx context.Context, tableName string) (tableContract, error) {
+func (store *DatabaseStore) inspectPostgres(ctx context.Context, tableName string) (tableContract, error) {
 	var columns []metadataColumn
 	if err := store.runtime.DB().GetScan(
 		ctx,
@@ -210,10 +210,10 @@ func (store *DatabaseStore) inspectPostgreSQLContract(ctx context.Context, table
 		return tableContract{}, gerror.Wrapf(err, "outbox store: 读取 PostgreSQL 表 %s 索引", tableName)
 	}
 
-	return collectTableContract(columns, primary, indexColumns), nil
+	return collectContract(columns, primary, indexColumns), nil
 }
 
-func (store *DatabaseStore) inspectSQLiteContract(ctx context.Context, tableName string) (tableContract, error) {
+func (store *DatabaseStore) inspectSQLite(ctx context.Context, tableName string) (tableContract, error) {
 	quotedTable, err := store.runtime.Dialect().Quote(tableName)
 	if err != nil {
 		return tableContract{}, err
@@ -260,10 +260,10 @@ func (store *DatabaseStore) inspectSQLiteContract(ctx context.Context, tableName
 		}
 	}
 
-	return collectTableContract(columns, primary, indexColumns), nil
+	return collectContract(columns, primary, indexColumns), nil
 }
 
-func collectTableContract(
+func collectContract(
 	columns []metadataColumn,
 	primary []metadataColumn,
 	indexColumns []metadataIndexColumn,
@@ -287,7 +287,7 @@ func collectTableContract(
 	return contract
 }
 
-func (store *DatabaseStore) validateMySQLEngines(ctx context.Context) error {
+func (store *DatabaseStore) checkMySQL(ctx context.Context) error {
 	for _, tableName := range []string{schema.OutboxTableName, schema.InboxTableName} {
 		value, err := store.runtime.DB().GetValue(
 			ctx,
@@ -306,7 +306,7 @@ func (store *DatabaseStore) validateMySQLEngines(ctx context.Context) error {
 }
 
 func (store *DatabaseStore) probeDML(ctx context.Context) error {
-	messageID, err := newProbeMessageID()
+	messageID, err := probeMessageID()
 	if err != nil {
 		return err
 	}
@@ -374,10 +374,10 @@ func (store *DatabaseStore) probeDML(ctx context.Context) error {
 		return gerror.Wrap(err, "outbox store: 回滚能力探测事务")
 	}
 
-	return store.requireProbeRowsAbsent(ctx, messageID)
+	return store.checkProbeRows(ctx, messageID)
 }
 
-func (store *DatabaseStore) requireProbeRowsAbsent(ctx context.Context, messageID string) error {
+func (store *DatabaseStore) checkProbeRows(ctx context.Context, messageID string) error {
 	for _, check := range []struct {
 		table     string
 		condition string
@@ -410,7 +410,7 @@ func (store *DatabaseStore) requireProbeRowsAbsent(ctx context.Context, messageI
 	return nil
 }
 
-func newProbeMessageID() (string, error) {
+func probeMessageID() (string, error) {
 	value := make([]byte, 16)
 	rand.Read(value)
 	milliseconds := uint64(time.Now().UnixMilli())

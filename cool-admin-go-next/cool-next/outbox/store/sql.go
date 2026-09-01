@@ -37,15 +37,15 @@ type sqlStatements struct {
 }
 
 func newSQLStatements(dialect driver.Dialect) (sqlStatements, error) {
-	identifiers, err := quoteStoreIdentifiers(dialect)
+	identifiers, err := quoteIdentifiers(dialect)
 	if err != nil {
 		return sqlStatements{}, err
 	}
 	now := databaseNow(dialect.Kind())
-	addFromNow := addDurationExpression(dialect.Kind(), now)
-	renewDeadline := renewDeadlineExpression(dialect.Kind(), identifiers["leaseExpiresAt"], now)
-	recordFields := quotedFields(identifiers, outboxRecordColumns())
-	metadataFields := quotedFields(identifiers, outboxMetadataColumns())
+	addFromNow := addDuration(dialect.Kind(), now)
+	renewExpr := renewDeadline(dialect.Kind(), identifiers["leaseExpiresAt"], now)
+	recordFields := quotedFields(identifiers, recordColumns())
+	metadataFields := quotedFields(identifiers, metadataColumns())
 	outboxTable := identifiers[schema.OutboxTableName]
 	inboxTable := identifiers[schema.InboxTableName]
 	status := identifiers["status"]
@@ -188,7 +188,7 @@ func newSQLStatements(dialect driver.Dialect) (sqlStatements, error) {
 		"UPDATE %s SET %s = %s, %s = %s WHERE %s = ? AND %s = 'leased' AND %s = ?",
 		outboxTable,
 		leaseExpiresAt,
-		renewDeadline,
+		renewExpr,
 		updateTime,
 		now,
 		messageID,
@@ -327,7 +327,7 @@ func newSQLStatements(dialect driver.Dialect) (sqlStatements, error) {
 		messageID,
 		status,
 	)
-	statements.insertInbox = inboxInsertStatement(dialect.Kind(), identifiers, inboxTable)
+	statements.insertInbox = inboxInsertSQL(dialect.Kind(), identifiers, inboxTable)
 
 	return statements, nil
 }
@@ -378,8 +378,8 @@ func (statements sqlStatements) durationArgument(duration time.Duration) any {
 	return microseconds
 }
 
-func quoteStoreIdentifiers(dialect driver.Dialect) (map[string]string, error) {
-	names := append(outboxRecordColumns(),
+func quoteIdentifiers(dialect driver.Dialect) (map[string]string, error) {
+	names := append(recordColumns(),
 		"consumer",
 		"processedAt",
 		"count",
@@ -400,7 +400,7 @@ func quoteStoreIdentifiers(dialect driver.Dialect) (map[string]string, error) {
 	return identifiers, nil
 }
 
-func outboxRecordColumns() []string {
+func recordColumns() []string {
 	return []string{
 		"messageId",
 		"topic",
@@ -422,7 +422,7 @@ func outboxRecordColumns() []string {
 	}
 }
 
-func outboxMetadataColumns() []string {
+func metadataColumns() []string {
 	return []string{
 		"messageId",
 		"topic",
@@ -461,7 +461,7 @@ func databaseNow(kind driver.Kind) string {
 	}
 }
 
-func addDurationExpression(kind driver.Kind, source string) string {
+func addDuration(kind driver.Kind, source string) string {
 	switch kind {
 	case driver.MySQL:
 		return "DATE_ADD(" + source + ", INTERVAL ? MICROSECOND)"
@@ -474,7 +474,7 @@ func addDurationExpression(kind driver.Kind, source string) string {
 	}
 }
 
-func renewDeadlineExpression(kind driver.Kind, deadline string, now string) string {
+func renewDeadline(kind driver.Kind, deadline string, now string) string {
 	switch kind {
 	case driver.MySQL:
 		return "GREATEST(DATE_ADD(" + deadline + ", INTERVAL ? MICROSECOND), DATE_ADD(" + now + ", INTERVAL ? MICROSECOND))"
@@ -487,7 +487,7 @@ func renewDeadlineExpression(kind driver.Kind, deadline string, now string) stri
 	}
 }
 
-func inboxInsertStatement(kind driver.Kind, identifiers map[string]string, table string) string {
+func inboxInsertSQL(kind driver.Kind, identifiers map[string]string, table string) string {
 	consumer := identifiers["consumer"]
 	messageID := identifiers["messageId"]
 	processedAt := identifiers["processedAt"]

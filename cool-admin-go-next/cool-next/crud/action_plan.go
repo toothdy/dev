@@ -217,7 +217,7 @@ func compileFieldPolicy(
 	input FieldPolicyInput,
 	autoSortFields bool,
 ) (FieldPolicy, error) {
-	if isEmptyFieldPolicyInput(input) && !autoSortFields {
+	if emptyPolicy(input) && !autoSortFields {
 		return FieldPolicy{}, nil
 	}
 	if isNilPlanValue(resolver) {
@@ -389,15 +389,15 @@ func applyFieldPolicy(
 		return nil
 	}
 
-	return applyRequestOrder(query, policy, request)
+	return applyOrder(query, policy, request)
 }
 
-func applyRequestOrder(query *QueryPlan, policy *FieldPolicy, request *QueryRequest) error {
-	orderFields, hasOrder, err := queryRequestStrings(request, "order")
+func applyOrder(query *QueryPlan, policy *FieldPolicy, request *QueryRequest) error {
+	orderFields, hasOrder, err := requestStrings(request, "order")
 	if err != nil {
 		return err
 	}
-	directions, hasSort, err := queryRequestStrings(request, "sort")
+	directions, hasSort, err := requestStrings(request, "sort")
 	if err != nil {
 		return err
 	}
@@ -429,7 +429,7 @@ func applyRequestOrder(query *QueryPlan, policy *FieldPolicy, request *QueryRequ
 	return nil
 }
 
-func queryRequestStrings(request *QueryRequest, name string) ([]string, bool, error) {
+func requestStrings(request *QueryRequest, name string) ([]string, bool, error) {
 	if request == nil {
 		return nil, false, nil
 	}
@@ -445,7 +445,7 @@ func queryRequestStrings(request *QueryRequest, name string) ([]string, bool, er
 	return values, true, nil
 }
 
-func isEmptyFieldPolicyInput(input FieldPolicyInput) bool {
+func emptyPolicy(input FieldPolicyInput) bool {
 	return len(input.HiddenFields) == 0 &&
 		len(input.ReadonlyFields) == 0 &&
 		len(input.InfoIgnoreProperty) == 0 &&

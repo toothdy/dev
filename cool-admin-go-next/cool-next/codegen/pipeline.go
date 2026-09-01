@@ -29,7 +29,7 @@ func buildCandidate(ctx context.Context, options PipelineOptions) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
-	model, err := analyzeWithOverlay(ctx, Options{Dir: paths.dir, ModulesRoot: pipelineModulesRoot}, map[string][]byte{
+	model, err := analyzeOverlay(ctx, Options{Dir: paths.dir, ModulesRoot: pipelineModulesRoot}, map[string][]byte{
 		paths.target: []byte("package modules\n"),
 	})
 	if err != nil {

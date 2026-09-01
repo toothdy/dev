@@ -208,12 +208,12 @@ func NewQueryRequest(values []RequestValue) (*QueryRequest, error) {
 	return crud.NewQueryRequest(values)
 }
 
-func resolveQueryProvider(ctx context.Context, provider QueryProvider) (QueryOp, error) {
+func resolveProvider(ctx context.Context, provider QueryProvider) (QueryOp, error) {
 	switch current := provider.(type) {
 	case nil:
-		return crud.WithStaticQueryShape(QueryOp{}), nil
+		return crud.StaticShape(QueryOp{}), nil
 	case staticQueryProvider:
-		return crud.WithStaticQueryShape(cloneQueryOp(current.op)), nil
+		return crud.StaticShape(cloneQueryOp(current.op)), nil
 	case dynamicQueryProvider:
 		op, err := current.resolve(ctx)
 		if err != nil {
@@ -225,13 +225,13 @@ func resolveQueryProvider(ctx context.Context, provider QueryProvider) (QueryOp,
 			return QueryOp{}, exception.WrapCore(err, "解析动态查询配置失败")
 		}
 
-		return crud.WithDynamicQueryShape(cloneQueryOp(op)), nil
+		return crud.DynamicShape(cloneQueryOp(op)), nil
 	default:
 		return QueryOp{}, exception.Core("QueryProvider 无效")
 	}
 }
 
-func requireQueryProvider(provider QueryProvider) {
+func requireProvider(provider QueryProvider) {
 	switch provider.(type) {
 	case staticQueryProvider, dynamicQueryProvider:
 		return
@@ -240,7 +240,7 @@ func requireQueryProvider(provider QueryProvider) {
 	}
 }
 
-func cloneQueryProvider(provider QueryProvider) QueryProvider {
+func cloneProvider(provider QueryProvider) QueryProvider {
 	switch current := provider.(type) {
 	case nil:
 		return nil

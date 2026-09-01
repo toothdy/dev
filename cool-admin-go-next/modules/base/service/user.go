@@ -88,7 +88,7 @@ func (s *UserService) Add(ctx context.Context, input coreservice.AddInput[entity
 		return coreservice.AddResult[uint64]{}, err
 	}
 	deptIDs := userDeptIDs(value)
-	if err := s.permission.LockRoles(ctx, roles); err != nil {
+	if err := s.permission.lockRoles(ctx, roles); err != nil {
 		return coreservice.AddResult[uint64]{}, err
 	}
 	if err := s.department.lockDepts(ctx, deptIDs); err != nil {
@@ -98,7 +98,7 @@ func (s *UserService) Add(ctx context.Context, input coreservice.AddInput[entity
 	if err != nil {
 		return coreservice.AddResult[uint64]{}, err
 	}
-	if err = s.permission.ReplaceRoles(ctx, result.One(), roles); err != nil {
+	if err = s.permission.setRoles(ctx, result.One(), roles); err != nil {
 		return coreservice.AddResult[uint64]{}, err
 	}
 
@@ -118,7 +118,7 @@ func (s *UserService) Update(ctx context.Context, input coreservice.UpdateInput[
 	var before map[uint64][]uint64
 	var err error
 	if authChanged {
-		before, err = s.permission.PrepareRoleChange(ctx, []uint64{item.ID()}, roles)
+		before, err = s.permission.prepRoles(ctx, []uint64{item.ID()}, roles)
 		if err != nil {
 			return err
 		}
@@ -126,15 +126,15 @@ func (s *UserService) Update(ctx context.Context, input coreservice.UpdateInput[
 	if err = s.department.lockDepts(ctx, deptIDs); err != nil {
 		return err
 	}
-	if err = s.permission.LockUsers(ctx, []uint64{item.ID()}); err != nil {
+	if err = s.permission.lockUsers(ctx, []uint64{item.ID()}); err != nil {
 		return err
 	}
 	if authChanged {
-		after, err := s.permission.RoleSnapshot(ctx, []uint64{item.ID()})
+		after, err := s.permission.roleSnap(ctx, []uint64{item.ID()})
 		if err != nil {
 			return err
 		}
-		if err = s.permission.ValidateRoleSnapshot(before, after); err != nil {
+		if err = s.permission.checkSnap(before, after); err != nil {
 			return err
 		}
 	}
@@ -152,7 +152,7 @@ func (s *UserService) Update(ctx context.Context, input coreservice.UpdateInput[
 		nextStatus = status.(int32)
 	}
 	if authChanged {
-		if err = s.permission.EnsureAdminTransition(ctx, item.ID(), row.Status, nextStatus, oldRoles, newRoles); err != nil {
+		if err = s.permission.checkAdmin(ctx, item.ID(), row.Status, nextStatus, oldRoles, newRoles); err != nil {
 			return err
 		}
 	}
@@ -173,12 +173,12 @@ func (s *UserService) Update(ctx context.Context, input coreservice.UpdateInput[
 		}
 	}
 	if hasRoles {
-		if err = s.permission.ReplaceRoles(ctx, item.ID(), roles); err != nil {
+		if err = s.permission.setRoles(ctx, item.ID(), roles); err != nil {
 			return err
 		}
 	}
 	if shouldRevoke {
-		return s.permission.RevokeUsers(ctx, []uint64{item.ID()})
+		return s.permission.revoke(ctx, []uint64{item.ID()})
 	}
 
 	return nil
@@ -190,31 +190,31 @@ func (s *UserService) Delete(ctx context.Context, input coreservice.DeleteInput[
 	if len(ids) == 0 {
 		return exception.Validate("用户 ID 不能为空")
 	}
-	before, err := s.permission.PrepareRoleChange(ctx, ids, nil)
+	before, err := s.permission.prepRoles(ctx, ids, nil)
 	if err != nil {
 		return err
 	}
-	if err = s.permission.LockUsers(ctx, ids); err != nil {
+	if err = s.permission.lockUsers(ctx, ids); err != nil {
 		return err
 	}
-	after, err := s.permission.RoleSnapshot(ctx, ids)
+	after, err := s.permission.roleSnap(ctx, ids)
 	if err != nil {
 		return err
 	}
-	if err = s.permission.ValidateRoleSnapshot(before, after); err != nil {
+	if err = s.permission.checkSnap(before, after); err != nil {
 		return err
 	}
-	if err = s.permission.EnsureNotLastAdmin(ctx, ids); err != nil {
+	if err = s.permission.keepAdmin(ctx, ids); err != nil {
 		return err
 	}
-	if err = s.permission.DeleteUserRoles(ctx, ids); err != nil {
+	if err = s.permission.delRoles(ctx, ids); err != nil {
 		return err
 	}
 	if err = s.Base.Delete(ctx, input); err != nil {
 		return err
 	}
 
-	return s.permission.RevokeUsers(ctx, ids)
+	return s.permission.revoke(ctx, ids)
 }
 
 // 用户详情及角色、部门虚拟字段
@@ -289,7 +289,7 @@ func (s *UserService) Move(ctx context.Context, req *dto.UserMoveReq) error {
 	if err := s.department.lockDepts(ctx, []uint64{req.DepartmentID}); err != nil {
 		return err
 	}
-	if err := s.permission.LockUsers(ctx, userIDs); err != nil {
+	if err := s.permission.lockUsers(ctx, userIDs); err != nil {
 		return err
 	}
 	model, err := s.Base.Model(ctx)
@@ -300,7 +300,7 @@ func (s *UserService) Move(ctx context.Context, req *dto.UserMoveReq) error {
 		return exception.WrapCore(err, "移动用户部门失败")
 	}
 
-	return s.permission.RevokeUsers(ctx, userIDs)
+	return s.permission.revoke(ctx, userIDs)
 }
 
 // 当前已认证管理员的个人资料
@@ -330,7 +330,7 @@ func (s *UserService) PersonUpdate(ctx context.Context, req dto.PersonUpdateReq)
 	if err != nil {
 		return err
 	}
-	if err = s.permission.LockUsers(ctx, []uint64{identity.UserID}); err != nil {
+	if err = s.permission.lockUsers(ctx, []uint64{identity.UserID}); err != nil {
 		return err
 	}
 	row, err := s.userByID(ctx, identity.UserID)
@@ -389,7 +389,7 @@ func (s *UserService) PersonUpdate(ctx context.Context, req dto.PersonUpdateReq)
 		return exception.WrapCore(err, "更新个人资料失败")
 	}
 	if shouldRevoke {
-		return s.permission.RevokeUsers(ctx, []uint64{identity.UserID})
+		return s.permission.revoke(ctx, []uint64{identity.UserID})
 	}
 
 	return nil
@@ -433,13 +433,13 @@ func (s *UserService) userByID(ctx context.Context, userID uint64) (*userRow, er
 	if err != nil {
 		return nil, err
 	}
-	var row *userRow
-	err = model.Where("id", userID).Scan(&row)
+	var find *userRow
+	err = model.Where("id", userID).Scan(&find)
 	if err != nil {
 		return nil, exception.WrapCore(err, "查询用户失败")
 	}
 
-	return row, nil
+	return find, nil
 }
 
 func (s *UserService) enrichUserInfo(ctx context.Context, result *dto.UserInfoResult) error {
@@ -468,7 +468,7 @@ func (s *UserService) pageItems(ctx context.Context, rows []userRow) ([]dto.User
 			deptIDs = append(deptIDs, *row.DepartmentID)
 		}
 	}
-	roles, err := s.permission.RolesByUsers(ctx, userIDs)
+	roles, err := s.permission.roles(ctx, userIDs)
 	if err != nil {
 		return nil, err
 	}

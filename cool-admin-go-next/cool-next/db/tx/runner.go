@@ -50,7 +50,7 @@ func (r *runner) Within(ctx context.Context, callback Callback) (err error) {
 		}
 
 		err = callback(ctx)
-		recordScopeFailure(ctx, err)
+		recordFailure(ctx, err)
 		return err
 	}
 
@@ -87,7 +87,7 @@ func (r *runner) Within(ctx context.Context, callback Callback) (err error) {
 	return err
 }
 
-func recordScopeFailure(ctx context.Context, err error) {
+func recordFailure(ctx context.Context, err error) {
 	if ctx == nil {
 		return
 	}

@@ -20,13 +20,13 @@ func expectedTable(dialect driver.Dialect, metadata entity.Metadata) (Table, err
 
 	table := Table{Name: metadata.Table()}
 	for _, field := range metadata.PersistentFields() {
-		columnType, err := expectedColumnType(dialect, field)
+		typ, err := columnType(dialect, field)
 		if err != nil {
 			return Table{}, gerror.Wrapf(err, "构建表 %s 的期望字段", metadata.Table())
 		}
 		table.Columns = append(table.Columns, Column{
 			Name:          field.Column(),
-			Type:          normalizeType(dialect.Kind(), columnType),
+			Type:          typeName(dialect.Kind(), typ),
 			Nullable:      field.Nullable(),
 			Primary:       field.Primary(),
 			AutoIncrement: field.AutoIncrement(),
@@ -54,7 +54,7 @@ func expectedTable(dialect driver.Dialect, metadata entity.Metadata) (Table, err
 	return table, nil
 }
 
-func expectedColumnType(dialect driver.Dialect, field entity.Field) (string, error) {
+func columnType(dialect driver.Dialect, field entity.Field) (string, error) {
 	if field.AutoIncrement() {
 		switch dialect.Kind() {
 		case driver.MySQL:
@@ -68,7 +68,7 @@ func expectedColumnType(dialect driver.Dialect, field entity.Field) (string, err
 	return dialect.ColumnType(field)
 }
 
-func normalizeType(kind driver.Kind, raw string) string {
+func typeName(kind driver.Kind, raw string) string {
 	typeName := strings.ToUpper(strings.Join(strings.Fields(raw), " "))
 	switch kind {
 	case driver.MySQL:

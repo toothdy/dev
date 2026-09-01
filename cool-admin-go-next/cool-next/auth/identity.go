@@ -267,7 +267,7 @@ func (service *Service) RefreshWith(
 	if err != nil {
 		return Pair{}, err
 	}
-	principal, err := resolve(ctx, principalFromSnapshot(current))
+	principal, err := resolve(ctx, toPrincipal(current))
 	if err != nil {
 		return Pair{}, err
 	}
@@ -325,7 +325,7 @@ func (service *Service) verify(
 	claims, err := service.tokens.Parse(token, isRefresh)
 	if err != nil {
 		if errors.Is(err, ErrInvalidCredential) {
-			return Claims{}, Snapshot{}, invalidCredentialError()
+			return Claims{}, Snapshot{}, credentialErr()
 		}
 		return Claims{}, Snapshot{}, exception.WrapCore(err, "验证 Token 失败")
 	}
@@ -409,7 +409,7 @@ func subjectFromPrincipal(sessionID string, principal Principal) TokenSubject {
 }
 
 // 从 Session 快照构造身份
-func principalFromSnapshot(snapshot Snapshot) Principal {
+func toPrincipal(snapshot Snapshot) Principal {
 	return Principal{
 		Subject:   snapshot.Subject,
 		UserID:    snapshot.UserID,
@@ -472,6 +472,6 @@ func randomID() (string, error) {
 }
 
 // 无效凭证异常
-func invalidCredentialError() error {
+func credentialErr() error {
 	return exception.Comm("凭证无效", http.StatusUnauthorized)
 }

@@ -51,7 +51,7 @@ func Load[T any](ctx context.Context, defaults T, source Source) (*Result[T], er
 	if validationErr := gvalid.New().Data(value).Run(ctx); validationErr != nil {
 		message := "配置校验失败"
 		if field, _ := validationErr.FirstItem(); field != "" {
-			message += ": " + validationFieldPath(schema, field)
+			message += ": " + fieldPath(schema, field)
 		}
 		return nil, exception.WrapCore(validationErr, message)
 	}
@@ -130,7 +130,7 @@ func clone[T any](value T) T {
 
 // reflect.Value 深拷贝
 func cloneValue(value reflect.Value) reflect.Value {
-	return cloneValueWithVisited(value, make(map[cloneVisit]reflect.Value))
+	return cloneSeen(value, make(map[cloneVisit]reflect.Value))
 }
 
 // 深拷贝循环引用去重 key
@@ -141,7 +141,7 @@ type cloneVisit struct {
 	capacity int
 }
 
-func cloneValueWithVisited(value reflect.Value, visited map[cloneVisit]reflect.Value) reflect.Value {
+func cloneSeen(value reflect.Value, seen map[cloneVisit]reflect.Value) reflect.Value {
 	if !value.IsValid() {
 		return reflect.Value{}
 	}
@@ -152,28 +152,28 @@ func cloneValueWithVisited(value reflect.Value, visited map[cloneVisit]reflect.V
 			return reflect.Zero(value.Type())
 		}
 		visit := cloneVisit{typ: value.Type(), pointer: value.Pointer()}
-		if cloned, exists := visited[visit]; exists {
+		if cloned, exists := seen[visit]; exists {
 			return cloned
 		}
 		cloned := reflect.New(value.Type().Elem())
-		visited[visit] = cloned
-		cloned.Elem().Set(cloneValueWithVisited(value.Elem(), visited))
+		seen[visit] = cloned
+		cloned.Elem().Set(cloneSeen(value.Elem(), seen))
 		return cloned
 	case reflect.Map:
 		if value.IsNil() {
 			return reflect.Zero(value.Type())
 		}
 		visit := cloneVisit{typ: value.Type(), pointer: value.Pointer()}
-		if cloned, exists := visited[visit]; exists {
+		if cloned, exists := seen[visit]; exists {
 			return cloned
 		}
 		cloned := reflect.MakeMapWithSize(value.Type(), value.Len())
-		visited[visit] = cloned
+		seen[visit] = cloned
 		iterator := value.MapRange()
 		for iterator.Next() {
 			cloned.SetMapIndex(
-				cloneValueWithVisited(iterator.Key(), visited),
-				cloneValueWithVisited(iterator.Value(), visited),
+				cloneSeen(iterator.Key(), seen),
+				cloneSeen(iterator.Value(), seen),
 			)
 		}
 		return cloned
@@ -187,13 +187,13 @@ func cloneValueWithVisited(value reflect.Value, visited map[cloneVisit]reflect.V
 			length:   value.Len(),
 			capacity: value.Cap(),
 		}
-		if cloned, exists := visited[visit]; exists {
+		if cloned, exists := seen[visit]; exists {
 			return cloned
 		}
 		cloned := reflect.MakeSlice(value.Type(), value.Len(), value.Cap())
-		visited[visit] = cloned
+		seen[visit] = cloned
 		for index := 0; index < value.Len(); index++ {
-			cloned.Index(index).Set(cloneValueWithVisited(value.Index(index), visited))
+			cloned.Index(index).Set(cloneSeen(value.Index(index), seen))
 		}
 		return cloned
 	case reflect.Interface:
@@ -201,12 +201,12 @@ func cloneValueWithVisited(value reflect.Value, visited map[cloneVisit]reflect.V
 			return reflect.Zero(value.Type())
 		}
 		cloned := reflect.New(value.Type()).Elem()
-		cloned.Set(cloneValueWithVisited(value.Elem(), visited))
+		cloned.Set(cloneSeen(value.Elem(), seen))
 		return cloned
 	case reflect.Array:
 		cloned := reflect.New(value.Type()).Elem()
 		for index := 0; index < value.Len(); index++ {
-			cloned.Index(index).Set(cloneValueWithVisited(value.Index(index), visited))
+			cloned.Index(index).Set(cloneSeen(value.Index(index), seen))
 		}
 		return cloned
 	case reflect.Struct:
@@ -214,7 +214,7 @@ func cloneValueWithVisited(value reflect.Value, visited map[cloneVisit]reflect.V
 		cloned.Set(value)
 		for index := 0; index < value.NumField(); index++ {
 			if cloned.Field(index).CanSet() && value.Field(index).CanInterface() {
-				cloned.Field(index).Set(cloneValueWithVisited(value.Field(index), visited))
+				cloned.Field(index).Set(cloneSeen(value.Field(index), seen))
 			}
 		}
 		return cloned

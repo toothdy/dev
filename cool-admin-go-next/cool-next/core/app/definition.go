@@ -26,14 +26,14 @@ type AssembleInput struct {
 
 type assembleInputKey struct{}
 
-func withAssembleInput(ctx context.Context, input AssembleInput) context.Context {
+func withInput(ctx context.Context, input AssembleInput) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, assembleInputKey{}, input)
 }
 
-func newAssembleInput(root config.Source) AssembleInput {
+func newInput(root config.Source) AssembleInput {
 	return AssembleInput{root: cloneSource(root)}
 }
 
@@ -79,7 +79,7 @@ func cloneSource(source config.Source) config.Source {
 }
 
 // 加载应用根配置
-func loadAssembleInput(ctx context.Context, definition Definition) (AssembleInput, error) {
+func loadInput(ctx context.Context) (AssembleInput, error) {
 	path := os.Getenv(configPathEnv)
 	if path == "" {
 		path = defaultConfigPath
@@ -89,37 +89,37 @@ func loadAssembleInput(ctx context.Context, definition Definition) (AssembleInpu
 		return AssembleInput{}, exception.WrapCore(err, "读取应用配置失败")
 	}
 
-	return parseAssembleInput(ctx, content)
+	return parseInput(ctx, content)
 }
 
-func parseAssembleInput(ctx context.Context, content []byte) (AssembleInput, error) {
+func parseInput(ctx context.Context, content []byte) (AssembleInput, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	if err := ctx.Err(); err != nil {
 		return AssembleInput{}, err
 	}
-	document, err := decodeConfigDocument(content)
+	document, err := decodeConfig(content)
 	if err != nil {
 		return AssembleInput{}, err
 	}
-	if hasModuleConfiguration(document.Content[0]) {
+	if hasModuleConfig(document.Content[0]) {
 		return AssembleInput{}, exception.Core("应用配置不支持 modules 节点")
 	}
-	rootSource, err := encodeConfigNode(document.Content[0])
+	rootSource, err := encodeConfig(document.Content[0])
 	if err != nil {
 		return AssembleInput{}, err
 	}
 
-	return newAssembleInput(config.Source{Main: rootSource, LookupEnv: os.LookupEnv}), nil
+	return newInput(config.Source{Main: rootSource, LookupEnv: os.LookupEnv}), nil
 }
 
-func decodeConfigDocument(content []byte) (*yaml.Node, error) {
+func decodeConfig(content []byte) (*yaml.Node, error) {
 	decoder := yaml.NewDecoder(bytes.NewReader(content))
 	document := &yaml.Node{}
 	if err := decoder.Decode(document); err != nil {
 		if err == io.EOF {
-			return emptyConfigDocument(), nil
+			return emptyConfig(), nil
 		}
 		return nil, exception.WrapCore(err, "解析应用配置失败")
 	}
@@ -137,7 +137,7 @@ func decodeConfigDocument(content []byte) (*yaml.Node, error) {
 	return document, nil
 }
 
-func hasModuleConfiguration(root *yaml.Node) bool {
+func hasModuleConfig(root *yaml.Node) bool {
 	if root == nil || root.Kind != yaml.MappingNode {
 		return false
 	}
@@ -149,7 +149,7 @@ func hasModuleConfiguration(root *yaml.Node) bool {
 	return false
 }
 
-func emptyConfigDocument() *yaml.Node {
+func emptyConfig() *yaml.Node {
 	return &yaml.Node{
 		Kind: yaml.DocumentNode,
 		Content: []*yaml.Node{{
@@ -159,7 +159,7 @@ func emptyConfigDocument() *yaml.Node {
 	}
 }
 
-func encodeConfigNode(node *yaml.Node) ([]byte, error) {
+func encodeConfig(node *yaml.Node) ([]byte, error) {
 	var output bytes.Buffer
 	encoder := yaml.NewEncoder(&output)
 	encoder.SetIndent(2)

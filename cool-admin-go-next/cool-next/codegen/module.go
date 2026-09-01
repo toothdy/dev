@@ -209,7 +209,7 @@ func (a *analysis) resolveReference(pkg *loadedPackage, _, group string, call *a
 		a.add("CG018", "module.Ref 目标必须是包级函数", a.position(pkg, call.Pos()))
 		return Reference{}, false
 	}
-	if !validMiddlewareConstructor(object.Type()) {
+	if !validMiddleware(object.Type()) {
 		a.add("CG104", "module.Ref 目标必须是合法中间件构造器", a.position(pkg, call.Pos()))
 		return Reference{}, false
 	}

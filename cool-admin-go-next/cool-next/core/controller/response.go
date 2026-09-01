@@ -81,25 +81,25 @@ func handleResponse(request *ghttp.Request, logger ErrorLogger) {
 		if recovered := recover(); recovered != nil {
 			err := panicError(recovered)
 			request.SetError(err)
-			writeErrorResponse(request, logger, err, true)
+			writeError(request, logger, err, true)
 		}
 	}()
 	if err := request.GetError(); err != nil {
-		writeErrorResponse(request, logger, err, false)
+		writeError(request, logger, err, false)
 		return
 	}
 
 	request.Middleware.Next()
 	if err := request.GetError(); err != nil {
 		isPanic := request.Response.Status == http.StatusInternalServerError && request.Response.BufferLength() > 0
-		writeErrorResponse(request, logger, err, isPanic)
+		writeError(request, logger, err, isPanic)
 		return
 	}
 	if request.GetServeHandler() == nil || responseCommitted(request) || request.Response.BufferLength() > 0 {
 		return
 	}
 
-	writeSuccessResponse(request, logger)
+	writeSuccess(request, logger)
 }
 
 // 转换处理器异常并保留堆栈
@@ -113,11 +113,11 @@ func panicError(recovered any) error {
 }
 
 // 写入成功响应
-func writeSuccessResponse(request *ghttp.Request, logger ErrorLogger) {
+func writeSuccess(request *ghttp.Request, logger ErrorLogger) {
 	if handled, err := writeRawResponse(request); handled {
 		if err != nil {
 			request.SetError(err)
-			writeErrorResponse(request, logger, err, false)
+			writeError(request, logger, err, false)
 		}
 		return
 	}
@@ -130,7 +130,7 @@ func writeSuccessResponse(request *ghttp.Request, logger ErrorLogger) {
 	if err != nil {
 		err = gerror.Wrap(err, "编码 HTTP 响应失败")
 		request.SetError(err)
-		writeErrorResponse(request, logger, err, false)
+		writeError(request, logger, err, false)
 		return
 	}
 
@@ -210,7 +210,7 @@ func closeFileResponse(response any) {
 }
 
 // 写入安全错误响应
-func writeErrorResponse(request *ghttp.Request, logger ErrorLogger, err error, isPanic bool) {
+func writeError(request *ghttp.Request, logger ErrorLogger, err error, isPanic bool) {
 	result := exception.Resolve(err)
 	if isPanic {
 		result = exception.Result{

@@ -128,7 +128,7 @@ func (s *PermissionService) RoleIDs(ctx context.Context, userID uint64) ([]uint6
 	if userID == 0 {
 		return nil, exception.Core("角色查询参数无效")
 	}
-	roles, err := s.RolesByUsers(ctx, []uint64{userID})
+	roles, err := s.roles(ctx, []uint64{userID})
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (s *PermissionService) RoleIDs(ctx context.Context, userID uint64) ([]uint6
 }
 
 // 批量查询用户角色，一次返回稳定 ID 和名称顺序
-func (s *PermissionService) RolesByUsers(ctx context.Context, userIDs []uint64) (map[uint64]UserRoles, error) {
+func (s *PermissionService) roles(ctx context.Context, userIDs []uint64) (map[uint64]UserRoles, error) {
 	ids := auth.NormalizeIDs(userIDs)
 	result := make(map[uint64]UserRoles, len(ids))
 	for _, userID := range ids {
@@ -170,8 +170,8 @@ func (s *PermissionService) RolesByUsers(ctx context.Context, userIDs []uint64) 
 }
 
 // 批量读取用户角色关系快照
-func (s *PermissionService) RoleSnapshot(ctx context.Context, userIDs []uint64) (map[uint64][]uint64, error) {
-	roles, err := s.RolesByUsers(ctx, userIDs)
+func (s *PermissionService) roleSnap(ctx context.Context, userIDs []uint64) (map[uint64][]uint64, error) {
+	roles, err := s.roles(ctx, userIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (s *PermissionService) RoleSnapshot(ctx context.Context, userIDs []uint64) 
 }
 
 // 校验锁前后的用户角色关系未变化
-func (s *PermissionService) ValidateRoleSnapshot(before, after map[uint64][]uint64) error {
+func (s *PermissionService) checkSnap(before, after map[uint64][]uint64) error {
 	if len(before) != len(after) {
 		return exception.Comm("用户角色已变更，请重试")
 	}
@@ -198,17 +198,17 @@ func (s *PermissionService) ValidateRoleSnapshot(before, after map[uint64][]uint
 }
 
 // 锁定授权变更涉及的角色并返回用户角色关系快照
-func (s *PermissionService) PrepareRoleChange(ctx context.Context, userIDs, nextRoleIDs []uint64) (map[uint64][]uint64, error) {
+func (s *PermissionService) prepRoles(ctx context.Context, userIDs, nextRoleIDs []uint64) (map[uint64][]uint64, error) {
 	users := auth.NormalizeIDs(userIDs)
 	next := auth.NormalizeIDs(nextRoleIDs)
-	adminRoles, err := s.AdminRoleIDs(ctx)
+	adminRoles, err := s.adminRoles(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err = s.LockRoles(ctx, adminRoles); err != nil {
+	if err = s.lockRoles(ctx, adminRoles); err != nil {
 		return nil, err
 	}
-	before, err := s.RoleSnapshot(ctx, users)
+	before, err := s.roleSnap(ctx, users)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (s *PermissionService) PrepareRoleChange(ctx context.Context, userIDs, next
 	involved = slices.DeleteFunc(involved, func(roleID uint64) bool {
 		return slices.Contains(adminRoles, roleID)
 	})
-	if err = s.LockRoles(ctx, involved); err != nil {
+	if err = s.lockRoles(ctx, involved); err != nil {
 		return nil, err
 	}
 
@@ -228,17 +228,17 @@ func (s *PermissionService) PrepareRoleChange(ctx context.Context, userIDs, next
 }
 
 // 按稳定 ID 顺序锁定并校验角色存在
-func (s *PermissionService) LockRoles(ctx context.Context, roleIDs []uint64) error {
+func (s *PermissionService) lockRoles(ctx context.Context, roleIDs []uint64) error {
 	return s.boundary.LockTable(ctx, s.role.Descriptor().Table(), roleIDs, "锁定授权角色失败")
 }
 
 // 按稳定 ID 顺序锁定并校验用户存在
-func (s *PermissionService) LockUsers(ctx context.Context, userIDs []uint64) error {
+func (s *PermissionService) lockUsers(ctx context.Context, userIDs []uint64) error {
 	return s.boundary.LockTable(ctx, s.user.Descriptor().Table(), userIDs, "锁定授权用户失败")
 }
 
 // 替换单个用户的全部角色关系
-func (s *PermissionService) ReplaceRoles(ctx context.Context, userID uint64, roleIDs []uint64) error {
+func (s *PermissionService) setRoles(ctx context.Context, userID uint64, roleIDs []uint64) error {
 	if userID == 0 {
 		return exception.Core("用户角色替换参数无效")
 	}
@@ -265,7 +265,7 @@ func (s *PermissionService) ReplaceRoles(ctx context.Context, userID uint64, rol
 }
 
 // 删除多个用户的角色关系
-func (s *PermissionService) DeleteUserRoles(ctx context.Context, userIDs []uint64) error {
+func (s *PermissionService) delRoles(ctx context.Context, userIDs []uint64) error {
 	ids := auth.NormalizeIDs(userIDs)
 	if len(ids) == 0 {
 		return nil
@@ -282,7 +282,7 @@ func (s *PermissionService) DeleteUserRoles(ctx context.Context, userIDs []uint6
 }
 
 // 平台管理员角色 ID
-func (s *PermissionService) AdminRoleIDs(ctx context.Context) ([]uint64, error) {
+func (s *PermissionService) adminRoles(ctx context.Context) ([]uint64, error) {
 	model, err := s.role.Model(ctx)
 	if err != nil {
 		return nil, err
@@ -302,7 +302,7 @@ func (s *PermissionService) AdminRoleIDs(ctx context.Context) ([]uint64, error) 
 }
 
 // 删除、禁用或移除管理员角色前保护最后一个有效管理员
-func (s *PermissionService) EnsureAdminTransition(
+func (s *PermissionService) checkAdmin(
 	ctx context.Context,
 	userID uint64,
 	currentStatus int32,
@@ -324,11 +324,11 @@ func (s *PermissionService) EnsureAdminTransition(
 		}
 	}
 
-	return s.EnsureNotLastAdmin(ctx, []uint64{userID})
+	return s.keepAdmin(ctx, []uint64{userID})
 }
 
 // 删除或禁用用户前保护最后一个有效管理员
-func (s *PermissionService) EnsureNotLastAdmin(ctx context.Context, userIDs []uint64) error {
+func (s *PermissionService) keepAdmin(ctx context.Context, userIDs []uint64) error {
 	ids := auth.NormalizeIDs(userIDs)
 	if len(ids) == 0 {
 		return nil
@@ -347,7 +347,7 @@ func (s *PermissionService) EnsureNotLastAdmin(ctx context.Context, userIDs []ui
 	for i, row := range enabled {
 		enabledIDs[i] = row.ID
 	}
-	roles, err := s.RoleSnapshot(ctx, enabledIDs)
+	roles, err := s.roleSnap(ctx, enabledIDs)
 	if err != nil {
 		return err
 	}
@@ -359,7 +359,7 @@ func (s *PermissionService) EnsureNotLastAdmin(ctx context.Context, userIDs []ui
 	if err != nil || !isAdmin {
 		return err
 	}
-	adminRoles, err := s.AdminRoleIDs(ctx)
+	adminRoles, err := s.adminRoles(ctx)
 	if err != nil {
 		return err
 	}
@@ -397,7 +397,7 @@ func (s *PermissionService) EnsureNotLastAdmin(ctx context.Context, userIDs []ui
 }
 
 // 撤销用户后台 Session
-func (s *PermissionService) RevokeUsers(ctx context.Context, userIDs []uint64) error {
+func (s *PermissionService) revoke(ctx context.Context, userIDs []uint64) error {
 	return s.boundary.RevokeUsers(ctx, auth.AdminKind, userIDs)
 }
 

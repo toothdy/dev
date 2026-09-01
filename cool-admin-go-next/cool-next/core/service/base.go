@@ -223,7 +223,7 @@ func (base *Base[E, ID]) Info(ctx context.Context, id ID) (Record, error) {
 		return Record{}, nil
 	}
 
-	return base.recordFromDatabase(result), nil
+	return base.record(result), nil
 }
 
 // 查询记录列表
@@ -243,7 +243,7 @@ func (base *Base[E, ID]) List(ctx context.Context, query Query) ([]Record, error
 		return nil, exception.WrapCore(err, "查询实体列表失败")
 	}
 
-	return base.recordsFromDatabase(result), nil
+	return base.records(result), nil
 }
 
 // 分页查询记录
@@ -259,7 +259,7 @@ func (base *Base[E, ID]) Page(ctx context.Context, query Query) (PageResult, err
 	}
 
 	return PageResult{
-		List:       base.recordsFromDatabase(result),
+		List:       base.records(result),
 		Pagination: pagination,
 	}, nil
 }
@@ -421,21 +421,21 @@ func validateReadQuery(query Query) error {
 	return nil
 }
 
-func (base *Base[E, ID]) recordsFromDatabase(result gdb.Result) []Record {
+func (base *Base[E, ID]) records(result gdb.Result) []Record {
 	records := make([]Record, len(result))
 	for index, current := range result {
-		records[index] = base.recordFromDatabase(current)
+		records[index] = base.record(current)
 	}
 
 	return records
 }
 
-func (base *Base[E, ID]) recordFromDatabase(record gdb.Record) Record {
+func (base *Base[E, ID]) record(record gdb.Record) Record {
 	values := make(map[string]any, len(record))
 	for field, value := range record {
 		raw := value.Val()
 		if descriptor, exists := base.descriptor.JSON(field); exists {
-			raw = normalizeDatabaseValue(raw, descriptor.GoType())
+			raw = dbValue(raw, descriptor.GoType())
 		}
 		values[field] = cloneData(raw)
 	}
@@ -443,7 +443,7 @@ func (base *Base[E, ID]) recordFromDatabase(record gdb.Record) Record {
 	return Record{values: values}
 }
 
-func normalizeDatabaseValue(value any, target reflect.Type) any {
+func dbValue(value any, target reflect.Type) any {
 	if value == nil {
 		return nil
 	}

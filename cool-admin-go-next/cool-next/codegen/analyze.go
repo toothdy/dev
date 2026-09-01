@@ -31,17 +31,17 @@ type analysis struct {
 
 // 分析模块源码
 func Analyze(ctx context.Context, options Options) (*Model, error) {
-	return analyzeWithOverlay(ctx, options, nil)
+	return analyzeOverlay(ctx, options, nil)
 }
 
 // 使用受控源码覆盖分析模块源码
-func analyzeWithOverlay(ctx context.Context, options Options, overlay map[string][]byte) (*Model, error) {
+func analyzeOverlay(ctx context.Context, options Options, overlay map[string][]byte) (*Model, error) {
 	overlay = cloneOverlay(overlay)
-	dir, modulesRoot, err := validateOptions(options)
+	dir, modulesRoot, err := checkOptions(options)
 	if err != nil {
 		return nil, &DiagnosticError{diagnostics: []Diagnostic{{Code: "CG001", Message: err.Error()}}}
 	}
-	roots, diagnostics := discoverModuleRoots(dir, modulesRoot)
+	roots, diagnostics := moduleRoots(dir, modulesRoot)
 	if len(diagnostics) > 0 {
 		sortDiagnostics(diagnostics)
 		return nil, &DiagnosticError{diagnostics: diagnostics}
@@ -49,11 +49,11 @@ func analyzeWithOverlay(ctx context.Context, options Options, overlay map[string
 	if len(roots) == 0 {
 		return &Model{}, nil
 	}
-	if diagnostics = validateModuleDirectories(dir, roots); len(diagnostics) > 0 {
+	if diagnostics = checkDirs(dir, roots); len(diagnostics) > 0 {
 		sortDiagnostics(diagnostics)
 		return nil, &DiagnosticError{diagnostics: diagnostics}
 	}
-	eligible := discoverEligibleFiles(roots)
+	eligible := eligibleFiles(roots)
 	packages, diagnostics := loadPackages(ctx, dir, modulesRoot, overlay)
 	if len(diagnostics) > 0 {
 		sortDiagnostics(diagnostics)
@@ -64,8 +64,8 @@ func analyzeWithOverlay(ctx context.Context, options Options, overlay map[string
 	for _, root := range roots {
 		current.analyzeModule(root, model)
 	}
-	current.validateConsumerNames(model)
-	current.validateRouteConflicts(model)
+	current.checkConsumerNames(model)
+	current.checkRouteConflicts(model)
 	sortDiagnostics(current.diagnostics)
 	if len(current.diagnostics) > 0 {
 		return nil, &DiagnosticError{diagnostics: current.diagnostics}
@@ -87,7 +87,7 @@ func cloneOverlay(source map[string][]byte) map[string][]byte {
 	return cloned
 }
 
-func validateOptions(options Options) (string, string, error) {
+func checkOptions(options Options) (string, string, error) {
 	if options.Dir == "" {
 		return "", "", fmt.Errorf("工作区目录不能为空")
 	}
@@ -104,7 +104,7 @@ func validateOptions(options Options) (string, string, error) {
 	return dir, filepath.Join(dir, options.ModulesRoot), nil
 }
 
-func discoverModuleRoots(dir, modulesRoot string) ([]string, []Diagnostic) {
+func moduleRoots(dir, modulesRoot string) ([]string, []Diagnostic) {
 	if _, err := os.Stat(modulesRoot); err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -116,7 +116,7 @@ func discoverModuleRoots(dir, modulesRoot string) ([]string, []Diagnostic) {
 		if walkErr != nil {
 			return walkErr
 		}
-		if path != modulesRoot && entry.IsDir() && isIgnoredDirectory(entry.Name()) {
+		if path != modulesRoot && entry.IsDir() && ignoredDir(entry.Name()) {
 			return filepath.SkipDir
 		}
 		if !entry.IsDir() && entry.Name() == "config.go" && !isGeneratedFile(path) {
@@ -138,10 +138,10 @@ func discoverModuleRoots(dir, modulesRoot string) ([]string, []Diagnostic) {
 	var roots []string
 	var diagnostics []Diagnostic
 	for _, candidate := range candidates {
-		ancestor := nearestModuleRoot(roots, candidate)
+		ancestor := nearestRoot(roots, candidate)
 		if ancestor != "" {
 			relative, _ := filepath.Rel(ancestor, candidate)
-			if isAllowedDirectory(relative) && !declaresModuleConfig(filepath.Join(candidate, "config.go")) {
+			if allowedDir(relative) && !hasModuleConfig(filepath.Join(candidate, "config.go")) {
 				continue
 			}
 			diagnostics = append(diagnostics, Diagnostic{Code: "CG003", Message: "模块根目录不能重叠", Position: positionFromPath(dir, filepath.Join(candidate, "config.go"))})
@@ -152,7 +152,7 @@ func discoverModuleRoots(dir, modulesRoot string) ([]string, []Diagnostic) {
 	return roots, diagnostics
 }
 
-func declaresModuleConfig(path string) bool {
+func hasModuleConfig(path string) bool {
 	file, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.SkipObjectResolution)
 	if err != nil {
 		return false
@@ -166,7 +166,7 @@ func declaresModuleConfig(path string) bool {
 	return false
 }
 
-func nearestModuleRoot(roots []string, candidate string) string {
+func nearestRoot(roots []string, candidate string) string {
 	nearest := ""
 	for _, root := range roots {
 		relative, err := filepath.Rel(root, candidate)
@@ -180,14 +180,14 @@ func nearestModuleRoot(roots []string, candidate string) string {
 	return nearest
 }
 
-func discoverEligibleFiles(roots []string) map[string]bool {
+func eligibleFiles(roots []string) map[string]bool {
 	files := make(map[string]bool)
 	for _, root := range roots {
 		_ = filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 			if err != nil {
 				return nil
 			}
-			if path != root && entry.IsDir() && isIgnoredDirectory(entry.Name()) {
+			if path != root && entry.IsDir() && ignoredDir(entry.Name()) {
 				return filepath.SkipDir
 			}
 			if entry.IsDir() || filepath.Ext(path) != ".go" || strings.HasSuffix(path, "_test.go") || isGeneratedFile(path) {
@@ -197,7 +197,7 @@ func discoverEligibleFiles(roots []string) map[string]bool {
 			if err != nil {
 				return nil
 			}
-			if filepath.Base(relative) == "config.go" || isAllowedDirectory(filepath.Dir(relative)) {
+			if filepath.Base(relative) == "config.go" || allowedDir(filepath.Dir(relative)) {
 				files[path] = true
 			}
 			return nil
@@ -211,7 +211,7 @@ var allowedModuleDirectories = []string{
 	"contract", "entity", "service", "controller", "middleware", "event", "schedule", "queue", "consumer", "dto", "grpc",
 }
 
-func isAllowedDirectory(directory string) bool {
+func allowedDir(directory string) bool {
 	if directory == "." {
 		return false
 	}
@@ -224,11 +224,11 @@ func isAllowedDirectory(directory string) bool {
 	return false
 }
 
-func isIgnoredDirectory(name string) bool { return name == "testdata" || strings.HasPrefix(name, ".") }
+func ignoredDir(name string) bool { return name == "testdata" || strings.HasPrefix(name, ".") }
 
 // 校验模块根目录只包含协议允许的子目录和 config.go；
 // 不符合项一律以诊断码显式报告，不被静默跳过
-func validateModuleDirectories(dir string, roots []string) []Diagnostic {
+func checkDirs(dir string, roots []string) []Diagnostic {
 	var diagnostics []Diagnostic
 	for _, root := range roots {
 		entries, err := os.ReadDir(root)
@@ -237,11 +237,11 @@ func validateModuleDirectories(dir string, roots []string) []Diagnostic {
 		}
 		for _, entry := range entries {
 			name := entry.Name()
-			if isIgnoredDirectory(name) {
+			if ignoredDir(name) {
 				continue
 			}
 			if entry.IsDir() {
-				if !isAllowedDirectory(name) {
+				if !allowedDir(name) {
 					diagnostics = append(diagnostics, Diagnostic{
 						Code:     "CG111",
 						Message:  fmt.Sprintf("模块目录 %q 不在允许列表内，见 README 模块目录协议", name),
@@ -277,7 +277,7 @@ func isGeneratedFile(path string) bool {
 func (a *analysis) analyzeModule(root string, model *Model) {
 	modulesRoot, _ := filepath.Rel(a.dir, a.modulesRoot)
 	directory, _ := filepath.Rel(a.dir, root)
-	identity, err := module.IdentityFromDirectory(modulesRoot, directory)
+	identity, err := module.NewIdentity(modulesRoot, directory)
 	if err != nil {
 		a.add("CG004", "模块身份无效", positionFromPath(a.dir, filepath.Join(root, "config.go")))
 		return
@@ -290,8 +290,8 @@ func (a *analysis) analyzeModule(root string, model *Model) {
 	}
 	a.analyzeQueryDSL(root)
 	result := Module{identity: identity, root: filepath.ToSlash(directory)}
-	result.seedDB = regularFileExists(filepath.Join(root, "db.json"))
-	result.seedMenu = regularFileExists(filepath.Join(root, "menu.json"))
+	result.seedDB = fileExists(filepath.Join(root, "db.json"))
+	result.seedMenu = fileExists(filepath.Join(root, "menu.json"))
 	result.config, result.references = a.analyzeConfig(pkg, configFile, root)
 	result.entities, result.schemas = a.analyzeEntities(root)
 	result.constructors = a.analyzeConstructors(root)
@@ -301,7 +301,7 @@ func (a *analysis) analyzeModule(root string, model *Model) {
 	model.modules = append(model.modules, result)
 }
 
-func regularFileExists(path string) bool {
+func fileExists(path string) bool {
 	info, err := os.Lstat(path)
 	return err == nil && info.Mode().IsRegular()
 }

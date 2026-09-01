@@ -53,26 +53,26 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 		return nil, err
 	}
 	services := renderServices(model)
-	controllers := renderControllers(model)
-	registrars := renderGRPCRegistrars(model)
-	if err := validateGeneratedIdentifiers(fragments, ordered, services, controllers); err != nil {
+	controllers := getControllers(model)
+	registrars := grpcRegistrars(model)
+	if err := checkNames(fragments, ordered, services, controllers); err != nil {
 		return nil, err
 	}
-	if err := validateControllerDependencies(controllers, ordered); err != nil {
+	if err := checkControllers(controllers, ordered); err != nil {
 		return nil, err
 	}
-	if err := validateHTTPDependencies(modules, fragments, services, controllers, ordered, hasAuthProviders(graph.Providers())); err != nil {
+	if err := checkHTTP(modules, fragments, services, controllers, ordered, hasAuthProviders(graph.Providers())); err != nil {
 		return nil, err
 	}
 	providers, descriptorProviders, err := renderProviders(graph, fragments)
 	if err != nil {
 		return nil, err
 	}
-	dependencies, err := renderDependencies(graph, ordered, providers)
+	dependencies, err := renderDeps(graph, ordered, providers)
 	if err != nil {
 		return nil, err
 	}
-	if err := validateProviderExpressions(dependencies, modules, fragments, descriptorProviders, ordered); err != nil {
+	if err := checkProviders(dependencies, modules, fragments, descriptorProviders, ordered); err != nil {
 		return nil, err
 	}
 	imports := newImportManager()
@@ -168,9 +168,9 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 	source.WriteString(generatedFileHeader)
 	source.WriteString("package modules\n\n")
 	writeImports(&source, imports)
-	writeSeedDeclarations(&source, modules)
-	writeDescriptorDeclarations(&source, fragments, imports)
-	writeInfrastructureDeclarations(
+	writeSeeds(&source, modules)
+	writeDescriptors(&source, fragments, imports)
+	writeInfra(
 		&source,
 		fragments,
 		hasOutbox,
@@ -178,11 +178,11 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 		hasAuthProviders(graph.Providers()),
 		hasFrameworkProvider(graph.Providers(), authBcryptPackagePath, "Verifier"),
 	)
-	writeBaseProviderDeclarations(&source, fragments, imports)
-	writeServiceAdapterDeclarations(&source, services, imports)
-	writeControllerDeclarations(&source, controllers, imports)
-	writeGRPCRegistrarDeclaration(&source, registrars, imports)
-	writeGeneratedFunction(&source, graph, modules, fragments, descriptorProviders, providers, ordered, dependencies, services, controllers, imports)
+	writeBaseProviders(&source, fragments, imports)
+	writeAdapters(&source, services, imports)
+	writeControllers(&source, controllers, imports)
+	writeGRPC(&source, registrars, imports)
+	writeGenerated(&source, graph, modules, fragments, descriptorProviders, providers, ordered, dependencies, services, controllers, imports)
 	formatted, err := format.Source([]byte(source.String()))
 	if err != nil {
 		return nil, renderError("CG079", "生成模块注册表语法无效: "+err.Error(), Position{})
@@ -198,14 +198,14 @@ type renderModule struct {
 	seedMenu   bool
 }
 
-func writeSeedDeclarations(source *strings.Builder, modules []renderModule) {
+func writeSeeds(source *strings.Builder, modules []renderModule) {
 	for _, current := range modules {
-		identifier := generatedIdentifier(current.key)
+		name := identifier(current.key)
 		if current.seedDB {
-			fmt.Fprintf(source, "//go:embed %s/db.json\nvar seedDB_%s []byte\n\n", current.key, identifier)
+			fmt.Fprintf(source, "//go:embed %s/db.json\nvar seedDB_%s []byte\n\n", current.key, name)
 		}
 		if current.seedMenu {
-			fmt.Fprintf(source, "//go:embed %s/menu.json\nvar seedMenu_%s []byte\n\n", current.key, identifier)
+			fmt.Fprintf(source, "//go:embed %s/menu.json\nvar seedMenu_%s []byte\n\n", current.key, name)
 		}
 	}
 }
@@ -230,7 +230,7 @@ type renderGRPCRegistrar struct {
 	module      string
 }
 
-func renderGRPCRegistrars(model *Model) []renderGRPCRegistrar {
+func grpcRegistrars(model *Model) []renderGRPCRegistrar {
 	var result []renderGRPCRegistrar
 	for _, current := range model.modules {
 		for _, declaration := range current.registrars {
@@ -248,7 +248,7 @@ func renderGRPCRegistrars(model *Model) []renderGRPCRegistrar {
 	return result
 }
 
-func renderControllers(model *Model) []renderController {
+func getControllers(model *Model) []renderController {
 	var result []renderController
 	for _, current := range model.modules {
 		for _, declaration := range current.controllers {
@@ -455,7 +455,7 @@ func renderProviders(graph *Graph, fragments []DescriptorFragment) ([]Provider, 
 	return providers, descriptorProviders, nil
 }
 
-func renderDependencies(graph *Graph, components []renderComponent, providers []Provider) ([]Dependency, error) {
+func renderDeps(graph *Graph, components []renderComponent, providers []Provider) ([]Dependency, error) {
 	componentIndexes := make(map[string]int, len(components))
 	for index, current := range components {
 		componentIndexes[componentKey(current.component.module, current.component.packagePath, current.component.name)] = index
@@ -490,7 +490,7 @@ func renderDependencies(graph *Graph, components []renderComponent, providers []
 	return dependencies, nil
 }
 
-func validateGeneratedIdentifiers(
+func checkNames(
 	fragments []DescriptorFragment,
 	components []renderComponent,
 	services []renderService,
@@ -541,7 +541,7 @@ func validateGeneratedIdentifiers(
 	return nil
 }
 
-func writeBaseProviderDeclarations(source *strings.Builder, fragments []DescriptorFragment, imports *importManager) {
+func writeBaseProviders(source *strings.Builder, fragments []DescriptorFragment, imports *importManager) {
 	for _, fragment := range fragments {
 		entityAlias := imports.alias(fragment.entityPackage)
 		fmt.Fprintf(
@@ -558,7 +558,7 @@ func writeBaseProviderDeclarations(source *strings.Builder, fragments []Descript
 	}
 }
 
-func writeServiceAdapterDeclarations(source *strings.Builder, services []renderService, imports *importManager) {
+func writeAdapters(source *strings.Builder, services []renderService, imports *importManager) {
 	for _, current := range services {
 		declaration := current.declaration
 		for _, action := range declaration.actions {
@@ -568,15 +568,15 @@ func writeServiceAdapterDeclarations(source *strings.Builder, services []renderS
 				serviceActionModeName(current, action.name),
 				serviceActionModeConstant(action.mode),
 			)
-			writeServiceActionAdapter(source, current, action, imports)
+			writeActionAdapter(source, current, action, imports)
 		}
 		writeHookAdapter(source, current, imports, "ModifyBefore", declaration.hasBefore)
 		writeHookAdapter(source, current, imports, "ModifyAfter", declaration.hasAfter)
 	}
 }
 
-func writeServiceActionAdapter(source *strings.Builder, current renderService, action ServiceAction, imports *importManager) {
-	signature := serviceActionSignature(current.declaration, action)
+func writeActionAdapter(source *strings.Builder, current renderService, action ServiceAction, imports *importManager) {
+	signature := actionSignature(current.declaration, action)
 	if signature == nil {
 		return
 	}
@@ -601,7 +601,7 @@ func writeServiceActionAdapter(source *strings.Builder, current renderService, a
 	)
 }
 
-func serviceActionSignature(declaration ServiceDeclaration, action ServiceAction) *types.Signature {
+func actionSignature(declaration ServiceDeclaration, action ServiceAction) *types.Signature {
 	if action.mode == ServiceActionBase {
 		return baseActionSignature(declaration.typ, action.name)
 	}
@@ -614,7 +614,7 @@ func serviceActionSignature(declaration ServiceDeclaration, action ServiceAction
 	return signature
 }
 
-func writeControllerDeclarations(source *strings.Builder, controllers []renderController, imports *importManager) {
+func writeControllers(source *strings.Builder, controllers []renderController, imports *importManager) {
 	for _, current := range controllers {
 		declaration := current.declaration
 		parameters := make([]string, len(declaration.parameterTypes))
@@ -668,17 +668,17 @@ func writeImports(source *strings.Builder, imports *importManager) {
 	source.WriteString(")\n\n")
 }
 
-func writeDescriptorDeclarations(source *strings.Builder, fragments []DescriptorFragment, imports *importManager) {
+func writeDescriptors(source *strings.Builder, fragments []DescriptorFragment, imports *importManager) {
 	for _, fragment := range fragments {
 		source.WriteString(fragment.doDeclaration)
 		source.WriteByte('\n')
-		writeDOValueDeclaration(source, fragment)
-		writeCompiledDescriptorDeclaration(source, fragment, imports)
-		writeDescriptorFunction(source, fragment, imports)
+		writeDOValue(source, fragment)
+		writeCompiledType(source, fragment, imports)
+		writeDescriptorFunc(source, fragment, imports)
 	}
 }
 
-func writeInfrastructureDeclarations(source *strings.Builder, fragments []DescriptorFragment, hasOutbox, hasHTTP, hasAuth, hasBcrypt bool) {
+func writeInfra(source *strings.Builder, fragments []DescriptorFragment, hasOutbox, hasHTTP, hasAuth, hasBcrypt bool) {
 	source.WriteString("type infrastructureConfig struct {\n")
 	source.WriteString("\tCool struct {\n")
 	source.WriteString("\t\tCRUD crud.Config `json:\"crud\"`\n")
@@ -761,7 +761,7 @@ func writeInfrastructureDeclarations(source *strings.Builder, fragments []Descri
 	source.WriteString("}\n\n")
 }
 
-func writeDOValueDeclaration(source *strings.Builder, fragment DescriptorFragment) {
+func writeDOValue(source *strings.Builder, fragment DescriptorFragment) {
 	name := doValueTypeName(fragment)
 	fmt.Fprintf(source, "type %s struct {\n\tstate coreentity.DOValue\n\tdata %s\n}\n\n", name, fragment.doName)
 	fmt.Fprintf(source, "func (value *%s) Has(field string) bool { return value.state.Has(field) }\n\n", name)
@@ -777,7 +777,7 @@ func writeDOValueDeclaration(source *strings.Builder, fragment DescriptorFragmen
 	fmt.Fprintf(source, "func (value *%s) DBData() any { return value.data }\n\n", name)
 }
 
-func writeCompiledDescriptorDeclaration(source *strings.Builder, fragment DescriptorFragment, imports *importManager) {
+func writeCompiledType(source *strings.Builder, fragment DescriptorFragment, imports *importManager) {
 	var (
 		descriptorName = compiledDescriptorTypeName(fragment)
 		doValueName    = doValueTypeName(fragment)
@@ -789,7 +789,7 @@ func writeCompiledDescriptorDeclaration(source *strings.Builder, fragment Descri
 	source.WriteString("}\n\n")
 }
 
-func writeDescriptorFunction(source *strings.Builder, fragment DescriptorFragment, imports *importManager) {
+func writeDescriptorFunc(source *strings.Builder, fragment DescriptorFragment, imports *importManager) {
 	var (
 		name           = descriptorFunctionName(fragment)
 		descriptorName = compiledDescriptorTypeName(fragment)
@@ -801,7 +801,7 @@ func writeDescriptorFunction(source *strings.Builder, fragment DescriptorFragmen
 	fmt.Fprintf(source, "\treturn %s{Descriptor: descriptor}\n}\n\n", descriptorName)
 }
 
-func writeGRPCRegistrarDeclaration(source *strings.Builder, registrars []renderGRPCRegistrar, imports *importManager) {
+func writeGRPC(source *strings.Builder, registrars []renderGRPCRegistrar, imports *importManager) {
 	source.WriteString("type generatedGRPCRegistrar struct{}\n\n")
 	source.WriteString("func (generatedGRPCRegistrar) Register(server *grpcx.GrpcServer) error {\n")
 	for _, current := range registrars {
@@ -828,7 +828,7 @@ func componentDependencies(component Component, dependencies []Dependency) []Dep
 	return result
 }
 
-func writeGeneratedFunction(
+func writeGenerated(
 	source *strings.Builder,
 	graph *Graph,
 	modules []renderModule,
@@ -1070,13 +1070,13 @@ func writeGeneratedFunction(
 		usedProviders[renderProviderKey(dependency.provider)] = true
 	}
 	for _, fragment := range fragments {
-		name := generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity)
+		name := identifier(fragment.module, fragment.entityPackage, fragment.entity)
 		fmt.Fprintf(source, "\tdescriptor_%s := %s()\n", name, descriptorFunctionName(fragment))
 	}
 	if len(fragments) > 0 || hasProducers || hasConsumers || len(controllers) > 0 || hasSeedModules(modules) {
 		source.WriteString("\truntime, recycler, err := generatedDataRuntime(ctx, infrastructure")
 		for _, fragment := range fragments {
-			fmt.Fprintf(source, ", descriptor_%s", generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity))
+			fmt.Fprintf(source, ", descriptor_%s", identifier(fragment.module, fragment.entityPackage, fragment.entity))
 		}
 		source.WriteString(")\n")
 		source.WriteString("\tif err != nil {\n\t\treturn assembly, err\n\t}\n")
@@ -1098,15 +1098,15 @@ func writeGeneratedFunction(
 			}
 			db, menu := "nil", "nil"
 			if current.seedDB {
-				db = "seedDB_" + generatedIdentifier(current.key)
+				db = "seedDB_" + identifier(current.key)
 			}
 			if current.seedMenu {
-				menu = "seedMenu_" + generatedIdentifier(current.key)
+				menu = "seedMenu_" + identifier(current.key)
 			}
 			fmt.Fprintf(source, "\t\tseed.NewDefinition(%q, seed.NewData(%s, %s)", current.key, db, menu)
 			for _, fragment := range fragments {
 				if fragment.module == current.key {
-					fmt.Fprintf(source, ", descriptor_%s", generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity))
+					fmt.Fprintf(source, ", descriptor_%s", identifier(fragment.module, fragment.entityPackage, fragment.entity))
 				}
 			}
 			source.WriteString("),\n")
@@ -1124,7 +1124,7 @@ func writeGeneratedFunction(
 		source.WriteString("\tif err != nil {\n\t\treturn assembly, exception.WrapCore(err, \"构造 Outbox Enqueuer 失败\")\n\t}\n")
 	}
 	for _, fragment := range fragments {
-		name := generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity)
+		name := identifier(fragment.module, fragment.entityPackage, fragment.entity)
 		if usedProviders[renderProviderKey(Provider{kind: ProviderKindBase, module: fragment.baseProvider.module, packagePath: fragment.entityPackage, name: fragment.baseProvider.name, typ: fragment.baseProvider.typ})] {
 			fmt.Fprintf(source, "\tbase_%s, err := %s(descriptor_%s, runtime, recycler)\n", name, fragment.baseProvider.name, name)
 			source.WriteString("\tif err != nil {\n\t\treturn assembly, err\n\t}\n")
@@ -1141,12 +1141,12 @@ func writeGeneratedFunction(
 		authorizer, exists := authorizerComponent(components)
 		if exists {
 			for _, prerequisite := range authorizerPrerequisites(authorizer, components, dependencies) {
-				writeComponentConstruction(source, prerequisite, dependencies, modules, fragments, descriptorProviders, components, componentResultRequired(prerequisite, graph, dependencies, modules, controllers, components), imports)
+				writeConstruction(source, prerequisite, dependencies, modules, fragments, descriptorProviders, components, needsResult(prerequisite, graph, dependencies, modules, controllers, components), imports)
 			}
 		}
 		authorizerValue := "nil"
 		if exists {
-			authorizerValue = componentVariableName(authorizer.component)
+			authorizerValue = componentVar(authorizer.component)
 		}
 		fmt.Fprintf(source, "\tauthService, err := auth.NewService(jwtService, sessionAdapter, %s)\n", authorizerValue)
 		source.WriteString("\tif err != nil { return assembly, exception.WrapCore(err, \"构造 Auth 服务失败\") }\n")
@@ -1159,14 +1159,14 @@ func writeGeneratedFunction(
 		if authorizer, exists := authorizerComponent(components); exists && authorizerDependency(authorizer, current, components, dependencies) {
 			continue
 		}
-		writeComponentConstruction(source, current, dependencies, modules, fragments, descriptorProviders, components, componentResultRequired(current, graph, dependencies, modules, controllers, components), imports)
+		writeConstruction(source, current, dependencies, modules, fragments, descriptorProviders, components, needsResult(current, graph, dependencies, modules, controllers, components), imports)
 	}
 	for _, current := range controllers {
 		arguments := make([]string, len(current.declaration.parameterTypes))
 		for index, parameter := range current.declaration.parameterTypes {
-			arguments[index], _ = componentExpressionForType(parameter, components)
+			arguments[index], _ = componentExpr(parameter, components)
 		}
-		name := "controller_" + generatedIdentifier(current.module, current.declaration.packagePath, current.declaration.name)
+		name := "controller_" + identifier(current.module, current.declaration.packagePath, current.declaration.name)
 		fmt.Fprintf(source, "\t%s := %s(%s)\n", name, controllerFunctionName(current), strings.Join(arguments, ", "))
 	}
 	writeEPSPublish(source, controllers, fragments)
@@ -1178,7 +1178,7 @@ func writeGeneratedFunction(
 	source.WriteString("\tif err != nil {\n\t\treturn assembly, exception.WrapCore(err, \"构造 gRPC Transport 失败\")\n\t}\n")
 	fmt.Fprintf(source, "\tassembly.AddTransport(module.ComponentDefinition{Module: %q, PackagePath: %q, Name: \"New\"}, grpcTransport, app.Hooks{})\n", frameworkModuleKey, grpcPackagePath)
 	if hasProducers {
-		publisherExpression := componentVariableName(publisher)
+		publisherExpression := componentVar(publisher)
 		fmt.Fprintf(source, "\toutboxWorker, err := outbox.NewWorker(outboxStore, %s, infrastructure.Cool.Outbox.WorkerConfig(), nil, nil)\n", publisherExpression)
 		source.WriteString("\tif err != nil {\n\t\treturn assembly, exception.WrapCore(err, \"构造 Outbox Worker 失败\")\n\t}\n")
 		fmt.Fprintf(source, "\tassembly.AddComponent(module.ComponentDefinition{Module: %q, PackagePath: %q, Name: %q}, app.Hooks{Starter: outboxWorker, Stopper: outboxWorker, Supervisor: outboxWorker})\n", workerDefinition.module, workerDefinition.packagePath, workerDefinition.name)
@@ -1186,11 +1186,11 @@ func writeGeneratedFunction(
 	if hasConsumers {
 		definitions := make([]string, len(consumers))
 		for index, consumer := range consumers {
-			definitions[index] = componentVariableName(consumer)
+			definitions[index] = componentVar(consumer)
 		}
 		fmt.Fprintf(source, "\toutboxDeliverer, err := outbox.NewDeliverer(runtime, outboxStore, infrastructure.Cool.Outbox.ConsumerConfig(), %s)\n", strings.Join(definitions, ", "))
 		source.WriteString("\tif err != nil {\n\t\treturn assembly, exception.WrapCore(err, \"构造 Outbox Deliverer 失败\")\n\t}\n")
-		fmt.Fprintf(source, "\toutboxConsumerRuntime, err := outbox.NewConsumerRuntime(%s, outboxStore, outboxDeliverer)\n", componentVariableName(consumerAdapter))
+		fmt.Fprintf(source, "\toutboxConsumerRuntime, err := outbox.NewConsumerRuntime(%s, outboxStore, outboxDeliverer)\n", componentVar(consumerAdapter))
 		source.WriteString("\tif err != nil {\n\t\treturn assembly, exception.WrapCore(err, \"构造 Consumer Runtime 失败\")\n\t}\n")
 		fmt.Fprintf(source, "\tassembly.AddComponent(module.ComponentDefinition{Module: %q, PackagePath: %q, Name: %q}, app.Hooks{Initializer: outboxConsumerRuntime, Starter: outboxConsumerRuntime, Stopper: outboxConsumerRuntime, Supervisor: outboxConsumerRuntime})\n", consumerRuntimeDefinition.module, consumerRuntimeDefinition.packagePath, consumerRuntimeDefinition.name)
 	}
@@ -1211,14 +1211,14 @@ func hasSeedModules(modules []renderModule) bool {
 	return false
 }
 
-func componentExpressionForType(parameter types.Type, components []renderComponent) (string, bool) {
+func componentExpr(parameter types.Type, components []renderComponent) (string, bool) {
 	var expression string
 	for _, current := range components {
 		if types.AssignableTo(current.constructor.resultType, parameter) {
 			if expression != "" {
 				return "", false
 			}
-			expression = componentVariableName(current.component)
+			expression = componentVar(current.component)
 		}
 	}
 	return expression, expression != ""
@@ -1236,7 +1236,7 @@ func writeEPSPublish(source *strings.Builder, controllers []renderController, fr
 			source,
 			"\t\t\t{Key: %q, Definition: controller_%s},\n",
 			controllerKey(controller),
-			generatedIdentifier(controller.module, controller.declaration.packagePath, controller.declaration.name),
+			identifier(controller.module, controller.declaration.packagePath, controller.declaration.name),
 		)
 	}
 	source.WriteString("\t\t},\n")
@@ -1245,7 +1245,7 @@ func writeEPSPublish(source *strings.Builder, controllers []renderController, fr
 		fmt.Fprintf(
 			source,
 			"\t\t\tdescriptor_%s,\n",
-			generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity),
+			identifier(fragment.module, fragment.entityPackage, fragment.entity),
 		)
 	}
 	source.WriteString("\t\t},\n")
@@ -1254,8 +1254,8 @@ func writeEPSPublish(source *strings.Builder, controllers []renderController, fr
 	source.WriteString("\tif err = eps.PublishViews(epsViews); err != nil { return assembly, exception.WrapCore(err, \"发布 EPS 视图失败\") }\n")
 }
 
-func writeComponentConstruction(source *strings.Builder, current renderComponent, dependencies []Dependency, modules []renderModule, fragments []DescriptorFragment, descriptorProviders map[string]Provider, components []renderComponent, resultRequired bool, imports *importManager) {
-	componentName := componentVariableName(current.component)
+func writeConstruction(source *strings.Builder, current renderComponent, dependencies []Dependency, modules []renderModule, fragments []DescriptorFragment, descriptorProviders map[string]Provider, components []renderComponent, resultRequired bool, imports *importManager) {
+	componentName := componentVar(current.component)
 	currentDependencies := componentDependencies(current.component, dependencies)
 	arguments := make([]string, len(currentDependencies))
 	for index, dependency := range currentDependencies {
@@ -1274,7 +1274,7 @@ func writeComponentConstruction(source *strings.Builder, current renderComponent
 	default:
 		fmt.Fprintf(source, "\t%s\n", call)
 	}
-	hooksName := "hooks_" + generatedIdentifier(current.component.module, current.component.packagePath, current.component.name)
+	hooksName := "hooks_" + identifier(current.component.module, current.component.packagePath, current.component.name)
 	fmt.Fprintf(source, "\t%s := app.Hooks{}\n", hooksName)
 	if current.constructor.hasInitializer {
 		fmt.Fprintf(source, "\t%s.Initializer = %s\n", hooksName, componentName)
@@ -1285,10 +1285,10 @@ func writeComponentConstruction(source *strings.Builder, current renderComponent
 	if current.constructor.hasStopper {
 		fmt.Fprintf(source, "\t%s.Stopper = %s\n", hooksName, componentName)
 	}
-	definitionName := "definition_" + generatedIdentifier(current.component.module, current.component.packagePath, current.component.name)
+	definitionName := "definition_" + identifier(current.component.module, current.component.packagePath, current.component.name)
 	fmt.Fprintf(source, "\t%s := module.ComponentDefinition{Module: %q, PackagePath: %q, Name: %q}\n", definitionName, current.component.module, current.component.packagePath, current.component.name)
 	if current.constructor.hasTransport {
-		transportName := "transport_" + generatedIdentifier(current.component.module, current.component.packagePath, current.component.name)
+		transportName := "transport_" + identifier(current.component.module, current.component.packagePath, current.component.name)
 		fmt.Fprintf(source, "\tvar %s app.Transport = %s\n", transportName, componentName)
 		fmt.Fprintf(source, "\tassembly.AddTransport(%s, %s, %s)\n", definitionName, transportName, hooksName)
 	} else {
@@ -1296,7 +1296,7 @@ func writeComponentConstruction(source *strings.Builder, current renderComponent
 	}
 }
 
-func componentResultRequired(current renderComponent, graph *Graph, dependencies []Dependency, modules []renderModule, controllers []renderController, components []renderComponent) bool {
+func needsResult(current renderComponent, graph *Graph, dependencies []Dependency, modules []renderModule, controllers []renderController, components []renderComponent) bool {
 	constructor := current.constructor
 	if constructor.hasInitializer || constructor.hasStarter || constructor.hasStopper || constructor.hasTransport ||
 		constructor.isConsumerDefinition || constructor.isPublisher || constructor.isConsumerAdapter {
@@ -1394,17 +1394,17 @@ func authorizerPrerequisites(authorizer renderComponent, components []renderComp
 }
 
 func authorizerDependency(authorizer, candidate renderComponent, components []renderComponent, dependencies []Dependency) bool {
-	needed := map[string]bool{componentVariableName(authorizer.component): true}
+	needed := map[string]bool{componentVar(authorizer.component): true}
 	changed := true
 	for changed {
 		changed = false
 		for _, dependency := range dependencies {
-			if !needed[componentVariableName(dependency.consumer)] {
+			if !needed[componentVar(dependency.consumer)] {
 				continue
 			}
 			for _, component := range components {
 				if component.component.module == dependency.provider.module && component.component.packagePath == dependency.provider.packagePath && component.component.name == dependency.provider.name {
-					key := componentVariableName(component.component)
+					key := componentVar(component.component)
 					if !needed[key] {
 						needed[key] = true
 						changed = true
@@ -1413,10 +1413,10 @@ func authorizerDependency(authorizer, candidate renderComponent, components []re
 			}
 		}
 	}
-	return needed[componentVariableName(candidate.component)]
+	return needed[componentVar(candidate.component)]
 }
 
-func validateControllerDependencies(controllers []renderController, components []renderComponent) error {
+func checkControllers(controllers []renderController, components []renderComponent) error {
 	for _, controller := range controllers {
 		for index, parameter := range controller.declaration.parameterTypes {
 			matches := 0
@@ -1436,8 +1436,8 @@ func validateControllerDependencies(controllers []renderController, components [
 	return nil
 }
 
-func componentVariableName(component Component) string {
-	return "component_" + generatedIdentifier(component.module, component.packagePath, component.name)
+func componentVar(component Component) string {
+	return "component_" + identifier(component.module, component.packagePath, component.name)
 }
 
 func providerExpression(provider Provider, modules []renderModule, fragments []DescriptorFragment, descriptorProviders map[string]Provider, components []renderComponent) (string, bool) {
@@ -1453,10 +1453,10 @@ func providerExpression(provider Provider, modules []renderModule, fragments []D
 			if current.key == provider.module {
 				db, menu := "nil", "nil"
 				if current.seedDB {
-					db = "seedDB_" + generatedIdentifier(current.key)
+					db = "seedDB_" + identifier(current.key)
 				}
 				if current.seedMenu {
-					menu = "seedMenu_" + generatedIdentifier(current.key)
+					menu = "seedMenu_" + identifier(current.key)
 				}
 				return fmt.Sprintf("seed.NewData(%s, %s)", db, menu), true
 			}
@@ -1465,19 +1465,19 @@ func providerExpression(provider Provider, modules []renderModule, fragments []D
 		for _, fragment := range fragments {
 			key := descriptorKey(fragment.module, fragment.entityPackage, fragment.entity)
 			if descriptorProviders[key] == provider {
-				return "descriptor_" + generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity), true
+				return "descriptor_" + identifier(fragment.module, fragment.entityPackage, fragment.entity), true
 			}
 		}
 	case ProviderKindBase:
 		for _, fragment := range fragments {
 			if fragment.baseProvider.module == provider.module && fragment.baseProvider.name == provider.name {
-				return "base_" + generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity), true
+				return "base_" + identifier(fragment.module, fragment.entityPackage, fragment.entity), true
 			}
 		}
 	case ProviderKindComponent, ProviderKindConsumerDefinition:
 		for _, current := range components {
 			if current.component.module == provider.module && current.component.packagePath == provider.packagePath && current.component.name == provider.name {
-				return componentVariableName(current.component), true
+				return componentVar(current.component), true
 			}
 		}
 		// 框架非构造器 Provider（如数据库 Runtime）使用局部变量名
@@ -1521,7 +1521,7 @@ func hasFrameworkProvider(providers []Provider, packagePath, name string) bool {
 	return false
 }
 
-func validateProviderExpressions(dependencies []Dependency, modules []renderModule, fragments []DescriptorFragment, descriptorProviders map[string]Provider, components []renderComponent) error {
+func checkProviders(dependencies []Dependency, modules []renderModule, fragments []DescriptorFragment, descriptorProviders map[string]Provider, components []renderComponent) error {
 	for _, dependency := range dependencies {
 		if _, ok := providerExpression(dependency.provider, modules, fragments, descriptorProviders, components); !ok {
 			return renderError("CG088", "Provider 无法映射到静态装配局部变量", dependency.position)
@@ -1587,7 +1587,7 @@ func writeCallableReference(source *strings.Builder, reference coreroute.Callabl
 	)
 }
 
-func validateHTTPDependencies(
+func checkHTTP(
 	modules []renderModule,
 	fragments []DescriptorFragment,
 	services []renderService,
@@ -1800,13 +1800,13 @@ func writeHTTPInstallerClosure(
 			"\t\tcase %s.%s:\n\t\t\treturn descriptor_%s, true\n",
 			imports.alias(fragment.entityPackage),
 			fragment.entity,
-			generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity),
+			identifier(fragment.module, fragment.entityPackage, fragment.entity),
 		)
 	}
 	source.WriteString("\t\tdefault:\n\t\t\treturn nil, false\n\t\t}\n\t})\n")
 	authenticator := "authService"
 	if !hasFrameworkAuth {
-		authenticator = componentVariableName(httpAuthenticatorComponent(components).component)
+		authenticator = componentVar(httpAuthenticatorComponent(components).component)
 	}
 	source.WriteString("\tgeneratedHTTPInstaller := func(server *ghttp.Server) error {\n")
 	source.WriteString("\t\tif server == nil {\n\t\t\treturn exception.Core(\"HTTP Server 未初始化\")\n\t\t}\n")
@@ -1817,7 +1817,7 @@ func writeHTTPInstallerClosure(
 				continue
 			}
 			component, _ := middlewareComponent(current.key, reference.symbol, modules, components)
-			fmt.Fprintf(source, "\t\tserver.Use(%s.Handle)\n", componentVariableName(component.component))
+			fmt.Fprintf(source, "\t\tserver.Use(%s.Handle)\n", componentVar(component.component))
 		}
 	}
 	for _, controller := range controllers {
@@ -1855,7 +1855,7 @@ func writeHTTPRouteInstall(
 		indent = "\t\t\t"
 	}
 	pattern := route.method + ":" + route.path
-	routeName := generatedIdentifier(controller.module, route.method, route.path)
+	routeName := identifier(controller.module, route.method, route.path)
 	ignoreToken := slices.Contains(route.tags, "ignoreToken")
 	fmt.Fprintf(
 		source,
@@ -1894,17 +1894,17 @@ func writeHTTPRouteMiddlewares(
 		for _, reference := range current.references {
 			if reference.group == "Middlewares" {
 				component, _ := middlewareComponent(current.key, reference.symbol, modules, components)
-				middleware = append(middleware, componentVariableName(component.component)+".Handle")
+				middleware = append(middleware, componentVar(component.component)+".Handle")
 			}
 		}
 	}
 	for _, symbol := range controller.declaration.middleware {
 		component, _ := middlewareComponent(controller.module, symbol, modules, components)
-		middleware = append(middleware, componentVariableName(component.component)+".Handle")
+		middleware = append(middleware, componentVar(component.component)+".Handle")
 	}
 	for _, symbol := range route.middleware {
 		component, _ := middlewareComponent(controller.module, symbol, modules, components)
-		middleware = append(middleware, componentVariableName(component.component)+".Handle")
+		middleware = append(middleware, componentVar(component.component)+".Handle")
 	}
 	if len(middleware) > 0 {
 		fmt.Fprintf(source, "%sserver.BindMiddleware(%q, %s)\n", indent, pattern, strings.Join(middleware, ", "))
@@ -1929,11 +1929,11 @@ func writeHTTPHandlerCall(
 	service, _ := renderServiceForController(controller, services)
 	component, _ := componentForType(controller.declaration.serviceType, components)
 	fragment, _ := descriptorForType(controller.declaration.entityType, fragments)
-	componentName := componentVariableName(component.component)
-	controllerName := "controller_" + generatedIdentifier(controller.module, controller.declaration.packagePath, controller.declaration.name)
+	componentName := componentVar(component.component)
+	controllerName := "controller_" + identifier(controller.module, controller.declaration.packagePath, controller.declaration.name)
 	mode := serviceActionModeName(service, route.handler.Method)
 	adapter := serviceActionAdapterName(service, route.handler.Method)
-	descriptor := "descriptor_" + generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity)
+	descriptor := "descriptor_" + identifier(fragment.module, fragment.entityPackage, fragment.entity)
 	entityType := imports.alias(fragment.entityPackage) + "." + fragment.entity
 	switch route.handler.Method {
 	case "Add":
@@ -1975,7 +1975,7 @@ func writeCustomHTTPHandlerCall(source *strings.Builder, indent string, route Ro
 	target := imports.alias(route.handler.PackagePath) + "." + route.handler.Method
 	if !isPackageHandler(route.handler) {
 		component, _ := handlerComponent(route.handler, components)
-		target = componentVariableName(component.component) + "." + route.handler.Method
+		target = componentVar(component.component) + "." + route.handler.Method
 	}
 	policy := "coreroute.TransactionPolicy{}"
 	if route.transaction.IsNonTransactional() {
@@ -2032,7 +2032,7 @@ func controllerKey(current renderController) string {
 }
 
 func controllerFunctionName(current renderController) string {
-	return "controller" + generatedIdentifier(current.module, current.declaration.packagePath, current.declaration.name)
+	return "controller" + identifier(current.module, current.declaration.packagePath, current.declaration.name)
 }
 
 func routeKindName(kind coreroute.Kind) string {
@@ -2186,23 +2186,23 @@ func sortedRenderKeys[T any](values map[string]T) []string {
 }
 
 func descriptorFunctionName(fragment DescriptorFragment) string {
-	return "descriptor" + generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity)
+	return "descriptor" + identifier(fragment.module, fragment.entityPackage, fragment.entity)
 }
 
 func doValueTypeName(fragment DescriptorFragment) string {
-	return "doValue" + generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity)
+	return "doValue" + identifier(fragment.module, fragment.entityPackage, fragment.entity)
 }
 
 func compiledDescriptorTypeName(fragment DescriptorFragment) string {
-	return "compiledDescriptor" + generatedIdentifier(fragment.module, fragment.entityPackage, fragment.entity)
+	return "compiledDescriptor" + identifier(fragment.module, fragment.entityPackage, fragment.entity)
 }
 
 func serviceActionModeName(service renderService, action string) string {
-	return "mode" + generatedIdentifier(service.module, service.declaration.packagePath, service.declaration.name, action)
+	return "mode" + identifier(service.module, service.declaration.packagePath, service.declaration.name, action)
 }
 
 func serviceActionAdapterName(service renderService, action string) string {
-	return "adapter" + generatedIdentifier(service.module, service.declaration.packagePath, service.declaration.name, action)
+	return "adapter" + identifier(service.module, service.declaration.packagePath, service.declaration.name, action)
 }
 
 func serviceActionTarget(actions []ServiceAction, action string) string {

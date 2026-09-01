@@ -63,7 +63,7 @@ func (dispatcher *Dispatcher) Dispatch(
 	if adapter == nil {
 		return exception.Core("CRUD Adapter 不能为空")
 	}
-	if err := validateDispatchPlan(action, mode, plan); err != nil {
+	if err := checkDispatch(action, mode, plan); err != nil {
 		return err
 	}
 
@@ -103,7 +103,7 @@ func (scope *DispatchScope) Mode() ActionMode {
 	return scope.mode
 }
 
-func validateDispatchPlan(action Action, mode ActionMode, plan *ActionPlan) error {
+func checkDispatch(action Action, mode ActionMode, plan *ActionPlan) error {
 	if !isActionMode(mode) {
 		return exception.Core("CRUD 动作模式无效")
 	}

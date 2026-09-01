@@ -34,7 +34,7 @@ func TestPermissionRoleDomainOperations(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	roles, err := service.RolesByUsers(t.Context(), []uint64{2, 1, 1, 0})
+	roles, err := service.roles(t.Context(), []uint64{2, 1, 1, 0})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,24 +45,24 @@ func TestPermissionRoleDomainOperations(t *testing.T) {
 
 	if err = runtime.Runner().Within(t.Context(), func(ctx context.Context) error {
 		users := []uint64{1}
-		before, changeErr := service.PrepareRoleChange(ctx, users, []uint64{30, 30, 0})
+		before, changeErr := service.prepRoles(ctx, users, []uint64{30, 30, 0})
 		if changeErr != nil {
 			return changeErr
 		}
-		if changeErr = service.LockUsers(ctx, users); changeErr != nil {
+		if changeErr = service.lockUsers(ctx, users); changeErr != nil {
 			return changeErr
 		}
-		after, changeErr := service.RoleSnapshot(ctx, users)
+		after, changeErr := service.roleSnap(ctx, users)
 		if changeErr != nil {
 			return changeErr
 		}
-		if changeErr = service.ValidateRoleSnapshot(before, after); changeErr != nil {
+		if changeErr = service.checkSnap(before, after); changeErr != nil {
 			return changeErr
 		}
-		if replaceErr := service.ReplaceRoles(ctx, 1, []uint64{30, 30, 0}); replaceErr != nil {
+		if replaceErr := service.setRoles(ctx, 1, []uint64{30, 30, 0}); replaceErr != nil {
 			return replaceErr
 		}
-		return service.RevokeUsers(ctx, []uint64{1})
+		return service.revoke(ctx, []uint64{1})
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -70,13 +70,13 @@ func TestPermissionRoleDomainOperations(t *testing.T) {
 	if err != nil || fmt.Sprint(roleIDs) != "[30]" {
 		t.Fatalf("RoleIDs() = %v, %v", roleIDs, err)
 	}
-	if err = service.EnsureNotLastAdmin(t.Context(), []uint64{2}); err == nil {
+	if err = service.keepAdmin(t.Context(), []uint64{2}); err == nil {
 		t.Fatal("EnsureNotLastAdmin(last) error = nil")
 	}
 	if _, err = runtime.DB().Exec(t.Context(), "INSERT INTO base_sys_user (id, username, status) VALUES (4, 'other', 1); INSERT INTO base_sys_user_role (userId, roleId) VALUES (4, 10)"); err != nil {
 		t.Fatal(err)
 	}
-	if err = service.EnsureNotLastAdmin(t.Context(), []uint64{2}); err != nil {
+	if err = service.keepAdmin(t.Context(), []uint64{2}); err != nil {
 		t.Fatal(err)
 	}
 }

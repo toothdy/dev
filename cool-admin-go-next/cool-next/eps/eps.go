@@ -317,7 +317,7 @@ func emptyController(definition coreroute.Controller, prefix string) Controller 
 		Module: definition.Module(),
 		Prefix: prefix,
 		Info: Info{Type: InfoType{
-			Name:        controllerTypeName(prefix),
+			Name:        controllerName(prefix),
 			Description: definition.Description(),
 		}},
 		API:         make([]API, 0),
@@ -366,8 +366,8 @@ func (current *compiler) compileCRUD(target *Controller, option controller.CurdO
 	if !static {
 		return nil
 	}
-	target.PageQueryOp = compilePageQueryOp(projection, descriptor, hidden)
-	target.PageColumns = compilePageColumns(projection.Select, descriptor, hidden)
+	target.PageQueryOp = compilePageQuery(projection, descriptor, hidden)
+	target.PageColumns = pageColumns(projection.Select, descriptor, hidden)
 
 	return nil
 }
@@ -409,20 +409,20 @@ func compileColumn(field coreentity.Field, propertyName, source string) Column {
 	return result
 }
 
-func compilePageQueryOp(projection crud.QueryProjection, root coreentity.RuntimeDescriptor, hidden map[string]bool) PageQueryOp {
+func compilePageQuery(projection crud.QueryProjection, root coreentity.RuntimeDescriptor, hidden map[string]bool) PageQueryOp {
 	result := emptyPageQueryOp()
 	for _, column := range projection.KeyWordLikeFields {
-		if visibleQueryColumn(column, root, hidden) {
+		if visibleColumn(column, root, hidden) {
 			result.KeyWordLikeFields = append(result.KeyWordLikeFields, column.Source)
 		}
 	}
 	for _, match := range projection.FieldEq {
-		if visibleQueryColumn(match.Column, root, hidden) {
+		if visibleColumn(match.Column, root, hidden) {
 			result.FieldEq = append(result.FieldEq, QueryField{Column: match.Column.Source, RequestParam: match.RequestParam})
 		}
 	}
 	for _, match := range projection.FieldLike {
-		if visibleQueryColumn(match.Column, root, hidden) {
+		if visibleColumn(match.Column, root, hidden) {
 			result.FieldLike = append(result.FieldLike, QueryField{Column: match.Column.Source, RequestParam: match.RequestParam})
 		}
 	}
@@ -430,11 +430,11 @@ func compilePageQueryOp(projection crud.QueryProjection, root coreentity.Runtime
 	return result
 }
 
-func compilePageColumns(selects []crud.QuerySelect, root coreentity.RuntimeDescriptor, hidden map[string]bool) []Column {
+func pageColumns(selects []crud.QuerySelect, root coreentity.RuntimeDescriptor, hidden map[string]bool) []Column {
 	columns := make([]Column, 0, len(selects))
 	trailing := make([]Column, 0, 2)
 	for _, selected := range selects {
-		if !visibleQueryColumn(selected.Column, root, hidden) {
+		if !visibleColumn(selected.Column, root, hidden) {
 			continue
 		}
 		column := compileColumn(selected.Column.Field, selected.Name, selected.Column.Source)
@@ -448,7 +448,7 @@ func compilePageColumns(selects []crud.QuerySelect, root coreentity.RuntimeDescr
 	return append(columns, trailing...)
 }
 
-func visibleQueryColumn(column crud.QueryColumn, root coreentity.RuntimeDescriptor, hidden map[string]bool) bool {
+func visibleColumn(column crud.QueryColumn, root coreentity.RuntimeDescriptor, hidden map[string]bool) bool {
 	if column.Field == nil || !column.Field.Persistent() {
 		return false
 	}
@@ -534,7 +534,7 @@ func parseDefault(logicalType coreentity.LogicalType, value string) any {
 	return value
 }
 
-func controllerTypeName(prefix string) string {
+func controllerName(prefix string) string {
 	parts := strings.Split(strings.Trim(prefix, "/"), "/")
 	if len(parts) == 0 {
 		return ""

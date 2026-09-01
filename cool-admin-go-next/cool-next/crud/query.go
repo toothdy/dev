@@ -48,14 +48,14 @@ type QueryBuilder struct {
 }
 
 // 标记静态查询响应形状
-func WithStaticQueryShape(op QueryOp) QueryOp {
+func StaticShape(op QueryOp) QueryOp {
 	op.shape = queryShapeStatic
 
 	return op
 }
 
 // 标记动态查询响应形状
-func WithDynamicQueryShape(op QueryOp) QueryOp {
+func DynamicShape(op QueryOp) QueryOp {
 	op.shape = queryShapeDynamic
 
 	return op
@@ -101,22 +101,22 @@ func (query *QueryBuilder) Where(conditions ...Condition) *QueryBuilder {
 
 // 追加大于条件
 func (query *QueryBuilder) WhereGT(column ColumnRef, value any) *QueryBuilder {
-	return query.Where(newComparisonCondition(operatorGT, column, value))
+	return query.Where(compare(operatorGT, column, value))
 }
 
 // 追加大于等于条件
 func (query *QueryBuilder) WhereGTE(column ColumnRef, value any) *QueryBuilder {
-	return query.Where(newComparisonCondition(operatorGTE, column, value))
+	return query.Where(compare(operatorGTE, column, value))
 }
 
 // 追加小于条件
 func (query *QueryBuilder) WhereLT(column ColumnRef, value any) *QueryBuilder {
-	return query.Where(newComparisonCondition(operatorLT, column, value))
+	return query.Where(compare(operatorLT, column, value))
 }
 
 // 追加小于等于条件
 func (query *QueryBuilder) WhereLTE(column ColumnRef, value any) *QueryBuilder {
-	return query.Where(newComparisonCondition(operatorLTE, column, value))
+	return query.Where(compare(operatorLTE, column, value))
 }
 
 // 追加查询字段
@@ -136,7 +136,7 @@ func (query *QueryBuilder) AddSelect(fields ...SelectField) *QueryBuilder {
 func (query *QueryBuilder) AddJoin(joins ...JoinOp) *QueryBuilder {
 	query.require()
 	for _, join := range joins {
-		validateJoin(join)
+		checkJoin(join)
 	}
 	query.joins = append(query.joins, joins...)
 
@@ -147,7 +147,7 @@ func (query *QueryBuilder) AddJoin(joins ...JoinOp) *QueryBuilder {
 func (query *QueryBuilder) AddGroupBy(fields ...ColumnRef) *QueryBuilder {
 	query.require()
 	for _, field := range fields {
-		validateColumnRef(field)
+		checkColumn(field)
 	}
 	query.groupBy = append(query.groupBy, fields...)
 
@@ -167,7 +167,7 @@ func (query *QueryBuilder) AddHaving(conditions ...Condition) *QueryBuilder {
 func (query *QueryBuilder) AddOrderBy(orders ...Order) *QueryBuilder {
 	query.require()
 	for _, order := range orders {
-		validateOrder(order)
+		checkOrder(order)
 	}
 	query.orderBy = append(query.orderBy, orders...)
 
@@ -176,7 +176,7 @@ func (query *QueryBuilder) AddOrderBy(orders ...Order) *QueryBuilder {
 
 // 构造请求字段匹配
 func newFieldMatch(column ColumnRef, requestParam string) FieldMatch {
-	validateColumnRef(column)
+	checkColumn(column)
 	if !queryNamePattern.MatchString(requestParam) {
 		panicCore("请求参数名 %q 无效", requestParam)
 	}

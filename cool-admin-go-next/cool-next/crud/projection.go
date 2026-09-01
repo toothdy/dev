@@ -40,7 +40,7 @@ func ProjectColumns(
 	rootEntity any,
 	columns []ColumnRef,
 ) ([]QueryColumn, error) {
-	compiler, err := newQueryPlanCompiler(resolver, rootEntity)
+	compiler, err := newPlanCompiler(resolver, rootEntity)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func ProjectQuery(
 	rootEntity any,
 	op QueryOp,
 ) (QueryProjection, error) {
-	compiler, err := newQueryPlanCompiler(resolver, rootEntity)
+	compiler, err := newPlanCompiler(resolver, rootEntity)
 	if err != nil {
 		return QueryProjection{}, err
 	}

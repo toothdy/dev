@@ -35,17 +35,17 @@ func (a *analysis) analyzeQueryDSL(root string) {
 			}
 			call, ok := node.(*ast.CallExpr)
 			if ok {
-				a.validateQueryCall(pkg, call)
-				a.validateNativeSQLCall(pkg, call)
+				a.checkQueryCall(pkg, call)
+				a.checkNativeCall(pkg, call)
 			}
 			selector, ok := node.(*ast.SelectorExpr)
 			if ok {
-				a.validateDatabaseBypassSelector(pkg, selector)
+				a.checkDBBypass(pkg, selector)
 			}
 			identifier, ok := node.(*ast.Ident)
 			if ok {
-				a.validateQueryFunctionReference(pkg, stack, identifier)
-				a.validateNativeSQLReference(pkg, stack, identifier)
+				a.checkQueryRef(pkg, stack, identifier)
+				a.checkNativeRef(pkg, stack, identifier)
 			}
 			stack = append(stack, node)
 			return true
@@ -53,9 +53,9 @@ func (a *analysis) analyzeQueryDSL(root string) {
 	}
 }
 
-func (a *analysis) validateNativeSQLCall(pkg *loadedPackage, call *ast.CallExpr) {
-	function := queryCalledFunction(pkg.packageInfo.TypesInfo, call.Fun)
-	if !isPackageFunction(function, servicePackagePath, "NativeSQL") || len(call.Args) == 0 {
+func (a *analysis) checkNativeCall(pkg *loadedPackage, call *ast.CallExpr) {
+	function := calledFunction(pkg.packageInfo.TypesInfo, call.Fun)
+	if !packageFunction(function, servicePackagePath, "NativeSQL") || len(call.Args) == 0 {
 		return
 	}
 	expression := call.Args[0]
@@ -65,15 +65,15 @@ func (a *analysis) validateNativeSQLCall(pkg *loadedPackage, call *ast.CallExpr)
 	}
 }
 
-func (a *analysis) validateNativeSQLReference(pkg *loadedPackage, stack []ast.Node, identifier *ast.Ident) {
+func (a *analysis) checkNativeRef(pkg *loadedPackage, stack []ast.Node, identifier *ast.Ident) {
 	function, _ := pkg.packageInfo.TypesInfo.Uses[identifier].(*types.Func)
-	if !isPackageFunction(function, servicePackagePath, "NativeSQL") || isDirectQueryCall(stack, identifier) {
+	if !packageFunction(function, servicePackagePath, "NativeSQL") || directQueryCall(stack, identifier) {
 		return
 	}
 	a.add("CG098", "NativeSQL 只能使用常量语句直接调用", a.position(pkg, identifier.Pos()))
 }
 
-func (a *analysis) validateDatabaseBypassSelector(pkg *loadedPackage, selector *ast.SelectorExpr) {
+func (a *analysis) checkDBBypass(pkg *loadedPackage, selector *ast.SelectorExpr) {
 	receiver := types.TypeString(pkg.packageInfo.TypesInfo.TypeOf(selector.X), func(current *types.Package) string {
 		return current.Path()
 	})
@@ -85,16 +85,16 @@ func (a *analysis) validateDatabaseBypassSelector(pkg *loadedPackage, selector *
 	}
 }
 
-func (a *analysis) validateQueryFunctionReference(pkg *loadedPackage, stack []ast.Node, identifier *ast.Ident) {
+func (a *analysis) checkQueryRef(pkg *loadedPackage, stack []ast.Node, identifier *ast.Ident) {
 	function, _ := pkg.packageInfo.TypesInfo.Uses[identifier].(*types.Func)
-	if !isQueryFunction(function, "RawWhere") || isDirectQueryCall(stack, identifier) {
+	if !isQueryFunction(function, "RawWhere") || directQueryCall(stack, identifier) {
 		return
 	}
 	a.add("CG065", "RawWhere 只能使用常量表达式直接调用", a.position(pkg, identifier.Pos()))
 }
 
-func (a *analysis) validateQueryCall(pkg *loadedPackage, call *ast.CallExpr) {
-	function := queryCalledFunction(pkg.packageInfo.TypesInfo, call.Fun)
+func (a *analysis) checkQueryCall(pkg *loadedPackage, call *ast.CallExpr) {
+	function := calledFunction(pkg.packageInfo.TypesInfo, call.Fun)
 	argumentIndex, kind, ok := queryArgument(function)
 	if !ok || argumentIndex >= len(call.Args) {
 		return
@@ -121,14 +121,14 @@ func (a *analysis) validateQueryCall(pkg *loadedPackage, call *ast.CallExpr) {
 	}
 }
 
-func queryCalledFunction(info *types.Info, expression ast.Expr) *types.Func {
+func calledFunction(info *types.Info, expression ast.Expr) *types.Func {
 	switch current := expression.(type) {
 	case *ast.ParenExpr:
-		return queryCalledFunction(info, current.X)
+		return calledFunction(info, current.X)
 	case *ast.IndexExpr:
-		return queryCalledFunction(info, current.X)
+		return calledFunction(info, current.X)
 	case *ast.IndexListExpr:
-		return queryCalledFunction(info, current.X)
+		return calledFunction(info, current.X)
 	case *ast.Ident:
 		function, _ := info.Uses[current].(*types.Func)
 		return function
@@ -156,7 +156,7 @@ func queryArgument(function *types.Func) (int, queryArgumentKind, bool) {
 	case "EqFrom", "LikeFrom", "As", "LeftJoin", "InnerJoin":
 		return 1, queryNameArgument, true
 	case "Of":
-		if isColumnRefMethod(function) {
+		if columnRefMethod(function) {
 			return 0, queryNameArgument, true
 		}
 	}
@@ -164,14 +164,14 @@ func queryArgument(function *types.Func) (int, queryArgumentKind, bool) {
 }
 
 func isQueryFunction(function *types.Func, name string) bool {
-	return isPackageFunction(function, queryPackagePath, name)
+	return packageFunction(function, queryPackagePath, name)
 }
 
-func isPackageFunction(function *types.Func, packagePath, name string) bool {
+func packageFunction(function *types.Func, packagePath, name string) bool {
 	return function != nil && function.Pkg() != nil && function.Pkg().Path() == packagePath && function.Name() == name
 }
 
-func isDirectQueryCall(stack []ast.Node, expression ast.Expr) bool {
+func directQueryCall(stack []ast.Node, expression ast.Expr) bool {
 	current := expression
 	for index := len(stack) - 1; index >= 0; index-- {
 		switch parent := stack[index].(type) {
@@ -204,7 +204,7 @@ func isDirectQueryCall(stack []ast.Node, expression ast.Expr) bool {
 	return false
 }
 
-func isColumnRefMethod(function *types.Func) bool {
+func columnRefMethod(function *types.Func) bool {
 	signature, _ := function.Type().(*types.Signature)
 	if signature == nil || signature.Recv() == nil {
 		return false

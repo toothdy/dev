@@ -23,7 +23,7 @@ func Snapshot(value Definition) (DefinitionSnapshot, error) {
 	result := DefinitionSnapshot{
 		Area:    current.area,
 		Path:    current.path,
-		Options: cloneRouterOptions(current.options),
+		Options: cloneOptions(current.options),
 		Routes:  cloneRoutes(current.routes),
 	}
 	if current.curd != nil {

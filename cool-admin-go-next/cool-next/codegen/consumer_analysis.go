@@ -79,7 +79,7 @@ func (a *analysis) consumerMetadata(
 	}, true
 }
 
-func (a *analysis) validateConsumerNames(model *Model) {
+func (a *analysis) checkConsumerNames(model *Model) {
 	seen := make(map[string]Position)
 	for _, current := range model.modules {
 		for _, constructor := range current.constructors {

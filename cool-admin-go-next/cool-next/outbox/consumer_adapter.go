@@ -137,7 +137,7 @@ func (adapter *BrokerConsumerAdapter) Prepare(
 	if adapter.isPrepared {
 		return gerror.New("outbox consumer adapter: Adapter 已 Prepare")
 	}
-	compiled, err := compileBrokerSubscriptions(subscriptions)
+	compiled, err := compileSubscriptions(subscriptions)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (adapter *BrokerConsumerAdapter) Prepare(
 	if err != nil {
 		return gerror.Wrap(err, "outbox consumer adapter: 探测 Broker 能力")
 	}
-	if err = validateConsumerCapabilities(capabilities, adapter.config.MaxEnvelopeBytes); err != nil {
+	if err = checkCaps(capabilities, adapter.config.MaxEnvelopeBytes); err != nil {
 		return err
 	}
 	visibilityTimeout, err := adapter.backend.VisibilityTimeout(ctx)
@@ -265,10 +265,10 @@ func (adapter *BrokerConsumerAdapter) InspectDeadLetter(
 	if adapter == nil || adapter.backend == nil {
 		return ConsumerDeadLetter{}, gerror.New("outbox consumer adapter: Adapter 不能为空")
 	}
-	if err := validateConsumerName(consumerName); err != nil {
+	if err := checkConsumerName(consumerName); err != nil {
 		return ConsumerDeadLetter{}, err
 	}
-	if err := validateMessageID(messageID); err != nil {
+	if err := checkMessageID(messageID); err != nil {
 		return ConsumerDeadLetter{}, err
 	}
 	if ctx == nil {
@@ -289,10 +289,10 @@ func (adapter *BrokerConsumerAdapter) ReplayDeadLetter(
 	if adapter == nil || adapter.backend == nil {
 		return gerror.New("outbox consumer adapter: Adapter 不能为空")
 	}
-	if err := validateConsumerName(consumerName); err != nil {
+	if err := checkConsumerName(consumerName); err != nil {
 		return err
 	}
-	if err := validateMessageID(messageID); err != nil {
+	if err := checkMessageID(messageID); err != nil {
 		return err
 	}
 	if strings.TrimSpace(operator) == "" || strings.TrimSpace(reason) == "" {
@@ -344,14 +344,14 @@ func (adapter *BrokerConsumerAdapter) handleDelivery(
 	if delivery == nil {
 		return
 	}
-	registered, err := adapter.registeredSubscription(subscription)
+	registered, err := adapter.findSubscription(subscription)
 	if err != nil {
-		adapter.persistDeadLetter(ctx, subscription, delivery, 0, err)
+		adapter.saveDeadLetter(ctx, subscription, delivery, 0, err)
 		return
 	}
 	message, err := adapter.restoreDelivery(delivery)
 	if err != nil {
-		adapter.persistDeadLetter(ctx, registered, delivery, 0, err)
+		adapter.saveDeadLetter(ctx, registered, delivery, 0, err)
 		return
 	}
 	attempt, err := adapter.backend.AdvanceAttempt(ctx, registered.Name(), message.MessageID())
@@ -374,9 +374,9 @@ func (adapter *BrokerConsumerAdapter) handleDelivery(
 			_ = adapter.backend.Ack(ctx, registered, delivery)
 		}
 	case DeliveryDeadLetter:
-		adapter.persistDeadLetter(ctx, registered, delivery, attempt, decision.Error())
+		adapter.saveDeadLetter(ctx, registered, delivery, attempt, decision.Error())
 	default:
-		adapter.persistDeadLetter(
+		adapter.saveDeadLetter(
 			ctx,
 			registered,
 			delivery,
@@ -386,7 +386,7 @@ func (adapter *BrokerConsumerAdapter) handleDelivery(
 	}
 }
 
-func (adapter *BrokerConsumerAdapter) persistDeadLetter(
+func (adapter *BrokerConsumerAdapter) saveDeadLetter(
 	ctx context.Context,
 	subscription Subscription,
 	delivery BrokerDelivery,
@@ -425,7 +425,7 @@ func (adapter *BrokerConsumerAdapter) renewVisibility(
 	}
 }
 
-func (adapter *BrokerConsumerAdapter) registeredSubscription(subscription Subscription) (Subscription, error) {
+func (adapter *BrokerConsumerAdapter) findSubscription(subscription Subscription) (Subscription, error) {
 	registered, exists := adapter.subscriptions[subscription.Name()]
 	if !exists {
 		return Subscription{}, gerror.Newf(
@@ -484,22 +484,22 @@ func (adapter *BrokerConsumerAdapter) restoreDelivery(delivery BrokerDelivery) (
 	return message, nil
 }
 
-func compileBrokerSubscriptions(subscriptions []Subscription) (map[string]Subscription, error) {
+func compileSubscriptions(subscriptions []Subscription) (map[string]Subscription, error) {
 	if len(subscriptions) == 0 {
 		return nil, gerror.New("outbox consumer adapter: Subscription 不能为空")
 	}
 	compiled := make(map[string]Subscription, len(subscriptions))
 	for _, subscription := range subscriptions {
-		if err := validateConsumerName(subscription.Name()); err != nil {
+		if err := checkConsumerName(subscription.Name()); err != nil {
 			return nil, err
 		}
-		if err := validateMessageText("Topic", subscription.Topic()); err != nil {
+		if err := checkText("Topic", subscription.Topic()); err != nil {
 			return nil, err
 		}
-		if err := validateMessageText("Message Type", subscription.MessageType()); err != nil {
+		if err := checkText("Message Type", subscription.MessageType()); err != nil {
 			return nil, err
 		}
-		if _, err := normalizeVersions(subscription.SupportedVersions()); err != nil {
+		if _, err := versions(subscription.SupportedVersions()); err != nil {
 			return nil, err
 		}
 		if _, exists := compiled[subscription.Name()]; exists {
@@ -514,7 +514,7 @@ func compileBrokerSubscriptions(subscriptions []Subscription) (map[string]Subscr
 	return compiled, nil
 }
 
-func validateConsumerCapabilities(capabilities ConsumerCapabilities, requiredEnvelopeBytes int) error {
+func checkCaps(capabilities ConsumerCapabilities, requiredEnvelopeBytes int) error {
 	if !capabilities.DurableAck || !capabilities.DurableRetryAttempts || !capabilities.DelayedRetry ||
 		!capabilities.DeadLetter || !capabilities.PreservesMessageID {
 		return gerror.New("outbox consumer adapter: Broker 缺少可靠消费能力")

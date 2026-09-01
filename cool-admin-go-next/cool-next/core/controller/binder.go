@@ -251,7 +251,7 @@ func BindCRUDQuery(binder *Binder, request *ghttp.Request, action crud.Action) (
 	if err != nil {
 		return service.Query{}, err
 	}
-	if err = normalizeOrder(data); err != nil {
+	if err = checkOrder(data); err != nil {
 		return service.Query{}, err
 	}
 	page, size, err := binder.queryWindow(data, action)
@@ -340,7 +340,7 @@ func (binder *Binder) bindFiles(request *ghttp.Request, target any, targetType r
 			return exception.Validate(fmt.Sprintf("DTO 存在未知文件字段 %s", name))
 		}
 	}
-	if err = bindDTOMapWithFields(target, targetType, BindFile, data, fields); err != nil {
+	if err = bindFields(target, targetType, BindFile, data, fields); err != nil {
 		return err
 	}
 	value := reflect.ValueOf(target).Elem()
@@ -362,10 +362,10 @@ func bindDTOMap(target any, targetType reflect.Type, source BindSource, data map
 		return err
 	}
 
-	return bindDTOMapWithFields(target, targetType, source, data, fields)
+	return bindFields(target, targetType, source, data, fields)
 }
 
-func bindDTOMapWithFields(
+func bindFields(
 	target any,
 	targetType reflect.Type,
 	source BindSource,
@@ -746,13 +746,13 @@ func decodeQueryObject(body []byte) (map[string]any, error) {
 		return nil, err
 	}
 	for name, value := range data {
-		data[name] = normalizeJSONValue(value)
+		data[name] = jsonValue(value)
 	}
 
 	return data, nil
 }
 
-func normalizeJSONValue(value any) any {
+func jsonValue(value any) any {
 	switch current := value.(type) {
 	case json.Number:
 		if strings.ContainsAny(current.String(), ".eE") {
@@ -771,13 +771,13 @@ func normalizeJSONValue(value any) any {
 	case []any:
 		result := make([]any, len(current))
 		for index, item := range current {
-			result[index] = normalizeJSONValue(item)
+			result[index] = jsonValue(item)
 		}
 		return result
 	case map[string]any:
 		result := make(map[string]any, len(current))
 		for name, item := range current {
-			result[name] = normalizeJSONValue(item)
+			result[name] = jsonValue(item)
 		}
 		return result
 	default:
@@ -785,7 +785,7 @@ func normalizeJSONValue(value any) any {
 	}
 }
 
-func normalizeOrder(data map[string]any) error {
+func checkOrder(data map[string]any) error {
 	orders, hasOrder, err := stringList(data["order"])
 	if err != nil {
 		return exception.Validate("order 必须是字符串、逗号字符串或字符串数组")

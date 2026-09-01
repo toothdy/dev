@@ -168,7 +168,7 @@ func BuildGraphWithDescriptors(model *Model, descriptors *DescriptorSet) (*Graph
 	if descriptors == nil {
 		return nil, graphError("CG038", "Descriptor 集合不能为空", Position{})
 	}
-	if err := validateDescriptorProviders(model, descriptors); err != nil {
+	if err := checkDescriptors(model, descriptors); err != nil {
 		return nil, err
 	}
 	return buildGraph(model, descriptors)
@@ -197,7 +197,7 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 		}
 	}
 	// 框架数据库 Runtime 作为共享 Provider，由生成的装配局部变量 runtime 提供
-	if runtimeProviderType := findRuntimeProviderType(model); runtimeProviderType != nil {
+	if runtimeType := runtimeProviderType(model); runtimeType != nil {
 		providers = append(providers, graphProvider{
 			componentIndex: -1,
 			provider: Provider{
@@ -205,12 +205,12 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 				name:        "Runtime",
 				module:      frameworkModuleKey,
 				packagePath: databasePackagePath,
-				typ:         types.TypeString(runtimeProviderType, qualifier),
+				typ:         types.TypeString(runtimeType, qualifier),
 			},
-			typ: runtimeProviderType,
+			typ: runtimeType,
 		})
 	}
-	providers = appendAuthProviders(model, providers)
+	providers = addAuthProviders(model, providers)
 	for _, current := range model.modules {
 		seen := make([]types.Type, 0, len(current.constructors))
 		for _, constructor := range current.constructors {
@@ -267,7 +267,7 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 				packagePath: outboxPackagePath,
 				typ:         outboxPackagePath + ".Enqueuer",
 			},
-			typ: producerEnqueuerType(nodes),
+			typ: enqueuerType(nodes),
 		})
 	}
 	if len(graph.consumers) > 0 && graph.consumerAdapter == nil {
@@ -288,17 +288,17 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 			providers = append(providers, graphProvider{
 				componentIndex: -1,
 				provider:       Provider{kind: ProviderKindBase, name: baseCandidate.name, module: baseCandidate.module, packagePath: fragment.entityPackage, typ: baseCandidate.typ},
-				typ:            findBaseProviderType(model, fragment.entityType),
+				typ:            baseProviderType(model, fragment.entityType),
 			})
 		}
 	}
 
-	dependencies, err := resolveDependencies(nodes, providers, modules)
+	dependencies, err := resolveDeps(nodes, providers, modules)
 	if err != nil {
 		return nil, err
 	}
-	graph.dependencies = publicDependencies(dependencies, nodes, providers)
-	graph.moduleDependencies = projectModuleDependencies(dependencies, nodes, providers)
+	graph.dependencies = exportDeps(dependencies, nodes, providers)
+	graph.moduleDependencies = moduleDeps(dependencies, nodes, providers)
 	if cycle, position := findModuleCycle(graph.modules, graph.moduleDependencies); len(cycle) > 0 {
 		return nil, graphError("CG036", "模块依赖循环: "+strings.Join(cycle, " -> "), position)
 	}
@@ -334,7 +334,7 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 }
 
 // 由生成装配负责创建的认证端口
-func appendAuthProviders(model *Model, providers []graphProvider) []graphProvider {
+func addAuthProviders(model *Model, providers []graphProvider) []graphProvider {
 	seen := make(map[string]bool)
 	for _, current := range providers {
 		seen[current.provider.name] = true
@@ -380,11 +380,11 @@ func authProviderType(value types.Type) (string, string) {
 	return "", ""
 }
 
-func findBaseProviderType(model *Model, entityType types.Type) types.Type {
+func baseProviderType(model *Model, entityType types.Type) types.Type {
 	for _, current := range model.modules {
 		for _, constructor := range current.constructors {
 			for _, parameter := range constructor.types {
-				if isBaseProviderType(parameter, entityType) {
+				if isBaseProvider(parameter, entityType) {
 					return parameter
 				}
 			}
@@ -410,7 +410,7 @@ func findSeedDataType(model *Model) types.Type {
 }
 
 // 任意构造器参数中的 *coredb.Runtime 类型，返回其 types.Type 对象
-func findRuntimeProviderType(model *Model) types.Type {
+func runtimeProviderType(model *Model) types.Type {
 	runtimePackagePath := databasePackagePath
 	for _, current := range model.modules {
 		for _, constructor := range current.constructors {
@@ -432,7 +432,7 @@ func findRuntimeProviderType(model *Model) types.Type {
 	return nil
 }
 
-func isBaseProviderType(value, entityType types.Type) bool {
+func isBaseProvider(value, entityType types.Type) bool {
 	pointer, matches := types.Unalias(value).(*types.Pointer)
 	if !matches {
 		return false
@@ -447,16 +447,16 @@ func isBaseProviderType(value, entityType types.Type) bool {
 		types.Identical(arguments.At(1), types.Typ[types.Uint64])
 }
 
-func validateDescriptorProviders(model *Model, descriptors *DescriptorSet) error {
+func checkDescriptors(model *Model, descriptors *DescriptorSet) error {
 	expected := make(map[string]Position)
 	for _, current := range model.modules {
 		for _, entity := range current.entities {
-			expected[graphDescriptorKey(current.identity.Key(), entity.packagePath, entity.name)] = entity.position
+			expected[graphDescKey(current.identity.Key(), entity.packagePath, entity.name)] = entity.position
 		}
 	}
 	seen := make(map[string]bool, len(descriptors.fragments))
 	for _, fragment := range descriptors.fragments {
-		key := graphDescriptorKey(fragment.module, fragment.entityPackage, fragment.entity)
+		key := graphDescKey(fragment.module, fragment.entityPackage, fragment.entity)
 		position, exists := expected[key]
 		if !exists {
 			return graphError("CG039", "Descriptor Provider 不属于已发现实体", fragment.provider.position)
@@ -479,7 +479,7 @@ func validateDescriptorProviders(model *Model, descriptors *DescriptorSet) error
 	return nil
 }
 
-func graphDescriptorKey(module, packagePath, entity string) string {
+func graphDescKey(module, packagePath, entity string) string {
 	return module + ":" + packagePath + ":" + entity
 }
 
@@ -563,7 +563,7 @@ func (g *Graph) ConsumerAdapter() (Component, bool) {
 	return *g.consumerAdapter, true
 }
 
-func producerEnqueuerType(nodes []graphComponent) types.Type {
+func enqueuerType(nodes []graphComponent) types.Type {
 	for _, node := range nodes {
 		if !node.constructor.isProducer {
 			continue

@@ -40,7 +40,7 @@ func New(
 	if err != nil {
 		return nil, exception.WrapCore(err, "构建回收站 Descriptor 注册表失败")
 	}
-	recordDescriptor, err := compileRecordDescriptor()
+	recordDescriptor, err := recordDescriptor()
 	if err != nil {
 		return nil, exception.WrapCore(err, "构建回收表 Descriptor 失败")
 	}
@@ -95,7 +95,7 @@ func (store *Store) Delete(
 	if !exists || transaction == nil {
 		return exception.Core("删除归档必须在框架事务中执行")
 	}
-	ids, err = validateIDs(descriptor, ids)
+	ids, err = checkIDs(descriptor, ids)
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func (store *Store) archiveDelete(
 	model := transaction.Model(descriptor.Table()).
 		Ctx(ctx).
 		Unscoped().
-		Fields(descriptorColumns(descriptor)).
+		Fields(columns(descriptor)).
 		WhereIn(descriptor.Primary().Column(), ids).
 		OrderAsc(descriptor.Primary().Column())
 	if store.runtime.Dialect().Kind() != driver.SQLite {
@@ -406,7 +406,7 @@ func requireJSONEnd(decoder *json.Decoder) error {
 	return nil
 }
 
-func validateIDs(descriptor entity.RuntimeDescriptor, ids []any) ([]any, error) {
+func checkIDs(descriptor entity.RuntimeDescriptor, ids []any) ([]any, error) {
 	if isNilDescriptor(descriptor) || descriptor.IDType() == nil || !descriptor.IDType().Comparable() {
 		return nil, exception.Core("删除目标 Descriptor 无效")
 	}
@@ -429,7 +429,7 @@ func validateIDs(descriptor entity.RuntimeDescriptor, ids []any) ([]any, error) 
 	return unique, nil
 }
 
-func descriptorColumns(descriptor entity.RuntimeDescriptor) []string {
+func columns(descriptor entity.RuntimeDescriptor) []string {
 	columns := make([]string, 0, len(descriptor.PersistentFields()))
 	for _, field := range descriptor.PersistentFields() {
 		columns = append(columns, field.Column())

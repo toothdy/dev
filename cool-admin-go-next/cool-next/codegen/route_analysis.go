@@ -16,7 +16,7 @@ import (
 
 const contextPackagePath = "context"
 
-func controllerParameterTypes(signature *types.Signature) []types.Type {
+func parameterTypes(signature *types.Signature) []types.Type {
 	result := make([]types.Type, signature.Params().Len())
 	for index := range signature.Params().Len() {
 		result[index] = signature.Params().At(index).Type()
@@ -153,7 +153,7 @@ func (a *analysis) analyzeDefaultRoutes(
 	}
 	basePath := declaration.prefix
 	if declaration.ignoreGlobalPrefix {
-		basePath = removeControllerGlobalPrefix(basePath, declaration.area)
+		basePath = removeGlobalPrefix(basePath, declaration.area)
 	}
 	result := make([]RouteDeclaration, 0, len(apis))
 	for _, api := range apis {
@@ -209,7 +209,7 @@ func (a *analysis) analyzeCustomRoute(
 	}
 	pathExpression, pathExists := controllerLiteralField(literal, "Path")
 	routePath, pathValid := constantControllerString(pkg, pathExpression)
-	if !pathExists || !pathValid || !validCustomRoutePath(routePath) {
+	if !pathExists || !pathValid || !validRoutePath(routePath) {
 		a.add("CG101", "Route Path 必须是规范化绝对路径常量", a.position(pkg, literal.Pos()))
 		return RouteDeclaration{}, false
 	}
@@ -246,12 +246,12 @@ func (a *analysis) analyzeCustomRoute(
 		a.add("CG101", "Route Tags 必须是无重复静态 URLTag 列表", a.position(pkg, literal.Pos()))
 		return RouteDeclaration{}, false
 	}
-	summary, valid := controllerLiteralOptionalString(pkg, literal, "Summary")
+	summary, valid := optionalString(pkg, literal, "Summary")
 	if !valid || !validStaticText(summary) {
 		a.add("CG101", "Route Summary 必须是合法常量字符串", a.position(pkg, literal.Pos()))
 		return RouteDeclaration{}, false
 	}
-	description, valid := controllerLiteralOptionalString(pkg, literal, "Description")
+	description, valid := optionalString(pkg, literal, "Description")
 	if !valid || !validStaticText(description) {
 		a.add("CG101", "Route Description 必须是合法常量字符串", a.position(pkg, literal.Pos()))
 		return RouteDeclaration{}, false
@@ -281,7 +281,7 @@ func (a *analysis) analyzeCustomRoute(
 	}
 	basePath := controller.path
 	if ignoreGlobalPrefix {
-		basePath = removeControllerGlobalPrefix(basePath, controller.area)
+		basePath = removeGlobalPrefix(basePath, controller.area)
 	}
 
 	return RouteDeclaration{
@@ -303,11 +303,11 @@ func (a *analysis) analyzeCustomRoute(
 func controllerAPIs(pkg *loadedPackage, function *ast.FuncDecl, expression ast.Expr) ([]string, bool) {
 	expression = localControllerValue(pkg, function, expression)
 	if call, matches := unparenControllerExpr(expression).(*ast.CallExpr); matches {
-		called := queryCalledFunction(pkg.packageInfo.TypesInfo, call.Fun)
-		if isPackageFunction(called, controllerPackagePath, "AllAPI") && len(call.Args) == 0 {
+		called := calledFunction(pkg.packageInfo.TypesInfo, call.Fun)
+		if packageFunction(called, controllerPackagePath, "AllAPI") && len(call.Args) == 0 {
 			return []string{"add", "delete", "update", "info", "list", "page"}, true
 		}
-		if isPackageFunction(called, controllerPackagePath, "API") {
+		if packageFunction(called, controllerPackagePath, "API") {
 			result := make([]string, len(call.Args))
 			for index, argument := range call.Args {
 				value, valid := constantControllerString(pkg, argument)
@@ -433,7 +433,7 @@ func controllerHandler(
 		return coreroute.CallableRef{}, nil, false
 	}
 	call, matches := unparenControllerExpr(localControllerValue(pkg, function, expression)).(*ast.CallExpr)
-	if !matches || len(call.Args) != 1 || !isPackageFunction(queryCalledFunction(pkg.packageInfo.TypesInfo, call.Fun), controllerPackagePath, "Handle") {
+	if !matches || len(call.Args) != 1 || !packageFunction(calledFunction(pkg.packageInfo.TypesInfo, call.Fun), controllerPackagePath, "Handle") {
 		return coreroute.CallableRef{}, nil, false
 	}
 	target := unparenControllerExpr(call.Args[0])
@@ -441,11 +441,11 @@ func controllerHandler(
 	if !matches {
 		return coreroute.CallableRef{}, nil, false
 	}
-	dtoType, returnsValue, valid := validRouteHandlerSignature(signature)
+	dtoType, returnsValue, valid := validHandler(signature)
 	if !valid {
 		return coreroute.CallableRef{}, nil, false
 	}
-	reference, valid := handlerCallableReference(pkg, factorySignature, target, signature)
+	reference, valid := handlerRef(pkg, factorySignature, target, signature)
 	if !valid {
 		return coreroute.CallableRef{}, nil, false
 	}
@@ -461,7 +461,7 @@ func controllerHandler(
 	return reference, dtoType, true
 }
 
-func handlerCallableReference(
+func handlerRef(
 	pkg *loadedPackage,
 	factorySignature *types.Signature,
 	expression ast.Expr,
@@ -517,7 +517,7 @@ func handlerCallableReference(
 	}
 }
 
-func validRouteHandlerSignature(signature *types.Signature) (types.Type, bool, bool) {
+func validHandler(signature *types.Signature) (types.Type, bool, bool) {
 	if signature == nil || signature.TypeParams().Len() != 0 || signature.Variadic() ||
 		(signature.Params().Len() != 1 && signature.Params().Len() != 2) {
 		return nil, false, false
@@ -626,7 +626,7 @@ func (a *analysis) controllerMiddleware(
 	result := make([]string, 0, len(values.Elts))
 	seen := make(map[string]bool, len(values.Elts))
 	for _, element := range values.Elts {
-		value, valid := a.resolveControllerMiddleware(root, pkg, unparenControllerExpr(element))
+		value, valid := a.resolveMiddleware(root, pkg, unparenControllerExpr(element))
 		if !valid || seen[value] {
 			return nil, false
 		}
@@ -637,9 +637,9 @@ func (a *analysis) controllerMiddleware(
 	return result, true
 }
 
-func (a *analysis) resolveControllerMiddleware(root string, pkg *loadedPackage, expression ast.Expr) (string, bool) {
+func (a *analysis) resolveMiddleware(root string, pkg *loadedPackage, expression ast.Expr) (string, bool) {
 	call, matches := expression.(*ast.CallExpr)
-	if !matches || len(call.Args) != 1 || !isPackageFunction(queryCalledFunction(pkg.packageInfo.TypesInfo, call.Fun), modulePackagePath, "Ref") {
+	if !matches || len(call.Args) != 1 || !packageFunction(calledFunction(pkg.packageInfo.TypesInfo, call.Fun), modulePackagePath, "Ref") {
 		return "", false
 	}
 	symbol, valid := constantControllerString(pkg, call.Args[0])
@@ -660,7 +660,7 @@ func (a *analysis) resolveControllerMiddleware(root string, pkg *loadedPackage, 
 		return "", false
 	}
 	object, _ := target.packageInfo.Types.Scope().Lookup(parts[len(parts)-1]).(*types.Func)
-	if object == nil || !validMiddlewareConstructor(object.Type()) {
+	if object == nil || !validMiddleware(object.Type()) {
 		return "", false
 	}
 	position := a.position(target, object.Pos())
@@ -671,7 +671,7 @@ func (a *analysis) resolveControllerMiddleware(root string, pkg *loadedPackage, 
 	return symbol, true
 }
 
-func validMiddlewareConstructor(value types.Type) bool {
+func validMiddleware(value types.Type) bool {
 	signature, matches := types.Unalias(value).(*types.Signature)
 	if !matches || signature.TypeParams().Len() != 0 || signature.Variadic() {
 		return false
@@ -723,7 +723,7 @@ func controllerTransaction(pkg *loadedPackage, function *ast.FuncDecl, literal *
 	}
 	resolved := unparenControllerExpr(localControllerValue(pkg, function, expression))
 	call, matches := resolved.(*ast.CallExpr)
-	if !matches || len(call.Args) != 0 || !isPackageFunction(queryCalledFunction(pkg.packageInfo.TypesInfo, call.Fun), controllerPackagePath, "NonTransactional") {
+	if !matches || len(call.Args) != 0 || !packageFunction(calledFunction(pkg.packageInfo.TypesInfo, call.Fun), controllerPackagePath, "NonTransactional") {
 		return coreroute.TransactionPolicy{}, false
 	}
 
@@ -732,7 +732,7 @@ func controllerTransaction(pkg *loadedPackage, function *ast.FuncDecl, literal *
 
 func controllerBoolPointer(pkg *loadedPackage, function *ast.FuncDecl, expression ast.Expr) (bool, bool) {
 	call, matches := unparenControllerExpr(localControllerValue(pkg, function, expression)).(*ast.CallExpr)
-	if !matches || len(call.Args) != 1 || !isPackageFunction(queryCalledFunction(pkg.packageInfo.TypesInfo, call.Fun), controllerPackagePath, "Bool") {
+	if !matches || len(call.Args) != 1 || !packageFunction(calledFunction(pkg.packageInfo.TypesInfo, call.Fun), controllerPackagePath, "Bool") {
 		return false, false
 	}
 
@@ -772,7 +772,7 @@ func controllerStringSlice(pkg *loadedPackage, function *ast.FuncDecl, expressio
 	return result, true
 }
 
-func controllerLiteralOptionalString(pkg *loadedPackage, literal *ast.CompositeLit, field string) (string, bool) {
+func optionalString(pkg *loadedPackage, literal *ast.CompositeLit, field string) (string, bool) {
 	expression, exists := controllerLiteralField(literal, field)
 	if !exists {
 		return "", true
@@ -781,7 +781,7 @@ func controllerLiteralOptionalString(pkg *loadedPackage, literal *ast.CompositeL
 	return constantControllerString(pkg, expression)
 }
 
-func removeControllerGlobalPrefix(value string, area ControllerArea) string {
+func removeGlobalPrefix(value string, area ControllerArea) string {
 	prefix := "/" + string(area)
 	if value == prefix {
 		return "/"
@@ -790,7 +790,7 @@ func removeControllerGlobalPrefix(value string, area ControllerArea) string {
 	return strings.TrimPrefix(value, prefix)
 }
 
-func validCustomRoutePath(value string) bool {
+func validRoutePath(value string) bool {
 	if value == "" || strings.TrimSpace(value) != value || !strings.HasPrefix(value, "/") || strings.HasSuffix(value, "/") || strings.ContainsAny(value, "?#") || path.Clean(value) != value {
 		return false
 	}
@@ -856,7 +856,7 @@ func isNilIdentifier(expression ast.Expr) bool {
 	return matches && identifier.Name == "nil"
 }
 
-func (a *analysis) validateRouteConflicts(model *Model) {
+func (a *analysis) checkRouteConflicts(model *Model) {
 	aliases := make(map[string]Position)
 	routes := make(map[string]Position)
 	for _, currentModule := range model.modules {

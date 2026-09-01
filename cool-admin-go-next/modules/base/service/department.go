@@ -196,11 +196,11 @@ func (s *DepartmentService) Delete(ctx context.Context, req dto.DepartmentDelete
 		return exception.Validate("部门 ID 不能为空")
 	}
 	if req.DeleteUser {
-		adminRoles, err := s.permission.AdminRoleIDs(ctx)
+		adminRoles, err := s.permission.adminRoles(ctx)
 		if err != nil {
 			return err
 		}
-		if err = s.permission.LockRoles(ctx, adminRoles); err != nil {
+		if err = s.permission.lockRoles(ctx, adminRoles); err != nil {
 			return err
 		}
 	}
@@ -218,15 +218,15 @@ func (s *DepartmentService) Delete(ctx context.Context, req dto.DepartmentDelete
 		return err
 	}
 	if len(userIDs) > 0 {
-		if err = s.permission.LockUsers(ctx, userIDs); err != nil {
+		if err = s.permission.lockUsers(ctx, userIDs); err != nil {
 			return err
 		}
 		if req.DeleteUser {
-			if err = s.permission.EnsureNotLastAdmin(ctx, userIDs); err != nil {
+			if err = s.permission.keepAdmin(ctx, userIDs); err != nil {
 				return err
 			}
 		}
-		if err = s.permission.RevokeUsers(ctx, userIDs); err != nil {
+		if err = s.permission.revoke(ctx, userIDs); err != nil {
 			return err
 		}
 	}
@@ -235,7 +235,7 @@ func (s *DepartmentService) Delete(ctx context.Context, req dto.DepartmentDelete
 		if modelErr != nil {
 			return modelErr
 		}
-		if modelErr = s.permission.DeleteUserRoles(ctx, userIDs); modelErr != nil {
+		if modelErr = s.permission.delRoles(ctx, userIDs); modelErr != nil {
 			return modelErr
 		}
 		if _, modelErr = model.WhereIn("id", userIDs).Delete(); modelErr != nil {

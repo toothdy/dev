@@ -134,7 +134,7 @@ func (base *Base[E, ID]) SQLRenderPage(
 	}
 	if len(autoSort) == 0 || autoSort[0] {
 		var err error
-		pageModel, err = applyNativePageOrder(pageModel, query)
+		pageModel, err = applyPageOrder(pageModel, query)
 		if err != nil {
 			return Pagination{}, err
 		}
@@ -143,7 +143,7 @@ func (base *Base[E, ID]) SQLRenderPage(
 	return renderPage(pageModel, query, destination)
 }
 
-func applyNativePageOrder(model *gdb.Model, query Query) (*gdb.Model, error) {
+func applyPageOrder(model *gdb.Model, query Query) (*gdb.Model, error) {
 	orders := []string{"id"}
 	directions := []string{"desc"}
 	if query.request != nil && (query.request.Has("order") || query.request.Has("sort")) {
@@ -201,7 +201,7 @@ func scanNativeSQL(query string) ([]string, error) {
 			}
 			index += closing + 2
 		case query[index] == '$':
-			if next, exists := skipDollarQuotedSQL(query, index); exists {
+			if next, exists := skipDollarQuote(query, index); exists {
 				if next < 0 {
 					return nil, exception.Validate("原生查询包含未闭合的字符串")
 				}
@@ -278,7 +278,7 @@ func skipQuotedSQL(query string, index int, quote byte) (int, error) {
 	return 0, exception.Validate("原生查询包含未闭合的字符串或标识符")
 }
 
-func skipDollarQuotedSQL(query string, index int) (int, bool) {
+func skipDollarQuote(query string, index int) (int, bool) {
 	closing := strings.IndexByte(query[index+1:], '$')
 	if closing < 0 {
 		return 0, false

@@ -32,7 +32,7 @@ func WithTraceID(ctx context.Context, traceID string) (context.Context, error) {
 	if !validTraceID(traceID) {
 		return ctx, exception.Core("Trace ID 无效")
 	}
-	info := requestInfoFromContext(ctx)
+	info := traceInfo(ctx)
 	info.traceID = traceID
 
 	return context.WithValue(ctx, requestContextKey{}, info), nil
@@ -40,11 +40,11 @@ func WithTraceID(ctx context.Context, traceID string) (context.Context, error) {
 
 // 返回协议无关 Trace ID
 func TraceID(ctx context.Context) string {
-	return requestInfoFromContext(ctx).traceID
+	return traceInfo(ctx).traceID
 }
 
 // 读取请求信息
-func requestInfoFromContext(ctx context.Context) requestInfo {
+func traceInfo(ctx context.Context) requestInfo {
 	if ctx == nil {
 		return requestInfo{}
 	}

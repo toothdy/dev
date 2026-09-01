@@ -51,7 +51,7 @@ func NewDeliverer(
 	if store == nil {
 		return nil, gerror.New("outbox consumer: Inbox Store 不能为空")
 	}
-	if err := validateConsumerConfig(config); err != nil {
+	if err := checkConsumer(config); err != nil {
 		return nil, err
 	}
 	if len(definitions) == 0 {
@@ -116,7 +116,7 @@ func (deliverer *Deliverer) Deliver(
 	if err != nil {
 		return DeadLetter(err)
 	}
-	validated, err := validateDeliveredEnvelope(subscription, message)
+	validated, err := checkEnvelope(subscription, message)
 	if err != nil {
 		return DeadLetter(err)
 	}
@@ -157,7 +157,7 @@ func (deliverer *Deliverer) Deliver(
 	if isPermanent(err) || attempt >= deliverer.config.ConsumerMaxAttempts {
 		return DeadLetter(err)
 	}
-	delay, delayErr := consumerRetryDelay(deliverer.config, attempt)
+	delay, delayErr := consumerDelay(deliverer.config, attempt)
 	if delayErr != nil {
 		return Retry(0, gerror.Wrap(delayErr, "outbox consumer: 生成重试延迟"))
 	}
@@ -191,7 +191,7 @@ func (definition consumerDefinition[T]) decode(message Envelope) (consumerInvoca
 	}, nil
 }
 
-func validateDeliveredEnvelope(subscription Subscription, message Envelope) (Envelope, error) {
+func checkEnvelope(subscription Subscription, message Envelope) (Envelope, error) {
 	var key *string
 	if value, exists := message.Key(); exists {
 		key = &value
@@ -221,7 +221,7 @@ func validateDeliveredEnvelope(subscription Subscription, message Envelope) (Env
 	return validated, nil
 }
 
-func validateConsumerConfig(config ConsumerConfig) error {
+func checkConsumer(config ConsumerConfig) error {
 	if config.ConsumerTimeout <= 0 || config.ConsumerMaxAttempts == 0 ||
 		config.ConsumerRetryBase <= 0 || config.ConsumerRetryMax <= 0 {
 		return gerror.New("outbox consumer: 配置值必须为正数")
@@ -233,7 +233,7 @@ func validateConsumerConfig(config ConsumerConfig) error {
 	return nil
 }
 
-func consumerRetryDelay(config ConsumerConfig, attempt uint32) (time.Duration, error) {
+func consumerDelay(config ConsumerConfig, attempt uint32) (time.Duration, error) {
 	delay := config.ConsumerRetryBase
 	for current := uint32(1); current < attempt && delay < config.ConsumerRetryMax; current++ {
 		if delay > config.ConsumerRetryMax/2 {

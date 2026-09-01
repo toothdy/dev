@@ -84,7 +84,7 @@ func (runtime *Runtime) importDB(ctx context.Context, definition Definition, dat
 	if err := json.Unmarshal(data, &groups); err != nil {
 		return exception.WrapCore(err, "解析数据库种子失败")
 	}
-	descriptors := definitionDescriptors(definition)
+	descriptors := descriptorMap(definition)
 	tables := make([]string, 0, len(groups))
 	for table := range groups {
 		if descriptors[table] == nil {
@@ -111,7 +111,7 @@ func (runtime *Runtime) importDB(ctx context.Context, definition Definition, dat
 				}
 				// SeedData 保留种子里的显式主键，PostgreSQL 的序列不会因此推进，
 				// 必须显式同步，否则后续自动分配的主键会从 1 开始撞上种子行。
-				if err = runtime.syncPrimarySequence(guardCtx, descriptors[table]); err != nil {
+				if err = runtime.syncSequence(guardCtx, descriptors[table]); err != nil {
 					return err
 				}
 			}
@@ -125,7 +125,7 @@ func (runtime *Runtime) importMenu(ctx context.Context, definition Definition, d
 	if err := json.Unmarshal(data, &records); err != nil {
 		return exception.WrapCore(err, "解析菜单种子失败")
 	}
-	descriptor := definitionDescriptors(definition)["base_sys_menu"]
+	descriptor := descriptorMap(definition)["base_sys_menu"]
 	if descriptor == nil {
 		return exception.Core("菜单种子需要 base_sys_menu Descriptor")
 	}
@@ -146,7 +146,7 @@ func (runtime *Runtime) importMenu(ctx context.Context, definition Definition, d
 }
 
 // 种子写入显式主键后同步自增序列，非自增主键直接跳过。
-func (runtime *Runtime) syncPrimarySequence(ctx context.Context, descriptor coreentity.RuntimeDescriptor) error {
+func (runtime *Runtime) syncSequence(ctx context.Context, descriptor coreentity.RuntimeDescriptor) error {
 	primary := descriptor.Primary()
 	if primary == nil || !primary.AutoIncrement() {
 		return nil
@@ -155,7 +155,7 @@ func (runtime *Runtime) syncPrimarySequence(ctx context.Context, descriptor core
 	return runtime.runtime.SyncSequence(ctx, descriptor.Table(), primary.Column())
 }
 
-func definitionDescriptors(definition Definition) map[string]coreentity.RuntimeDescriptor {
+func descriptorMap(definition Definition) map[string]coreentity.RuntimeDescriptor {
 	result := make(map[string]coreentity.RuntimeDescriptor, len(definition.Descriptors))
 	for _, descriptor := range definition.Descriptors {
 		result[descriptor.Table()] = descriptor

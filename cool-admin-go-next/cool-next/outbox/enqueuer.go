@@ -145,7 +145,7 @@ func (enqueuer *databaseEnqueuer) toRecord(message Envelope) (outboxstore.Record
 	)
 }
 
-func envelopeFromRecord(record outboxstore.Record) (Envelope, error) {
+func envelope(record outboxstore.Record) (Envelope, error) {
 	var headers map[string]string
 	if err := json.Unmarshal(record.Headers(), &headers); err != nil {
 		return Envelope{}, gerror.Wrap(err, "outbox: 解析持久化 Header")

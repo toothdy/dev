@@ -386,7 +386,7 @@ func TestAnalyzeWithOverlayIgnoresInvalidCommittedOutput(t *testing.T) {
 	target := filepath.Join(root, "modules", "modules_gen.go")
 	overlay := map[string][]byte{target: []byte("package modules\n")}
 
-	model, err := analyzeWithOverlay(context.Background(), Options{Dir: root, ModulesRoot: "modules"}, overlay)
+	model, err := analyzeOverlay(context.Background(), Options{Dir: root, ModulesRoot: "modules"}, overlay)
 	if err != nil {
 		t.Fatalf("analyzeWithOverlay() error = %v", err)
 	}

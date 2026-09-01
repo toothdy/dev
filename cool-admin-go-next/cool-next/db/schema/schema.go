@@ -74,7 +74,7 @@ func (m *Manager) Apply(ctx context.Context, mode Mode, metadata ...entity.Metad
 }
 
 func (m *Manager) sync(ctx context.Context, metadata entity.Metadata, expected Table, actual Table, differences []Difference) error {
-	if hasUnsafeDifference(metadata, differences) {
+	if hasUnsafeDiff(metadata, differences) {
 		return &ValidationError{Report: Report{Dialect: m.dialect.Kind(), Differences: differences}}
 	}
 	if actual.Name == "" {
@@ -157,7 +157,7 @@ func (m *Manager) createIndex(ctx context.Context, metadata entity.Metadata, nam
 	return gerror.Newf("表 %s 的索引 %s 未在 Descriptor 中找到", metadata.Table(), name)
 }
 
-func hasUnsafeDifference(metadata entity.Metadata, differences []Difference) bool {
+func hasUnsafeDiff(metadata entity.Metadata, differences []Difference) bool {
 	for _, difference := range differences {
 		if difference.Safe {
 			continue

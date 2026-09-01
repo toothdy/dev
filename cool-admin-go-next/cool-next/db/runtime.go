@@ -32,7 +32,7 @@ func New(ctx context.Context, config Config) (*Runtime, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	nodes, tables, err := validateConfig(config)
+	nodes, tables, err := checkConfig(config)
 	if err != nil {
 		return nil, err
 	}

@@ -22,7 +22,7 @@ type ColumnRef struct {
 
 // 构造根实体字段引用
 func NewColumnRef(name string) ColumnRef {
-	validateQueryName("字段名", name)
+	checkName("字段名", name)
 
 	return ColumnRef{name: name}
 }
@@ -31,15 +31,15 @@ func NewColumnRef(name string) ColumnRef {
 func NewColumnRefOf[E any](name string) ColumnRef {
 	column := NewColumnRef(name)
 	column.entityType = reflect.TypeFor[E]()
-	validateEntityType(column.entityType)
+	checkEntityType(column.entityType)
 
 	return column
 }
 
 // 绑定字段所属别名
 func (column ColumnRef) Of(alias string) ColumnRef {
-	validateColumnRef(column)
-	validateQueryName("字段别名", alias)
+	checkColumn(column)
+	checkName("字段别名", alias)
 	column.alias = alias
 
 	return column
@@ -103,17 +103,17 @@ func Where(conditions ...Condition) WhereProvider {
 
 // 构造等值条件
 func EqValue(column ColumnRef, value any) Condition {
-	return newComparisonCondition(operatorEQ, column, value)
+	return compare(operatorEQ, column, value)
 }
 
 // 构造不等条件
 func NeValue(column ColumnRef, value any) Condition {
-	return newComparisonCondition(operatorNE, column, value)
+	return compare(operatorNE, column, value)
 }
 
 // 构造集合条件
 func In(column ColumnRef, values any) Condition {
-	validateColumnRef(column)
+	checkColumn(column)
 	reflected := reflect.ValueOf(values)
 	if !reflected.IsValid() || (reflected.Kind() != reflect.Slice && reflected.Kind() != reflect.Array) || reflected.Len() == 0 {
 		panicCore("In 只接受非空 slice 或 array")
@@ -124,7 +124,7 @@ func In(column ColumnRef, values any) Condition {
 
 // 构造模糊匹配条件
 func LikeValue(column ColumnRef, value string) Condition {
-	validateColumnRef(column)
+	checkColumn(column)
 
 	return conditionNode{operator: operatorLike, column: column, value: value}
 }
@@ -144,8 +144,8 @@ func RawWhere(expression string, args ...any) Condition {
 
 // 构造字段关联条件
 func On(left ColumnRef, right ColumnRef) Condition {
-	validateColumnRef(left)
-	validateColumnRef(right)
+	checkColumn(left)
+	checkColumn(right)
 
 	return conditionNode{operator: operatorOn, column: left, right: right}
 }
@@ -170,15 +170,15 @@ func (aliasedSelectNode) selectField() {}
 
 // 选择别名实体全部字段
 func All(alias string) SelectField {
-	validateQueryName("实体别名", alias)
+	checkName("实体别名", alias)
 
 	return allSelectNode{alias: alias}
 }
 
 // 选择字段并指定输出别名
 func As(column ColumnRef, alias string) SelectField {
-	validateColumnRef(column)
-	validateQueryName("输出别名", alias)
+	checkColumn(column)
+	checkName("输出别名", alias)
 
 	return aliasedSelectNode{column: column, alias: alias}
 }
@@ -225,8 +225,8 @@ func Desc(column ColumnRef) Order {
 	return newOrder(column, Descending)
 }
 
-func newComparisonCondition(operator conditionOperator, column ColumnRef, value any) Condition {
-	validateColumnRef(column)
+func compare(operator conditionOperator, column ColumnRef, value any) Condition {
+	checkColumn(column)
 	switch operator {
 	case operatorEQ, operatorNE, operatorGT, operatorGTE, operatorLT, operatorLTE:
 		return conditionNode{operator: operator, column: column, value: cloneRequestData(value)}
@@ -238,56 +238,56 @@ func newComparisonCondition(operator conditionOperator, column ColumnRef, value 
 
 func newJoin(joinType JoinType, entity any, alias string, on Condition) JoinOp {
 	join := JoinOp{Entity: entity, Alias: alias, Condition: on, Type: joinType}
-	validateJoin(join)
+	checkJoin(join)
 
 	return join
 }
 
 func newOrder(column ColumnRef, direction Direction) Order {
 	order := Order{Column: column, Direction: direction}
-	validateOrder(order)
+	checkOrder(order)
 
 	return order
 }
 
-func validateColumnRef(column ColumnRef) {
+func checkColumn(column ColumnRef) {
 	if !queryNamePattern.MatchString(column.name) {
 		panicCore("字段引用无效")
 	}
 	if column.entityType != nil {
-		validateEntityType(column.entityType)
+		checkEntityType(column.entityType)
 	}
 	if column.alias != "" {
-		validateQueryName("字段别名", column.alias)
+		checkName("字段别名", column.alias)
 	}
 }
 
-func validateEntityType(entityType reflect.Type) {
+func checkEntityType(entityType reflect.Type) {
 	if entityType == nil || entityType.Kind() != reflect.Struct || entityType.Name() == "" || entityType.PkgPath() == "" {
 		panicCore("实体必须是非指针具名 struct")
 	}
 }
 
-func validateJoin(join JoinOp) {
+func checkJoin(join JoinOp) {
 	if join.Type != JoinLeft && join.Type != JoinInner {
 		panicCore("关联类型 %q 无效", join.Type)
 	}
-	validateEntityType(reflect.TypeOf(join.Entity))
-	validateQueryName("实体别名", join.Alias)
+	checkEntityType(reflect.TypeOf(join.Entity))
+	checkName("实体别名", join.Alias)
 	condition, ok := join.Condition.(conditionNode)
 	if !ok || condition.operator != operatorOn {
 		panicCore("关联条件必须使用 On")
 	}
 }
 
-func validateOrder(order Order) {
-	validateColumnRef(order.Column)
+func checkOrder(order Order) {
+	checkColumn(order.Column)
 	if order.Direction != Ascending && order.Direction != Descending {
 		panicCore("排序方向 %q 无效", order.Direction)
 	}
 }
 
-func validateQueryName(role string, name string) {
+func checkName(role string, name string) {
 	if !queryNamePattern.MatchString(name) {
 		panicCore("%s %q 无效", role, name)
 	}

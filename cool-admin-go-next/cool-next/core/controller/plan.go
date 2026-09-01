@@ -38,9 +38,9 @@ func CompilePlan(
 	query := QueryOp{}
 	switch action {
 	case crud.ActionPage:
-		query, err = resolveQueryProvider(ctx, option.PageQueryOp)
+		query, err = resolveProvider(ctx, option.PageQueryOp)
 	case crud.ActionList:
-		query, err = resolveQueryProvider(ctx, option.ListQueryOp)
+		query, err = resolveProvider(ctx, option.ListQueryOp)
 	}
 	if err != nil {
 		return nil, err

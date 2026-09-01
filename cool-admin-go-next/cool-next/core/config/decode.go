@@ -106,7 +106,7 @@ func writeCanonical(buffer *bytes.Buffer, node *configNode) error {
 	case valuePointer:
 		return writeCanonical(buffer, node.child)
 	case valueObject:
-		return writeCanonicalObject(buffer, node)
+		return writeObject(buffer, node)
 	case valueList:
 		buffer.WriteByte('[')
 		for index, child := range node.list {
@@ -120,13 +120,13 @@ func writeCanonical(buffer *bytes.Buffer, node *configNode) error {
 		buffer.WriteByte(']')
 		return nil
 	case valueScalar:
-		return writeCanonicalScalar(buffer, node)
+		return writeScalar(buffer, node)
 	default:
 		return fmt.Errorf("配置节点类型无法规范化")
 	}
 }
 
-func writeCanonicalObject(buffer *bytes.Buffer, node *configNode) error {
+func writeObject(buffer *bytes.Buffer, node *configNode) error {
 	keys := make([]string, 0, len(node.object))
 	for key := range node.object {
 		keys = append(keys, key)
@@ -153,10 +153,10 @@ func writeCanonicalObject(buffer *bytes.Buffer, node *configNode) error {
 	return nil
 }
 
-func writeCanonicalScalar(buffer *bytes.Buffer, node *configNode) error {
+func writeScalar(buffer *bytes.Buffer, node *configNode) error {
 	value := node.scalar
 	if node.schema.isDuration {
-		return writeCanonicalString(buffer, time.Duration(value.Int()).String())
+		return writeString(buffer, time.Duration(value.Int()).String())
 	}
 	if node.schema.isText {
 		marshaler := value.Interface().(encoding.TextMarshaler)
@@ -164,12 +164,12 @@ func writeCanonicalScalar(buffer *bytes.Buffer, node *configNode) error {
 		if err != nil {
 			return preserveCause("文本标量无法规范化", err)
 		}
-		return writeCanonicalString(buffer, string(text))
+		return writeString(buffer, string(text))
 	}
 
 	switch value.Kind() {
 	case reflect.String:
-		return writeCanonicalString(buffer, value.String())
+		return writeString(buffer, value.String())
 	case reflect.Bool:
 		buffer.WriteString(strconv.FormatBool(value.Bool()))
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -185,7 +185,7 @@ func writeCanonicalScalar(buffer *bytes.Buffer, node *configNode) error {
 	return nil
 }
 
-func writeCanonicalString(buffer *bytes.Buffer, value string) error {
+func writeString(buffer *bytes.Buffer, value string) error {
 	encoded, err := json.Marshal(value)
 	if err != nil {
 		return fmt.Errorf("字符串无法规范化")

@@ -22,14 +22,14 @@ type Compiled[T any] struct {
 
 // 编译模块声明和配置
 func Compile[T any](ctx context.Context, identity Identity, declaration Declaration[T], source config.Source) (*Compiled[T], error) {
-	if err := validateIdentity(identity); err != nil {
+	if err := checkIdentity(identity); err != nil {
 		return nil, exception.WrapCore(err, "模块身份无效")
 	}
-	if err := validateDeclaration(declaration); err != nil {
+	if err := checkDecl(declaration); err != nil {
 		return nil, exception.WrapCore(err, fmt.Sprintf("模块 %s 声明无效", identity.Key()))
 	}
 
-	config, err := config.Load(ctx, declaration.Defaults, source)
+	cfg, err := config.Load(ctx, declaration.Defaults, source)
 	if err != nil {
 		return nil, exception.WrapCore(err, fmt.Sprintf("模块 %s 配置无效", identity.Key()))
 	}
@@ -41,7 +41,7 @@ func Compile[T any](ctx context.Context, identity Identity, declaration Declarat
 		order:             declaration.Order,
 		middlewares:       append([]ComponentRef(nil), declaration.Middlewares...),
 		globalMiddlewares: append([]ComponentRef(nil), declaration.GlobalMiddlewares...),
-		config:            config,
+		config:            cfg,
 	}, nil
 }
 
@@ -92,7 +92,7 @@ func (c *Compiled[T]) Config() T {
 }
 
 // 返回规范化配置 JSON 副本
-func (c *Compiled[T]) CanonicalConfigJSON() []byte {
+func (c *Compiled[T]) ConfigJSON() []byte {
 	if c == nil || c.config == nil {
 		return nil
 	}

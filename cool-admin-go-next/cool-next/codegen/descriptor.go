@@ -128,7 +128,7 @@ func CompileDescriptors(model *Model) (*DescriptorSet, error) {
 		}
 		return first.declaration.name < second.declaration.name
 	})
-	if diagnostics = validatePhysicalNames(compiled); len(diagnostics) > 0 {
+	if diagnostics = checkPhysicalNames(compiled); len(diagnostics) > 0 {
 		sortDiagnostics(diagnostics)
 		return nil, &DiagnosticError{diagnostics: diagnostics}
 	}
@@ -139,7 +139,7 @@ func CompileDescriptors(model *Model) (*DescriptorSet, error) {
 		if err != nil {
 			return nil, &DiagnosticError{diagnostics: []Diagnostic{{Code: "CG064", Message: err.Error(), Position: current.declaration.position}}}
 		}
-		fragments[index] = emitDescriptorFragment(current, providerType)
+		fragments[index] = emitFragment(current, providerType)
 	}
 	return &DescriptorSet{fragments: fragments}, nil
 }

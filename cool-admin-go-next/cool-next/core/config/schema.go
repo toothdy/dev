@@ -143,13 +143,13 @@ func buildStructSchema(current reflect.Type, stack map[reflect.Type]bool) (*conf
 			return nil, fmt.Errorf("配置结构体 %s 不允许匿名字段 %s", current, field.Name)
 		}
 		if !field.IsExported() {
-			if containsMutableReference(field.Type, make(map[reflect.Type]bool)) {
+			if hasMutableRef(field.Type, make(map[reflect.Type]bool)) {
 				return nil, fmt.Errorf("配置结构体 %s 的未导出字段 %s 包含可变引用", current, field.Name)
 			}
 			continue
 		}
 
-		name, isIgnored, err := getJSONFieldName(field)
+		name, isIgnored, err := jsonField(field)
 		if err != nil {
 			return nil, err
 		}
@@ -167,7 +167,7 @@ func buildStructSchema(current reflect.Type, stack map[reflect.Type]bool) (*conf
 		schemaField := &schemaField{
 			name:            name,
 			goName:          field.Name,
-			validationAlias: getValidationAlias(field),
+			validationAlias: validationAlias(field),
 			index:           index,
 			node:            fieldSchema,
 		}
@@ -178,7 +178,7 @@ func buildStructSchema(current reflect.Type, stack map[reflect.Type]bool) (*conf
 	return node, nil
 }
 
-func containsMutableReference(current reflect.Type, stack map[reflect.Type]bool) bool {
+func hasMutableRef(current reflect.Type, stack map[reflect.Type]bool) bool {
 	if stack[current] {
 		return false
 	}
@@ -190,10 +190,10 @@ func containsMutableReference(current reflect.Type, stack map[reflect.Type]bool)
 		reflect.Func, reflect.Chan, reflect.UnsafePointer:
 		return true
 	case reflect.Array:
-		return containsMutableReference(current.Elem(), stack)
+		return hasMutableRef(current.Elem(), stack)
 	case reflect.Struct:
 		for index := 0; index < current.NumField(); index++ {
-			if containsMutableReference(current.Field(index).Type, stack) {
+			if hasMutableRef(current.Field(index).Type, stack) {
 				return true
 			}
 		}
@@ -203,7 +203,7 @@ func containsMutableReference(current reflect.Type, stack map[reflect.Type]bool)
 }
 
 // 将校验错误中的字段路径映射为配置 JSON 字段路径
-func validationFieldPath(schema *configSchema, field string) string {
+func fieldPath(schema *configSchema, field string) string {
 	parts := strings.Split(field, ".")
 	path := make([]string, 0, len(parts))
 	current := schema
@@ -235,7 +235,7 @@ func validationFieldPath(schema *configSchema, field string) string {
 }
 
 // 从 struct tag 提取校验别名
-func getValidationAlias(field reflect.StructField) string {
+func validationAlias(field reflect.StructField) string {
 	rules := strings.SplitN(field.Tag.Get("v"), "#", 2)[0]
 	alias, _, exists := strings.Cut(rules, "@")
 	if !exists {
@@ -246,7 +246,7 @@ func getValidationAlias(field reflect.StructField) string {
 }
 
 // 从 struct tag 提取 JSON 字段名及选项
-func getJSONFieldName(field reflect.StructField) (name string, isIgnored bool, err error) {
+func jsonField(field reflect.StructField) (name string, isIgnored bool, err error) {
 	tag, hasTag := field.Tag.Lookup("json")
 	if !hasTag {
 		return field.Name, false, nil

@@ -14,46 +14,46 @@ func compileOutbox(
 	dependencies []Dependency,
 	lifecycles []Lifecycle,
 ) (OutboxGraph, error) {
-	producers, err := compileOutboxRole("Producer", definition.Producers, components, componentIndexes, 0)
+	producers, err := compileRole("Producer", definition.Producers, components, componentIndexes, 0)
 	if err != nil {
 		return OutboxGraph{}, err
 	}
-	consumers, err := compileOutboxRole("Consumer Definition", definition.Consumers, components, componentIndexes, 0)
+	consumers, err := compileRole("Consumer Definition", definition.Consumers, components, componentIndexes, 0)
 	if err != nil {
 		return OutboxGraph{}, err
 	}
-	publishers, err := compileOutboxRole("Publisher", definition.Publishers, components, componentIndexes, 1)
+	publishers, err := compileRole("Publisher", definition.Publishers, components, componentIndexes, 1)
 	if err != nil {
 		return OutboxGraph{}, err
 	}
-	consumerAdapters, err := compileOutboxRole("Consumer Adapter", definition.ConsumerAdapters, components, componentIndexes, 1)
+	adapters, err := compileRole("Consumer Adapter", definition.ConsumerAdapters, components, componentIndexes, 1)
 	if err != nil {
 		return OutboxGraph{}, err
 	}
-	workers, err := compileOutboxRole("Worker", definition.Workers, components, componentIndexes, 1)
+	workers, err := compileRole("Worker", definition.Workers, components, componentIndexes, 1)
 	if err != nil {
 		return OutboxGraph{}, err
 	}
-	consumerRuntimes, err := compileOutboxRole("Consumer Runtime", definition.ConsumerRuntimes, components, componentIndexes, 1)
+	runtimes, err := compileRole("Consumer Runtime", definition.ConsumerRuntimes, components, componentIndexes, 1)
 	if err != nil {
 		return OutboxGraph{}, err
 	}
 	graph := OutboxGraph{producers: producers, consumers: consumers}
 	graph.publisher = firstComponent(publishers)
-	graph.consumerAdapter = firstComponent(consumerAdapters)
+	graph.consumerAdapter = firstComponent(adapters)
 	graph.worker = firstComponent(workers)
-	graph.consumerRuntime = firstComponent(consumerRuntimes)
-	if err = validateProducerGraph(graph, providers, dependencies, lifecycles); err != nil {
+	graph.consumerRuntime = firstComponent(runtimes)
+	if err = checkProducer(graph, providers, dependencies, lifecycles); err != nil {
 		return OutboxGraph{}, err
 	}
-	if err = validateConsumerGraph(graph, providers, dependencies, lifecycles); err != nil {
+	if err = checkConsumer(graph, providers, dependencies, lifecycles); err != nil {
 		return OutboxGraph{}, err
 	}
 
 	return graph, nil
 }
 
-func compileOutboxRole(
+func compileRole(
 	label string,
 	definitions []ComponentDefinition,
 	components []Component,
@@ -66,7 +66,7 @@ func compileOutboxRole(
 	result := make([]Component, len(definitions))
 	seen := make(map[componentKey]bool, len(definitions))
 	for index, definition := range definitions {
-		key := componentDefinitionKey(definition)
+		key := componentDefKey(definition)
 		componentIndex, exists := indexes[key]
 		if !exists {
 			return nil, exception.Core(fmt.Sprintf("Outbox %s 组件不存在: %s", label, componentKeyLabel(key)))
@@ -80,7 +80,7 @@ func compileOutboxRole(
 	return result, nil
 }
 
-func validateProducerGraph(
+func checkProducer(
 	graph OutboxGraph,
 	providers []Provider,
 	dependencies []Dependency,
@@ -103,7 +103,7 @@ func validateProducerGraph(
 			return exception.Core("Outbox Producer 必须直接依赖 Enqueuer: " + componentLabel(producer))
 		}
 	}
-	if !hasComponentDependency(dependencies, *graph.worker, *graph.publisher) {
+	if !hasDependency(dependencies, *graph.worker, *graph.publisher) {
 		return exception.Core("Outbox Worker 必须依赖 Publisher")
 	}
 	if !hasLifecycle(lifecycles, *graph.worker, false, true, true) {
@@ -112,7 +112,7 @@ func validateProducerGraph(
 	return nil
 }
 
-func validateConsumerGraph(
+func checkConsumer(
 	graph OutboxGraph,
 	providers []Provider,
 	dependencies []Dependency,
@@ -128,14 +128,14 @@ func validateConsumerGraph(
 		return exception.Core("可靠 Consumer 需要唯一 Consumer Adapter 和 Consumer Runtime")
 	}
 	for _, consumer := range graph.consumers {
-		if !hasComponentProviderKind(providers, consumer, ProviderKindConsumerDefinition) {
+		if !hasProvider(providers, consumer, ProviderKindConsumerDefinition) {
 			return exception.Core("可靠 Consumer 缺少 Consumer Definition Provider: " + componentLabel(consumer))
 		}
-		if !hasComponentDependency(dependencies, *graph.consumerRuntime, consumer) {
+		if !hasDependency(dependencies, *graph.consumerRuntime, consumer) {
 			return exception.Core("Consumer Runtime 必须依赖全部 Consumer Definition")
 		}
 	}
-	if !hasComponentDependency(dependencies, *graph.consumerRuntime, *graph.consumerAdapter) {
+	if !hasDependency(dependencies, *graph.consumerRuntime, *graph.consumerAdapter) {
 		return exception.Core("Consumer Runtime 必须依赖 Consumer Adapter")
 	}
 	if !hasLifecycle(lifecycles, *graph.consumerRuntime, true, true, true) {
@@ -171,9 +171,9 @@ func hasDependencyKind(dependencies []Dependency, consumer Component, kind Provi
 	return false
 }
 
-func hasComponentDependency(dependencies []Dependency, consumer, provider Component) bool {
+func hasDependency(dependencies []Dependency, consumer, provider Component) bool {
 	for _, dependency := range dependencies {
-		if dependency.consumer != consumer || !isComponentProviderKind(dependency.provider.kind) {
+		if dependency.consumer != consumer || !isComponentProvider(dependency.provider.kind) {
 			continue
 		}
 		candidate := Component{
@@ -188,7 +188,7 @@ func hasComponentDependency(dependencies []Dependency, consumer, provider Compon
 	return false
 }
 
-func hasComponentProviderKind(providers []Provider, component Component, kind ProviderKind) bool {
+func hasProvider(providers []Provider, component Component, kind ProviderKind) bool {
 	for _, provider := range providers {
 		if provider.kind == kind && provider.module == component.module &&
 			provider.packagePath == component.packagePath && provider.name == component.name {
