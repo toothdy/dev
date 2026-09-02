@@ -5,31 +5,31 @@ import (
 	"net/http"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
 // 系统用户管理路由
-func AdminSysUserController(user *service.UserService) controller.Definition {
-	return controller.Admin().
-		Options(controller.RouterOptions{Description: "系统用户", TagName: "系统用户"}).
-		Curd(controller.CurdOption{
-			API:     controller.AllAPI(),
+func AdminSysUserController(user *service.UserService) gnctrl.Definition {
+	return gnctrl.Admin().
+		Options(gnctrl.RouterOptions{Description: "系统用户", TagName: "系统用户"}).
+		Curd(gnctrl.CurdOption{
+			API:     gnctrl.AllAPI(),
 			Entity:  entity.User{},
 			Service: user,
-			PageQueryOp: controller.StaticQuery(controller.QueryOp{
-				KeyWordLikeFields: []controller.ColumnRef{
-					controller.Field("name"),
-					controller.Field("username"),
+			PageQueryOp: gnctrl.StaticQuery(gnctrl.QueryOp{
+				KeyWordLikeFields: []gnctrl.ColumnRef{
+					gnctrl.Field("name"),
+					gnctrl.Field("username"),
 				},
-				FieldEq: []controller.FieldEq{
-					controller.Eq(controller.Field("status")),
-					controller.EqFrom(controller.Field("departmentId"), "departmentIds"),
+				FieldEq: []gnctrl.FieldEq{
+					gnctrl.Eq(gnctrl.Field("status")),
+					gnctrl.EqFrom(gnctrl.Field("departmentId"), "departmentIds"),
 				},
 			}),
-			InsertParam: controller.Insert(func(ctx context.Context, input *coreservice.Mutable[entity.User]) error {
+			InsertParam: gnctrl.Insert(func(ctx context.Context, input *gnservice.Mutable[entity.User]) error {
 				identity, err := auth.Admin(ctx)
 				if err != nil {
 					return err
@@ -37,15 +37,15 @@ func AdminSysUserController(user *service.UserService) controller.Definition {
 
 				return input.Set("userId", identity.UserID)
 			}),
-			HiddenFields:   []controller.ColumnRef{controller.Field("password")},
-			ReadonlyFields: []controller.ColumnRef{controller.Field("passwordV"), controller.Field("socketId")},
+			HiddenFields:   []gnctrl.ColumnRef{gnctrl.Field("password")},
+			ReadonlyFields: []gnctrl.ColumnRef{gnctrl.Field("passwordV"), gnctrl.Field("socketId")},
 		}).
-		Route(controller.Route{
+		Route(gnctrl.Route{
 			Method:  http.MethodPost,
 			Path:    "/move",
 			Summary: "移动部门",
-			Handler: controller.Handle(user.Move),
-			Bind:    controller.BindJSON,
+			Handler: gnctrl.Handle(user.Move),
+			Bind:    gnctrl.BindJSON,
 		}).
 		Build()
 }

@@ -6,26 +6,26 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
-	outboxstore "github.com/toothdy/cool-admin-go-next/cool-next/outbox/store"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/outbox/store"
 )
 
 // Store 状态
-type Status = outboxstore.Status
+type Status = store.Status
 
 const (
-	Pending  = outboxstore.Pending // 等待首次发布
-	Retrying = outboxstore.Retry   // 等待重试
-	Leased   = outboxstore.Leased  // 已被 Worker 领取
-	Sent     = outboxstore.Sent    // 已发布
-	Dead     = outboxstore.Dead    // 已进入死信
+	Pending  = store.Pending // 等待首次发布
+	Retrying = store.Retry   // 等待重试
+	Leased   = store.Leased  // 已被 Worker 领取
+	Sent     = store.Sent    // 已发布
+	Dead     = store.Dead    // 已进入死信
 )
 
 // 单次领取所有权令牌
-type ClaimToken = outboxstore.ClaimToken
+type ClaimToken = store.ClaimToken
 
 // Worker 已失去记录所有权
-var ErrClaimLost = outboxstore.ErrClaimLost
+var ErrClaimLost = store.ErrClaimLost
 
 // 入队消息大小限制
 type EnqueueLimits struct {
@@ -35,8 +35,8 @@ type EnqueueLimits struct {
 }
 
 type databaseEnqueuer struct {
-	runtime *coredb.Runtime
-	store   outboxstore.Store
+	runtime *db.Runtime
+	store   store.Store
 	limits  EnqueueLimits
 }
 
@@ -51,7 +51,7 @@ type serializedEnvelope struct {
 }
 
 // 数据库 Enqueuer
-func NewEnqueuer(runtime *coredb.Runtime, store outboxstore.Store, limits EnqueueLimits) (Enqueuer, error) {
+func NewEnqueuer(runtime *db.Runtime, store store.Store, limits EnqueueLimits) (Enqueuer, error) {
 	if runtime == nil || runtime.DB() == nil || runtime.Runner() == nil || runtime.Group() == "" {
 		return nil, gerror.New("outbox: 框架数据库 Runtime 无效")
 	}
@@ -88,10 +88,10 @@ func (enqueuer *databaseEnqueuer) Enqueue(ctx context.Context, message Envelope)
 	})
 }
 
-func (enqueuer *databaseEnqueuer) toRecord(message Envelope) (outboxstore.Record, error) {
+func (enqueuer *databaseEnqueuer) toRecord(message Envelope) (store.Record, error) {
 	payload := message.Payload()
 	if len(payload) > enqueuer.limits.MaxPayloadBytes {
-		return outboxstore.Record{}, gerror.Newf(
+		return store.Record{}, gerror.Newf(
 			"outbox: Payload 超出大小上限: %d > %d",
 			len(payload),
 			enqueuer.limits.MaxPayloadBytes,
@@ -100,10 +100,10 @@ func (enqueuer *databaseEnqueuer) toRecord(message Envelope) (outboxstore.Record
 	headers := message.Headers()
 	encodedHeaders, err := json.Marshal(headers)
 	if err != nil {
-		return outboxstore.Record{}, gerror.Wrap(err, "outbox: 序列化 Header")
+		return store.Record{}, gerror.Wrap(err, "outbox: 序列化 Header")
 	}
 	if len(encodedHeaders) > enqueuer.limits.MaxHeaderBytes {
-		return outboxstore.Record{}, gerror.Newf(
+		return store.Record{}, gerror.Newf(
 			"outbox: Header 超出大小上限: %d > %d",
 			len(encodedHeaders),
 			enqueuer.limits.MaxHeaderBytes,
@@ -124,17 +124,17 @@ func (enqueuer *databaseEnqueuer) toRecord(message Envelope) (outboxstore.Record
 		Headers:     headers,
 	})
 	if err != nil {
-		return outboxstore.Record{}, gerror.Wrap(err, "outbox: 序列化完整消息")
+		return store.Record{}, gerror.Wrap(err, "outbox: 序列化完整消息")
 	}
 	if len(encodedEnvelope) > enqueuer.limits.MaxEnvelopeBytes {
-		return outboxstore.Record{}, gerror.Newf(
+		return store.Record{}, gerror.Newf(
 			"outbox: Envelope 超出大小上限: %d > %d",
 			len(encodedEnvelope),
 			enqueuer.limits.MaxEnvelopeBytes,
 		)
 	}
 
-	return outboxstore.NewRecord(
+	return store.NewRecord(
 		string(message.MessageID()),
 		message.Topic(),
 		message.MessageType(),
@@ -145,7 +145,7 @@ func (enqueuer *databaseEnqueuer) toRecord(message Envelope) (outboxstore.Record
 	)
 }
 
-func envelope(record outboxstore.Record) (Envelope, error) {
+func envelope(record store.Record) (Envelope, error) {
 	var headers map[string]string
 	if err := json.Unmarshal(record.Headers(), &headers); err != nil {
 		return Envelope{}, gerror.Wrap(err, "outbox: 解析持久化 Header")

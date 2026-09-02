@@ -6,7 +6,7 @@ import (
 
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
 
@@ -39,23 +39,23 @@ type LogPageItem struct {
 
 // 操作日志分页结果
 type LogPageResult struct {
-	List       []LogPageItem          `json:"list"`
-	Pagination coreservice.Pagination `json:"pagination"`
+	List       []LogPageItem        `json:"list"`
+	Pagination gnservice.Pagination `json:"pagination"`
 }
 
 // 操作日志记录、分页和清理
 type LogService struct {
-	*coreservice.Base[entity.Log, uint64]
+	*gnservice.Base[entity.Log, uint64]
 	conf *ConfService
-	user *coreservice.Base[entity.User, uint64]
+	user *gnservice.Base[entity.User, uint64]
 	now  func() time.Time
 }
 
 // 操作日志服务
 func NewLog(
-	baseService *coreservice.Base[entity.Log, uint64],
+	baseService *gnservice.Base[entity.Log, uint64],
 	conf *ConfService,
-	user *coreservice.Base[entity.User, uint64],
+	user *gnservice.Base[entity.User, uint64],
 ) (*LogService, error) {
 	if baseService == nil || baseService.Descriptor() == nil || conf == nil ||
 		user == nil || user.Descriptor() == nil {
@@ -88,7 +88,7 @@ func (service *LogService) Record(ctx context.Context, record LogRecord) error {
 }
 
 // 带用户名称的操作日志分页
-func (service *LogService) Page(ctx context.Context, query coreservice.Query) (LogPageResult, error) {
+func (service *LogService) Page(ctx context.Context, query gnservice.Query) (LogPageResult, error) {
 	page, err := service.Base.Page(ctx, query)
 	if err != nil {
 		return LogPageResult{}, err

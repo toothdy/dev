@@ -3,33 +3,33 @@ package app
 import (
 	"net/http"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"github.com/toothdy/cool-admin-go-next/modules/dict/service"
 )
 
 // App 字典信息路由
-func AppDictInfoController(info *service.InfoService) controller.Definition {
-	public := []controller.URLTag{{Name: controller.TagIgnoreToken}}
+func AppDictInfoController(info *service.InfoService) gnctrl.Definition {
+	public := []gnctrl.URLTag{{Name: gnctrl.TagIgnoreToken}}
 
-	return controller.App().
-		Options(controller.RouterOptions{Description: "字典信息", TagName: "字典信息"}).
+	return gnctrl.App().
+		Options(gnctrl.RouterOptions{Description: "字典信息", TagName: "字典信息"}).
 		Route(
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/data",
 				Summary:     "获得字典数据",
-				Handler:     controller.Handle(info.Data),
-				Bind:        controller.BindJSON,
+				Handler:     gnctrl.Handle(info.Data),
+				Bind:        gnctrl.BindJSON,
 				Tags:        public,
-				Transaction: controller.NonTransactional(),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/types",
 				Summary:     "获得所有字典类型",
-				Handler:     controller.Handle(info.Types),
+				Handler:     gnctrl.Handle(info.Types),
 				Tags:        public,
-				Transaction: controller.NonTransactional(),
+				Transaction: gnctrl.NonTransactional(),
 			},
 		).
 		Build()

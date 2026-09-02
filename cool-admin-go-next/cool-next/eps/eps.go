@@ -9,11 +9,11 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/module"
-	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
 )
 
@@ -21,13 +21,13 @@ import (
 type Input struct {
 	Graph       module.Graph
 	Controllers []ControllerInput
-	Descriptors []coreentity.RuntimeDescriptor
+	Descriptors []gnentity.RuntimeDescriptor
 }
 
 // ControllerInput 将静态 Graph Controller 与运行时 Definition 对齐
 type ControllerInput struct {
 	Key        string
-	Definition controller.Definition
+	Definition gnctrl.Definition
 }
 
 // Views 是后台与 App 的最终 EPS 视图
@@ -108,17 +108,17 @@ func (field QueryField) MarshalJSON() ([]byte, error) {
 
 type compiler struct {
 	input       Input
-	controllers map[string]controller.DefinitionSnapshot
+	controllers map[string]gnctrl.DefinitionSnapshot
 	descriptors descriptorResolver
 	graphTables map[string]string
 }
 
 type descriptorResolver struct {
-	byType  map[reflect.Type]coreentity.RuntimeDescriptor
-	byTable map[string]coreentity.RuntimeDescriptor
+	byType  map[reflect.Type]gnentity.RuntimeDescriptor
+	byTable map[string]gnentity.RuntimeDescriptor
 }
 
-func (resolver descriptorResolver) Resolve(value any) (coreentity.Metadata, bool) {
+func (resolver descriptorResolver) Resolve(value any) (gnentity.Metadata, bool) {
 	descriptor, exists := resolver.byType[reflect.TypeOf(value)]
 
 	return descriptor, exists
@@ -135,10 +135,10 @@ var publishedViews atomic.Pointer[Views]
 func CompileViews(input Input, includeDevelopment bool) (*Views, error) {
 	current := &compiler{
 		input:       input,
-		controllers: make(map[string]controller.DefinitionSnapshot),
+		controllers: make(map[string]gnctrl.DefinitionSnapshot),
 		descriptors: descriptorResolver{
-			byType:  make(map[reflect.Type]coreentity.RuntimeDescriptor),
-			byTable: make(map[string]coreentity.RuntimeDescriptor),
+			byType:  make(map[reflect.Type]gnentity.RuntimeDescriptor),
+			byTable: make(map[string]gnentity.RuntimeDescriptor),
 		},
 		graphTables: make(map[string]string),
 	}
@@ -161,7 +161,7 @@ func CompileViews(input Input, includeDevelopment bool) (*Views, error) {
 			continue
 		}
 		target := views.Admin
-		if area == controller.AreaApp {
+		if area == gnctrl.AreaApp {
 			target = views.App
 		}
 		target[definition.Module()] = append(target[definition.Module()], items...)
@@ -209,11 +209,11 @@ func (current *compiler) validate() error {
 		if _, exists := current.controllers[input.Key]; exists {
 			return exception.Core(fmt.Sprintf("EPS Controller %s 重复", input.Key))
 		}
-		snapshot, err := controller.Snapshot(input.Definition)
+		snapshot, err := gnctrl.Snapshot(input.Definition)
 		if err != nil {
 			return exception.WrapCore(err, fmt.Sprintf("读取 EPS Controller %s 失败", input.Key))
 		}
-		if snapshot.Area != controller.AreaAdmin && snapshot.Area != controller.AreaApp {
+		if snapshot.Area != gnctrl.AreaAdmin && snapshot.Area != gnctrl.AreaApp {
 			return exception.Core(fmt.Sprintf("EPS Controller %s 的区域无效", input.Key))
 		}
 		current.controllers[input.Key] = snapshot
@@ -228,23 +228,23 @@ func (current *compiler) validate() error {
 }
 
 func (current *compiler) compileController(
-	definition coreroute.Controller,
+	definition route.Controller,
 	includeDevelopment bool,
-) ([]Controller, controller.Area, error) {
+) ([]Controller, gnctrl.Area, error) {
 	snapshot := current.controllers[definition.Key()]
 	buckets := make([]routeBucket, 0)
 	indexes := make(map[string]int)
 	customRoutes := snapshot.Routes
-	for _, route := range current.controllerRoutes(definition.Key()) {
-		if !includeDevelopment && route.DevelopmentOnly() {
+	for _, currentRoute := range current.controllerRoutes(definition.Key()) {
+		if !includeDevelopment && currentRoute.DevelopmentOnly() {
 			continue
 		}
-		if strings.ContainsAny(route.Path(), "{}:") {
+		if strings.ContainsAny(currentRoute.Path(), "{}:") {
 			continue
 		}
-		prefix, err := routePrefix(route, customRoutes)
+		prefix, err := routePrefix(currentRoute, customRoutes)
 		if err != nil {
-			return nil, snapshot.Area, exception.WrapCore(err, fmt.Sprintf("EPS Controller %s 路由 %s %s 无效", definition.Key(), route.Method(), route.Path()))
+			return nil, snapshot.Area, exception.WrapCore(err, fmt.Sprintf("EPS Controller %s 路由 %s %s 无效", definition.Key(), currentRoute.Method(), currentRoute.Path()))
 		}
 		index, exists := indexes[prefix]
 		if !exists {
@@ -253,8 +253,8 @@ func (current *compiler) compileController(
 			buckets = append(buckets, routeBucket{controller: emptyController(definition, prefix)})
 		}
 		bucket := &buckets[index]
-		bucket.controller.API = append(bucket.controller.API, compileAPI(route, prefix))
-		if route.Kind() == coreroute.KindCRUD {
+		bucket.controller.API = append(bucket.controller.API, compileAPI(currentRoute, prefix))
+		if currentRoute.Kind() == route.KindCRUD {
 			bucket.hasCRUD = true
 		}
 	}
@@ -276,8 +276,8 @@ func (current *compiler) compileController(
 	return result, snapshot.Area, nil
 }
 
-func (current *compiler) controllerRoutes(key string) []coreroute.Route {
-	result := make([]coreroute.Route, 0)
+func (current *compiler) controllerRoutes(key string) []route.Route {
+	result := make([]route.Route, 0)
 	for _, route := range current.input.Graph.Routes().Routes() {
 		if route.Controller() == key {
 			result = append(result, route)
@@ -287,9 +287,9 @@ func (current *compiler) controllerRoutes(key string) []coreroute.Route {
 	return result
 }
 
-func routePrefix(route coreroute.Route, custom []controller.Route) (string, error) {
-	if route.Kind() == coreroute.KindCRUD {
-		prefix := path.Dir(route.Path())
+func routePrefix(currentRoute route.Route, custom []gnctrl.Route) (string, error) {
+	if currentRoute.Kind() == route.KindCRUD {
+		prefix := path.Dir(currentRoute.Path())
 		if prefix == "." || prefix == "/" {
 			return strings.TrimSuffix(prefix, "/"), nil
 		}
@@ -298,7 +298,7 @@ func routePrefix(route coreroute.Route, custom []controller.Route) (string, erro
 	}
 	matched := ""
 	for _, candidate := range custom {
-		if !strings.EqualFold(candidate.Method, route.Method()) || !strings.HasSuffix(route.Path(), candidate.Path) {
+		if !strings.EqualFold(candidate.Method, currentRoute.Method()) || !strings.HasSuffix(currentRoute.Path(), candidate.Path) {
 			continue
 		}
 		if len(candidate.Path) > len(matched) {
@@ -306,13 +306,13 @@ func routePrefix(route coreroute.Route, custom []controller.Route) (string, erro
 		}
 	}
 	if matched != "" {
-		return strings.TrimSuffix(route.Path(), matched), nil
+		return strings.TrimSuffix(currentRoute.Path(), matched), nil
 	}
 
 	return "", exception.Core("找不到对应的运行时自定义 Route")
 }
 
-func emptyController(definition coreroute.Controller, prefix string) Controller {
+func emptyController(definition route.Controller, prefix string) Controller {
 	return Controller{
 		Module: definition.Module(),
 		Prefix: prefix,
@@ -327,7 +327,7 @@ func emptyController(definition coreroute.Controller, prefix string) Controller 
 	}
 }
 
-func compileAPI(route coreroute.Route, prefix string) API {
+func compileAPI(route route.Route, prefix string) API {
 	relative := strings.TrimPrefix(route.Path(), prefix)
 	if relative == "" {
 		relative = "/"
@@ -339,11 +339,11 @@ func compileAPI(route coreroute.Route, prefix string) API {
 		Summary:     route.Summary(),
 		DTS:         make(map[string]any),
 		Prefix:      prefix,
-		IgnoreToken: contains(route.Tags(), controller.TagIgnoreToken),
+		IgnoreToken: contains(route.Tags(), gnctrl.TagIgnoreToken),
 	}
 }
 
-func (current *compiler) compileCRUD(target *Controller, option controller.CurdOption) error {
+func (current *compiler) compileCRUD(target *Controller, option gnctrl.CurdOption) error {
 	descriptor, exists := current.descriptors.byType[reflect.TypeOf(option.Entity)]
 	if !exists {
 		return exception.Core(fmt.Sprintf("实体 %T 的 Descriptor 不存在", option.Entity))
@@ -359,7 +359,7 @@ func (current *compiler) compileCRUD(target *Controller, option controller.CurdO
 	target.Name = entityName(descriptor.Table())
 	target.Columns = compileColumns(descriptor.Fields(), hidden)
 
-	projection, static, err := controller.ProjectQuery(option.PageQueryOp, current.descriptors, option.Entity)
+	projection, static, err := gnctrl.ProjectQuery(option.PageQueryOp, current.descriptors, option.Entity)
 	if err != nil {
 		return exception.WrapCore(err, "投影分页查询失败")
 	}
@@ -372,7 +372,7 @@ func (current *compiler) compileCRUD(target *Controller, option controller.CurdO
 	return nil
 }
 
-func compileColumns(fields []coreentity.Field, hidden map[string]bool) []Column {
+func compileColumns(fields []gnentity.Field, hidden map[string]bool) []Column {
 	columns := make([]Column, 0, len(fields))
 	trailing := make([]Column, 0, 2)
 	for _, field := range fields {
@@ -390,7 +390,7 @@ func compileColumns(fields []coreentity.Field, hidden map[string]bool) []Column 
 	return append(columns, trailing...)
 }
 
-func compileColumn(field coreentity.Field, propertyName, source string) Column {
+func compileColumn(field gnentity.Field, propertyName, source string) Column {
 	constraints := field.Constraints()
 	result := Column{
 		PropertyName: propertyName,
@@ -409,7 +409,7 @@ func compileColumn(field coreentity.Field, propertyName, source string) Column {
 	return result
 }
 
-func compilePageQuery(projection crud.QueryProjection, root coreentity.RuntimeDescriptor, hidden map[string]bool) PageQueryOp {
+func compilePageQuery(projection crud.QueryProjection, root gnentity.RuntimeDescriptor, hidden map[string]bool) PageQueryOp {
 	result := emptyPageQueryOp()
 	for _, column := range projection.KeyWordLikeFields {
 		if visibleColumn(column, root, hidden) {
@@ -430,7 +430,7 @@ func compilePageQuery(projection crud.QueryProjection, root coreentity.RuntimeDe
 	return result
 }
 
-func pageColumns(selects []crud.QuerySelect, root coreentity.RuntimeDescriptor, hidden map[string]bool) []Column {
+func pageColumns(selects []crud.QuerySelect, root gnentity.RuntimeDescriptor, hidden map[string]bool) []Column {
 	columns := make([]Column, 0, len(selects))
 	trailing := make([]Column, 0, 2)
 	for _, selected := range selects {
@@ -448,7 +448,7 @@ func pageColumns(selects []crud.QuerySelect, root coreentity.RuntimeDescriptor, 
 	return append(columns, trailing...)
 }
 
-func visibleColumn(column crud.QueryColumn, root coreentity.RuntimeDescriptor, hidden map[string]bool) bool {
+func visibleColumn(column crud.QueryColumn, root gnentity.RuntimeDescriptor, hidden map[string]bool) bool {
 	if column.Field == nil || !column.Field.Persistent() {
 		return false
 	}
@@ -467,30 +467,30 @@ func emptyPageQueryOp() PageQueryOp {
 	}
 }
 
-func columnType(field coreentity.Field) string {
+func columnType(field gnentity.Field) string {
 	switch field.LogicalType() {
-	case coreentity.LogicalBool:
+	case gnentity.LogicalBool:
 		return "boolean"
-	case coreentity.LogicalInt, coreentity.LogicalUint:
+	case gnentity.LogicalInt, gnentity.LogicalUint:
 		return "number"
-	case coreentity.LogicalFloat:
+	case gnentity.LogicalFloat:
 		if !field.Constraints().HasPrecision {
 			return "number"
 		}
 		return "decimal"
-	case coreentity.LogicalString:
+	case gnentity.LogicalString:
 		if !field.Constraints().HasSize {
 			return "text"
 		}
 		return "string"
-	case coreentity.LogicalBytes:
+	case gnentity.LogicalBytes:
 		return "text"
-	case coreentity.LogicalTime:
+	case gnentity.LogicalTime:
 		if field.SystemMaintained() {
 			return "varchar"
 		}
 		return "date"
-	case coreentity.LogicalJSON:
+	case gnentity.LogicalJSON:
 		return "json"
 	default:
 		return string(field.LogicalType())
@@ -511,21 +511,21 @@ func entityName(table string) string {
 	return result.String()
 }
 
-func parseDefault(logicalType coreentity.LogicalType, value string) any {
+func parseDefault(logicalType gnentity.LogicalType, value string) any {
 	switch logicalType {
-	case coreentity.LogicalBool:
+	case gnentity.LogicalBool:
 		if parsed, err := strconv.ParseBool(value); err == nil {
 			return parsed
 		}
-	case coreentity.LogicalInt:
+	case gnentity.LogicalInt:
 		if parsed, err := strconv.ParseInt(value, 10, 64); err == nil {
 			return parsed
 		}
-	case coreentity.LogicalUint:
+	case gnentity.LogicalUint:
 		if parsed, err := strconv.ParseUint(value, 10, 64); err == nil {
 			return parsed
 		}
-	case coreentity.LogicalFloat:
+	case gnentity.LogicalFloat:
 		if parsed, err := strconv.ParseFloat(value, 64); err == nil {
 			return parsed
 		}
@@ -543,7 +543,7 @@ func controllerName(prefix string) string {
 	return parts[len(parts)-1]
 }
 
-func isTimeField(field coreentity.Field) bool {
+func isTimeField(field gnentity.Field) bool {
 	return isTimeProperty(field.JSONName())
 }
 

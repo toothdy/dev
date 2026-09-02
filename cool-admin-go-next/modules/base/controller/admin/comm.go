@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
@@ -61,60 +61,60 @@ func Program(context.Context) (string, error) {
 }
 
 // 已有依赖可执行的后台通用路由
-func AdminCommController(handler *CommHandler, login *service.LoginService, upload *UploadHandler) controller.Definition {
-	return controller.Admin().
-		Options(controller.RouterOptions{Description: "Base 通用接口", TagName: "Base 通用接口"}).
+func AdminCommController(handler *CommHandler, login *service.LoginService, upload *UploadHandler) gnctrl.Definition {
+	return gnctrl.Admin().
+		Options(gnctrl.RouterOptions{Description: "Base 通用接口", TagName: "Base 通用接口"}).
 		Route(
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/person",
 				Summary:     "个人信息",
-				Handler:     controller.Handle(handler.Person),
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(handler.Person),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:  http.MethodPost,
 				Path:    "/personUpdate",
 				Summary: "修改个人信息",
-				Handler: controller.Handle(handler.PersonUpdate),
-				Bind:    controller.BindJSON,
+				Handler: gnctrl.Handle(handler.PersonUpdate),
+				Bind:    gnctrl.BindJSON,
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/permmenu",
 				Summary:     "权限与菜单",
-				Handler:     controller.Handle(handler.PermissionMenu),
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(handler.PermissionMenu),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/upload",
 				Summary:     "文件上传",
-				Handler:     controller.Handle(upload.AdminUpload),
-				Bind:        controller.BindFile,
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(upload.AdminUpload),
+				Bind:        gnctrl.BindFile,
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/uploadMode",
 				Summary:     "文件上传模式",
-				Handler:     controller.Handle(upload.AdminMode),
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(upload.AdminMode),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/logout",
 				Summary:     "退出",
-				Handler:     controller.Handle(login.Logout),
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(login.Logout),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/program",
 				Summary:     "编程",
-				Handler:     controller.Handle(Program),
-				Tags:        []controller.URLTag{{Name: controller.TagIgnoreToken}},
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(Program),
+				Tags:        []gnctrl.URLTag{{Name: gnctrl.TagIgnoreToken}},
+				Transaction: gnctrl.NonTransactional(),
 			},
 		).
 		Build()

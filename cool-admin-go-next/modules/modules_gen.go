@@ -3,52 +3,52 @@
 package modules
 
 import (
-	context "context"
+	"context"
 	_ "embed"
 	grpcx "github.com/gogf/gf/contrib/rpc/grpcx/v2"
-	gdb "github.com/gogf/gf/v2/database/gdb"
-	gredis "github.com/gogf/gf/v2/database/gredis"
-	g "github.com/gogf/gf/v2/frame/g"
-	ghttp "github.com/gogf/gf/v2/net/ghttp"
-	gmode "github.com/gogf/gf/v2/util/gmode"
-	auth "github.com/toothdy/cool-admin-go-next/cool-next/auth"
-	authbcrypt "github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt"
-	dto "github.com/toothdy/cool-admin-go-next/cool-next/codegen"
-	app "github.com/toothdy/cool-admin-go-next/cool-next/core/app"
-	config "github.com/toothdy/cool-admin-go-next/cool-next/core/config"
-	corecontroller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
-	exception "github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	apphttp "github.com/toothdy/cool-admin-go-next/cool-next/core/http"
-	module "github.com/toothdy/cool-admin-go-next/cool-next/core/module"
-	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
-	crud "github.com/toothdy/cool-admin-go-next/cool-next/crud"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
-	corerecycle "github.com/toothdy/cool-admin-go-next/cool-next/db/recycle"
-	dbschema "github.com/toothdy/cool-admin-go-next/cool-next/db/schema"
-	eps "github.com/toothdy/cool-admin-go-next/cool-next/eps"
-	coolgrpc "github.com/toothdy/cool-admin-go-next/cool-next/grpc"
-	outbox "github.com/toothdy/cool-admin-go-next/cool-next/outbox"
-	seed "github.com/toothdy/cool-admin-go-next/cool-next/seed"
-	base "github.com/toothdy/cool-admin-go-next/modules/base"
-	admin "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin"
-	sys "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys"
+	"github.com/gogf/gf/v2/database/gdb"
+	"github.com/gogf/gf/v2/database/gredis"
+	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/ghttp"
+	"github.com/gogf/gf/v2/util/gmode"
+	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
+	"github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt"
+	"github.com/toothdy/cool-admin-go-next/cool-next/codegen"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/app"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/config"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnhttp"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/module"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
+	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db/recycle"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db/schema"
+	"github.com/toothdy/cool-admin-go-next/cool-next/eps"
+	"github.com/toothdy/cool-admin-go-next/cool-next/grpc"
+	"github.com/toothdy/cool-admin-go-next/cool-next/outbox"
+	"github.com/toothdy/cool-admin-go-next/cool-next/seed"
+	"github.com/toothdy/cool-admin-go-next/modules/base"
+	"github.com/toothdy/cool-admin-go-next/modules/base/controller/admin"
+	"github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys"
 	app2 "github.com/toothdy/cool-admin-go-next/modules/base/controller/app"
-	dto2 "github.com/toothdy/cool-admin-go-next/modules/base/dto"
-	entity "github.com/toothdy/cool-admin-go-next/modules/base/entity"
-	middleware "github.com/toothdy/cool-admin-go-next/modules/base/middleware"
-	schedule "github.com/toothdy/cool-admin-go-next/modules/base/schedule"
-	service "github.com/toothdy/cool-admin-go-next/modules/base/service"
-	dict "github.com/toothdy/cool-admin-go-next/modules/dict"
+	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
+	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
+	"github.com/toothdy/cool-admin-go-next/modules/base/middleware"
+	"github.com/toothdy/cool-admin-go-next/modules/base/schedule"
+	"github.com/toothdy/cool-admin-go-next/modules/base/service"
+	"github.com/toothdy/cool-admin-go-next/modules/dict"
 	admin2 "github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin"
 	app3 "github.com/toothdy/cool-admin-go-next/modules/dict/controller/app"
-	dto3 "github.com/toothdy/cool-admin-go-next/modules/dict/dto"
+	dto2 "github.com/toothdy/cool-admin-go-next/modules/dict/dto"
 	entity2 "github.com/toothdy/cool-admin-go-next/modules/dict/entity"
 	service2 "github.com/toothdy/cool-admin-go-next/modules/dict/service"
-	task "github.com/toothdy/cool-admin-go-next/modules/task"
+	"github.com/toothdy/cool-admin-go-next/modules/task"
 	admin3 "github.com/toothdy/cool-admin-go-next/modules/task/controller/admin"
-	dto4 "github.com/toothdy/cool-admin-go-next/modules/task/dto"
+	dto3 "github.com/toothdy/cool-admin-go-next/modules/task/dto"
 	entity3 "github.com/toothdy/cool-admin-go-next/modules/task/entity"
 	schedule2 "github.com/toothdy/cool-admin-go-next/modules/task/schedule"
 	service3 "github.com/toothdy/cool-admin-go-next/modules/task/service"
@@ -76,7 +76,7 @@ type dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf struct 
 }
 
 type doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf
 }
 
@@ -115,15 +115,15 @@ func (value *doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entit
 }
 
 type compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf struct {
-	coreentity.Descriptor[entity.Conf, uint64]
+	gnentity.Descriptor[entity.Conf, uint64]
 }
 
-func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf) NewDO() gnentity.DOValue {
 	return &doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf() coreentity.Descriptor[entity.Conf, uint64] {
-	descriptor, err := coreentity.Compile[entity.Conf, uint64](entity.ConfSchema())
+func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf() gnentity.Descriptor[entity.Conf, uint64] {
+	descriptor, err := gnentity.Compile[entity.Conf, uint64](entity.ConfSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -143,7 +143,7 @@ type dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment s
 }
 
 type doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment
 }
 
@@ -188,15 +188,15 @@ func (value *doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entit
 }
 
 type compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment struct {
-	coreentity.Descriptor[entity.Department, uint64]
+	gnentity.Descriptor[entity.Department, uint64]
 }
 
-func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment) NewDO() gnentity.DOValue {
 	return &doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment() coreentity.Descriptor[entity.Department, uint64] {
-	descriptor, err := coreentity.Compile[entity.Department, uint64](entity.DepartmentSchema())
+func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment() gnentity.Descriptor[entity.Department, uint64] {
+	descriptor, err := gnentity.Compile[entity.Department, uint64](entity.DepartmentSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -215,7 +215,7 @@ type dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog struct {
 }
 
 type doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog
 }
 
@@ -258,15 +258,15 @@ func (value *doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entit
 }
 
 type compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog struct {
-	coreentity.Descriptor[entity.Log, uint64]
+	gnentity.Descriptor[entity.Log, uint64]
 }
 
-func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog) NewDO() gnentity.DOValue {
 	return &doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog() coreentity.Descriptor[entity.Log, uint64] {
-	descriptor, err := coreentity.Compile[entity.Log, uint64](entity.LogSchema())
+func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog() gnentity.Descriptor[entity.Log, uint64] {
+	descriptor, err := gnentity.Compile[entity.Log, uint64](entity.LogSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -292,7 +292,7 @@ type dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu struct 
 }
 
 type doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu
 }
 
@@ -349,15 +349,15 @@ func (value *doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entit
 }
 
 type compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu struct {
-	coreentity.Descriptor[entity.Menu, uint64]
+	gnentity.Descriptor[entity.Menu, uint64]
 }
 
-func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu) NewDO() gnentity.DOValue {
 	return &doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu() coreentity.Descriptor[entity.Menu, uint64] {
-	descriptor, err := coreentity.Compile[entity.Menu, uint64](entity.MenuSchema())
+func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu() gnentity.Descriptor[entity.Menu, uint64] {
+	descriptor, err := gnentity.Compile[entity.Menu, uint64](entity.MenuSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -377,7 +377,7 @@ type dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam struct
 }
 
 type doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam
 }
 
@@ -422,15 +422,15 @@ func (value *doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entit
 }
 
 type compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam struct {
-	coreentity.Descriptor[entity.Param, uint64]
+	gnentity.Descriptor[entity.Param, uint64]
 }
 
-func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam) NewDO() gnentity.DOValue {
 	return &doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam() coreentity.Descriptor[entity.Param, uint64] {
-	descriptor, err := coreentity.Compile[entity.Param, uint64](entity.ParamSchema())
+func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam() gnentity.Descriptor[entity.Param, uint64] {
+	descriptor, err := gnentity.Compile[entity.Param, uint64](entity.ParamSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -452,7 +452,7 @@ type dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole struct 
 }
 
 type doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole
 }
 
@@ -501,15 +501,15 @@ func (value *doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entit
 }
 
 type compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole struct {
-	coreentity.Descriptor[entity.Role, uint64]
+	gnentity.Descriptor[entity.Role, uint64]
 }
 
-func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole) NewDO() gnentity.DOValue {
 	return &doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole() coreentity.Descriptor[entity.Role, uint64] {
-	descriptor, err := coreentity.Compile[entity.Role, uint64](entity.RoleSchema())
+func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole() gnentity.Descriptor[entity.Role, uint64] {
+	descriptor, err := gnentity.Compile[entity.Role, uint64](entity.RoleSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -526,7 +526,7 @@ type dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartme
 }
 
 type doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment
 }
 
@@ -565,15 +565,15 @@ func (value *doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entit
 }
 
 type compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment struct {
-	coreentity.Descriptor[entity.RoleDepartment, uint64]
+	gnentity.Descriptor[entity.RoleDepartment, uint64]
 }
 
-func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment) NewDO() gnentity.DOValue {
 	return &doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment() coreentity.Descriptor[entity.RoleDepartment, uint64] {
-	descriptor, err := coreentity.Compile[entity.RoleDepartment, uint64](entity.RoleDepartmentSchema())
+func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment() gnentity.Descriptor[entity.RoleDepartment, uint64] {
+	descriptor, err := gnentity.Compile[entity.RoleDepartment, uint64](entity.RoleDepartmentSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -590,7 +590,7 @@ type dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu str
 }
 
 type doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu
 }
 
@@ -629,15 +629,15 @@ func (value *doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entit
 }
 
 type compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu struct {
-	coreentity.Descriptor[entity.RoleMenu, uint64]
+	gnentity.Descriptor[entity.RoleMenu, uint64]
 }
 
-func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu) NewDO() gnentity.DOValue {
 	return &doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu() coreentity.Descriptor[entity.RoleMenu, uint64] {
-	descriptor, err := coreentity.Compile[entity.RoleMenu, uint64](entity.RoleMenuSchema())
+func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu() gnentity.Descriptor[entity.RoleMenu, uint64] {
+	descriptor, err := gnentity.Compile[entity.RoleMenu, uint64](entity.RoleMenuSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -665,7 +665,7 @@ type dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser struct 
 }
 
 type doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser
 }
 
@@ -726,15 +726,15 @@ func (value *doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entit
 }
 
 type compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser struct {
-	coreentity.Descriptor[entity.User, uint64]
+	gnentity.Descriptor[entity.User, uint64]
 }
 
-func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser) NewDO() gnentity.DOValue {
 	return &doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser() coreentity.Descriptor[entity.User, uint64] {
-	descriptor, err := coreentity.Compile[entity.User, uint64](entity.UserSchema())
+func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser() gnentity.Descriptor[entity.User, uint64] {
+	descriptor, err := gnentity.Compile[entity.User, uint64](entity.UserSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -751,7 +751,7 @@ type dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole str
 }
 
 type doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dobasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole
 }
 
@@ -790,15 +790,15 @@ func (value *doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entit
 }
 
 type compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole struct {
-	coreentity.Descriptor[entity.UserRole, uint64]
+	gnentity.Descriptor[entity.UserRole, uint64]
 }
 
-func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole) NewDO() gnentity.DOValue {
 	return &doValuebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole() coreentity.Descriptor[entity.UserRole, uint64] {
-	descriptor, err := coreentity.Compile[entity.UserRole, uint64](entity.UserRoleSchema())
+func descriptorbasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole() gnentity.Descriptor[entity.UserRole, uint64] {
+	descriptor, err := gnentity.Compile[entity.UserRole, uint64](entity.UserRoleSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -819,7 +819,7 @@ type dodictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo struct 
 }
 
 type doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dodictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo
 }
 
@@ -866,15 +866,15 @@ func (value *doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entit
 }
 
 type compiledDescriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo struct {
-	coreentity.Descriptor[entity2.Info, uint64]
+	gnentity.Descriptor[entity2.Info, uint64]
 }
 
-func (descriptor compiledDescriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo) NewDO() gnentity.DOValue {
 	return &doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo() coreentity.Descriptor[entity2.Info, uint64] {
-	descriptor, err := coreentity.Compile[entity2.Info, uint64](entity2.InfoSchema())
+func descriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo() gnentity.Descriptor[entity2.Info, uint64] {
+	descriptor, err := gnentity.Compile[entity2.Info, uint64](entity2.InfoSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -891,7 +891,7 @@ type dodictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType struct 
 }
 
 type doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dodictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType
 }
 
@@ -930,15 +930,15 @@ func (value *doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entit
 }
 
 type compiledDescriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType struct {
-	coreentity.Descriptor[entity2.Type, uint64]
+	gnentity.Descriptor[entity2.Type, uint64]
 }
 
-func (descriptor compiledDescriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType) NewDO() gnentity.DOValue {
 	return &doValuedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType() coreentity.Descriptor[entity2.Type, uint64] {
-	descriptor, err := coreentity.Compile[entity2.Type, uint64](entity2.TypeSchema())
+func descriptordictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType() gnentity.Descriptor[entity2.Type, uint64] {
+	descriptor, err := gnentity.Compile[entity2.Type, uint64](entity2.TypeSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -970,7 +970,7 @@ type dotaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo struct 
 }
 
 type doValuetaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dotaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo
 }
 
@@ -1039,15 +1039,15 @@ func (value *doValuetaskgithub_com_toothdy_cool_admin_go_next_modules_task_entit
 }
 
 type compiledDescriptortaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo struct {
-	coreentity.Descriptor[entity3.Info, uint64]
+	gnentity.Descriptor[entity3.Info, uint64]
 }
 
-func (descriptor compiledDescriptortaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptortaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo) NewDO() gnentity.DOValue {
 	return &doValuetaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptortaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo() coreentity.Descriptor[entity3.Info, uint64] {
-	descriptor, err := coreentity.Compile[entity3.Info, uint64](entity3.InfoSchema())
+func descriptortaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo() gnentity.Descriptor[entity3.Info, uint64] {
+	descriptor, err := gnentity.Compile[entity3.Info, uint64](entity3.InfoSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -1065,7 +1065,7 @@ type dotaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog struct {
 }
 
 type doValuetaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog struct {
-	state coreentity.DOValue
+	state gnentity.DOValue
 	data  dotaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog
 }
 
@@ -1106,15 +1106,15 @@ func (value *doValuetaskgithub_com_toothdy_cool_admin_go_next_modules_task_entit
 }
 
 type compiledDescriptortaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog struct {
-	coreentity.Descriptor[entity3.Log, uint64]
+	gnentity.Descriptor[entity3.Log, uint64]
 }
 
-func (descriptor compiledDescriptortaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog) NewDO() coreentity.DOValue {
+func (descriptor compiledDescriptortaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog) NewDO() gnentity.DOValue {
 	return &doValuetaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog{state: descriptor.Descriptor.NewDO()}
 }
 
-func descriptortaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog() coreentity.Descriptor[entity3.Log, uint64] {
-	descriptor, err := coreentity.Compile[entity3.Log, uint64](entity3.LogSchema())
+func descriptortaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog() gnentity.Descriptor[entity3.Log, uint64] {
+	descriptor, err := gnentity.Compile[entity3.Log, uint64](entity3.LogSchema())
 	if err != nil {
 		panic(err)
 	}
@@ -1126,13 +1126,13 @@ type infrastructureConfig struct {
 		CRUD       crud.Config   `json:"crud"`
 		Outbox     outbox.Config `json:"outbox"`
 		Transports struct {
-			HTTP apphttp.Config  `json:"http"`
-			GRPC coolgrpc.Config `json:"grpc"`
+			HTTP gnhttp.Config `json:"http"`
+			GRPC grpc.Config   `json:"grpc"`
 		} `json:"transports"`
 		Auth struct {
 			JWT     auth.JWTConfig     `json:"jwt"`
 			Session auth.SessionConfig `json:"session"`
-			Bcrypt  authbcrypt.Config  `json:"bcrypt"`
+			Bcrypt  bcrypt.Config      `json:"bcrypt"`
 		} `json:"auth"`
 	} `json:"cool"`
 	Database map[string]gdb.ConfigGroup `json:"database"`
@@ -1143,11 +1143,11 @@ func generatedInfrastructureConfig(ctx context.Context, source config.Source) (i
 	defaults := infrastructureConfig{}
 	defaults.Cool.CRUD = crud.DefaultConfig()
 	defaults.Cool.Outbox = outbox.DefaultConfig()
-	defaults.Cool.Transports.HTTP = apphttp.DefaultConfig()
-	defaults.Cool.Transports.GRPC = coolgrpc.DefaultConfig()
+	defaults.Cool.Transports.HTTP = gnhttp.DefaultConfig()
+	defaults.Cool.Transports.GRPC = grpc.DefaultConfig()
 	defaults.Cool.Auth.JWT = auth.DefaultJWTConfig()
 	defaults.Cool.Auth.Session = auth.DefaultSessionConfig()
-	defaults.Cool.Auth.Bcrypt = authbcrypt.Config{Cost: authbcrypt.DefaultCost}
+	defaults.Cool.Auth.Bcrypt = bcrypt.Config{Cost: bcrypt.DefaultCost}
 	result, err := config.Load(ctx, defaults, source)
 	if err != nil {
 		return infrastructureConfig{}, exception.WrapCore(err, "基础设施配置无效")
@@ -1165,48 +1165,48 @@ func generatedInfrastructureConfig(ctx context.Context, source config.Source) (i
 	return config, nil
 }
 
-func generatedDataRuntime(ctx context.Context, config infrastructureConfig, descriptors ...coreentity.RuntimeDescriptor) (*coredb.Runtime, *corerecycle.Store, error) {
+func generatedDataRuntime(ctx context.Context, config infrastructureConfig, descriptors ...gnentity.RuntimeDescriptor) (*db.Runtime, *recycle.Store, error) {
 	group := config.Cool.Outbox.DatabaseGroup
 	tables := make([]string, len(descriptors))
 	for index, descriptor := range descriptors {
 		tables[index] = descriptor.Table()
 	}
 	if len(descriptors) > 0 && config.Cool.CRUD.SoftDelete {
-		tables = append(tables, corerecycle.TableName)
+		tables = append(tables, recycle.TableName)
 	}
-	bootstrap, err := coredb.New(ctx, coredb.Config{Group: group, Nodes: config.Database[group]})
+	bootstrap, err := db.New(ctx, db.Config{Group: group, Nodes: config.Database[group]})
 	if err != nil {
 		return nil, nil, err
 	}
 	if len(descriptors) > 0 {
-		manager, err := dbschema.New(bootstrap.DB(), bootstrap.Dialect())
+		manager, err := schema.New(bootstrap.DB(), bootstrap.Dialect())
 		if err != nil {
 			return nil, nil, exception.WrapCore(err, "创建 Schema 管理器失败")
 		}
-		metadata := make([]coreentity.Metadata, len(descriptors))
+		metadata := make([]gnentity.Metadata, len(descriptors))
 		for index, descriptor := range descriptors {
 			metadata[index] = descriptor
 		}
-		if _, err = manager.Apply(ctx, dbschema.Sync, metadata...); err != nil {
+		if _, err = manager.Apply(ctx, schema.Sync, metadata...); err != nil {
 			return nil, nil, exception.WrapCore(err, "同步业务表结构失败")
 		}
 	}
 	if len(descriptors) > 0 && config.Cool.CRUD.SoftDelete {
-		bootstrapRecycler, err := corerecycle.New(bootstrap, config.Cool.CRUD, descriptors...)
+		bootstrapRecycler, err := recycle.New(bootstrap, config.Cool.CRUD, descriptors...)
 		if err != nil {
 			return nil, nil, err
 		}
-		if err = bootstrapRecycler.Prepare(ctx, dbschema.Sync); err != nil {
+		if err = bootstrapRecycler.Prepare(ctx, schema.Sync); err != nil {
 			return nil, nil, err
 		}
 	}
-	runtime, err := coredb.New(ctx, coredb.Config{Group: group, Nodes: config.Database[group], TransactionTables: tables})
+	runtime, err := db.New(ctx, db.Config{Group: group, Nodes: config.Database[group], TransactionTables: tables})
 	if err != nil {
 		return nil, nil, err
 	}
-	var store *corerecycle.Store
+	var store *recycle.Store
 	if len(descriptors) > 0 {
-		store, err = corerecycle.New(runtime, config.Cool.CRUD, descriptors...)
+		store, err = recycle.New(runtime, config.Cool.CRUD, descriptors...)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1214,559 +1214,559 @@ func generatedDataRuntime(ctx context.Context, config infrastructureConfig, desc
 	return runtime, store, nil
 }
 
-func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf(descriptor coreentity.Descriptor[entity.Conf, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity.Conf, uint64], error) {
-	return coreservice.NewBase[entity.Conf, uint64](descriptor, runtime, recycler)
+func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf(descriptor gnentity.Descriptor[entity.Conf, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity.Conf, uint64], error) {
+	return gnservice.NewBase[entity.Conf, uint64](descriptor, runtime, recycler)
 }
 
-func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment(descriptor coreentity.Descriptor[entity.Department, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity.Department, uint64], error) {
-	return coreservice.NewBase[entity.Department, uint64](descriptor, runtime, recycler)
+func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment(descriptor gnentity.Descriptor[entity.Department, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity.Department, uint64], error) {
+	return gnservice.NewBase[entity.Department, uint64](descriptor, runtime, recycler)
 }
 
-func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog(descriptor coreentity.Descriptor[entity.Log, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity.Log, uint64], error) {
-	return coreservice.NewBase[entity.Log, uint64](descriptor, runtime, recycler)
+func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog(descriptor gnentity.Descriptor[entity.Log, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity.Log, uint64], error) {
+	return gnservice.NewBase[entity.Log, uint64](descriptor, runtime, recycler)
 }
 
-func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu(descriptor coreentity.Descriptor[entity.Menu, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity.Menu, uint64], error) {
-	return coreservice.NewBase[entity.Menu, uint64](descriptor, runtime, recycler)
+func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu(descriptor gnentity.Descriptor[entity.Menu, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity.Menu, uint64], error) {
+	return gnservice.NewBase[entity.Menu, uint64](descriptor, runtime, recycler)
 }
 
-func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam(descriptor coreentity.Descriptor[entity.Param, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity.Param, uint64], error) {
-	return coreservice.NewBase[entity.Param, uint64](descriptor, runtime, recycler)
+func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam(descriptor gnentity.Descriptor[entity.Param, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity.Param, uint64], error) {
+	return gnservice.NewBase[entity.Param, uint64](descriptor, runtime, recycler)
 }
 
-func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole(descriptor coreentity.Descriptor[entity.Role, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity.Role, uint64], error) {
-	return coreservice.NewBase[entity.Role, uint64](descriptor, runtime, recycler)
+func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole(descriptor gnentity.Descriptor[entity.Role, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity.Role, uint64], error) {
+	return gnservice.NewBase[entity.Role, uint64](descriptor, runtime, recycler)
 }
 
-func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment(descriptor coreentity.Descriptor[entity.RoleDepartment, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity.RoleDepartment, uint64], error) {
-	return coreservice.NewBase[entity.RoleDepartment, uint64](descriptor, runtime, recycler)
+func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment(descriptor gnentity.Descriptor[entity.RoleDepartment, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity.RoleDepartment, uint64], error) {
+	return gnservice.NewBase[entity.RoleDepartment, uint64](descriptor, runtime, recycler)
 }
 
-func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu(descriptor coreentity.Descriptor[entity.RoleMenu, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity.RoleMenu, uint64], error) {
-	return coreservice.NewBase[entity.RoleMenu, uint64](descriptor, runtime, recycler)
+func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu(descriptor gnentity.Descriptor[entity.RoleMenu, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity.RoleMenu, uint64], error) {
+	return gnservice.NewBase[entity.RoleMenu, uint64](descriptor, runtime, recycler)
 }
 
-func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser(descriptor coreentity.Descriptor[entity.User, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity.User, uint64], error) {
-	return coreservice.NewBase[entity.User, uint64](descriptor, runtime, recycler)
+func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser(descriptor gnentity.Descriptor[entity.User, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity.User, uint64], error) {
+	return gnservice.NewBase[entity.User, uint64](descriptor, runtime, recycler)
 }
 
-func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole(descriptor coreentity.Descriptor[entity.UserRole, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity.UserRole, uint64], error) {
-	return coreservice.NewBase[entity.UserRole, uint64](descriptor, runtime, recycler)
+func basebasegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole(descriptor gnentity.Descriptor[entity.UserRole, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity.UserRole, uint64], error) {
+	return gnservice.NewBase[entity.UserRole, uint64](descriptor, runtime, recycler)
 }
 
-func basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo(descriptor coreentity.Descriptor[entity2.Info, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity2.Info, uint64], error) {
-	return coreservice.NewBase[entity2.Info, uint64](descriptor, runtime, recycler)
+func basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo(descriptor gnentity.Descriptor[entity2.Info, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity2.Info, uint64], error) {
+	return gnservice.NewBase[entity2.Info, uint64](descriptor, runtime, recycler)
 }
 
-func basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType(descriptor coreentity.Descriptor[entity2.Type, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity2.Type, uint64], error) {
-	return coreservice.NewBase[entity2.Type, uint64](descriptor, runtime, recycler)
+func basedictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType(descriptor gnentity.Descriptor[entity2.Type, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity2.Type, uint64], error) {
+	return gnservice.NewBase[entity2.Type, uint64](descriptor, runtime, recycler)
 }
 
-func basetaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo(descriptor coreentity.Descriptor[entity3.Info, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity3.Info, uint64], error) {
-	return coreservice.NewBase[entity3.Info, uint64](descriptor, runtime, recycler)
+func basetaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo(descriptor gnentity.Descriptor[entity3.Info, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity3.Info, uint64], error) {
+	return gnservice.NewBase[entity3.Info, uint64](descriptor, runtime, recycler)
 }
 
-func basetaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog(descriptor coreentity.Descriptor[entity3.Log, uint64], runtime *coredb.Runtime, recycler *corerecycle.Store) (*coreservice.Base[entity3.Log, uint64], error) {
-	return coreservice.NewBase[entity3.Log, uint64](descriptor, runtime, recycler)
+func basetaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog(descriptor gnentity.Descriptor[entity3.Log, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[entity3.Log, uint64], error) {
+	return gnservice.NewBase[entity3.Log, uint64](descriptor, runtime, recycler)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceAdd coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceAdd gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceAdd(ctx context.Context, instance *service.ConfService, input coreservice.AddInput[entity.Conf]) (coreservice.AddResult[uint64], error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceAdd(ctx context.Context, instance *service.ConfService, input gnservice.AddInput[entity.Conf]) (gnservice.AddResult[uint64], error) {
 	return instance.Base.Add(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceDelete coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceDelete gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceDelete(ctx context.Context, instance *service.ConfService, input coreservice.DeleteInput[uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceDelete(ctx context.Context, instance *service.ConfService, input gnservice.DeleteInput[uint64]) error {
 	return instance.Base.Delete(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceUpdate coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceUpdate gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceUpdate(ctx context.Context, instance *service.ConfService, input coreservice.UpdateInput[entity.Conf, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceUpdate(ctx context.Context, instance *service.ConfService, input gnservice.UpdateInput[entity.Conf, uint64]) error {
 	return instance.Base.Update(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceInfo coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceInfo gnservice.ActionMode = gnservice.ActionModeBase
 
 func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceInfo(ctx context.Context, instance *service.ConfService, input uint64) (any, error) {
 	return instance.Base.Info(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceList coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceList gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceList(ctx context.Context, instance *service.ConfService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceList(ctx context.Context, instance *service.ConfService, input gnservice.Query) (any, error) {
 	return instance.Base.List(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServicePage coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServicePage gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServicePage(ctx context.Context, instance *service.ConfService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServicePage(ctx context.Context, instance *service.ConfService, input gnservice.Query) (any, error) {
 	return instance.Base.Page(ctx, input)
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceModifyBefore(ctx context.Context, instance *service.ConfService, mutation *coreservice.Mutation[entity.Conf, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceModifyBefore(ctx context.Context, instance *service.ConfService, mutation *gnservice.Mutation[entity.Conf, uint64]) error {
 	return nil
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceModifyAfter(ctx context.Context, instance *service.ConfService, mutation *coreservice.Mutation[entity.Conf, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceConfServiceModifyAfter(ctx context.Context, instance *service.ConfService, mutation *gnservice.Mutation[entity.Conf, uint64]) error {
 	return nil
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceAdd coreservice.ActionMode = coreservice.ActionModeDelegate
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceAdd gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceAdd(ctx context.Context, instance *service.DepartmentService, input coreservice.AddInput[entity.Department]) (coreservice.AddResult[uint64], error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceAdd(ctx context.Context, instance *service.DepartmentService, input gnservice.AddInput[entity.Department]) (gnservice.AddResult[uint64], error) {
 	return instance.Add(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceDelete coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceDelete gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceDelete(ctx context.Context, instance *service.DepartmentService, input coreservice.DeleteInput[uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceDelete(ctx context.Context, instance *service.DepartmentService, input gnservice.DeleteInput[uint64]) error {
 	return instance.Base.Delete(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceUpdate coreservice.ActionMode = coreservice.ActionModeDelegate
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceUpdate gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceUpdate(ctx context.Context, instance *service.DepartmentService, input coreservice.UpdateInput[entity.Department, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceUpdate(ctx context.Context, instance *service.DepartmentService, input gnservice.UpdateInput[entity.Department, uint64]) error {
 	return instance.Update(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceInfo coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceInfo gnservice.ActionMode = gnservice.ActionModeBase
 
 func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceInfo(ctx context.Context, instance *service.DepartmentService, input uint64) (any, error) {
 	return instance.Base.Info(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceList coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceList gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceList(ctx context.Context, instance *service.DepartmentService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceList(ctx context.Context, instance *service.DepartmentService, input gnservice.Query) (any, error) {
 	return instance.Base.List(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServicePage coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServicePage gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServicePage(ctx context.Context, instance *service.DepartmentService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServicePage(ctx context.Context, instance *service.DepartmentService, input gnservice.Query) (any, error) {
 	return instance.Base.Page(ctx, input)
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceModifyBefore(ctx context.Context, instance *service.DepartmentService, mutation *coreservice.Mutation[entity.Department, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceModifyBefore(ctx context.Context, instance *service.DepartmentService, mutation *gnservice.Mutation[entity.Department, uint64]) error {
 	return nil
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceModifyAfter(ctx context.Context, instance *service.DepartmentService, mutation *coreservice.Mutation[entity.Department, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceModifyAfter(ctx context.Context, instance *service.DepartmentService, mutation *gnservice.Mutation[entity.Department, uint64]) error {
 	return nil
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceAdd coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceAdd gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceAdd(ctx context.Context, instance *service.LogService, input coreservice.AddInput[entity.Log]) (coreservice.AddResult[uint64], error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceAdd(ctx context.Context, instance *service.LogService, input gnservice.AddInput[entity.Log]) (gnservice.AddResult[uint64], error) {
 	return instance.Base.Add(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceDelete coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceDelete gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceDelete(ctx context.Context, instance *service.LogService, input coreservice.DeleteInput[uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceDelete(ctx context.Context, instance *service.LogService, input gnservice.DeleteInput[uint64]) error {
 	return instance.Base.Delete(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceUpdate coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceUpdate gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceUpdate(ctx context.Context, instance *service.LogService, input coreservice.UpdateInput[entity.Log, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceUpdate(ctx context.Context, instance *service.LogService, input gnservice.UpdateInput[entity.Log, uint64]) error {
 	return instance.Base.Update(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceInfo coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceInfo gnservice.ActionMode = gnservice.ActionModeBase
 
 func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceInfo(ctx context.Context, instance *service.LogService, input uint64) (any, error) {
 	return instance.Base.Info(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceList coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceList gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceList(ctx context.Context, instance *service.LogService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceList(ctx context.Context, instance *service.LogService, input gnservice.Query) (any, error) {
 	return instance.Base.List(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServicePage coreservice.ActionMode = coreservice.ActionModeDelegate
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServicePage gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServicePage(ctx context.Context, instance *service.LogService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServicePage(ctx context.Context, instance *service.LogService, input gnservice.Query) (any, error) {
 	return instance.Page(ctx, input)
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceModifyBefore(ctx context.Context, instance *service.LogService, mutation *coreservice.Mutation[entity.Log, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceModifyBefore(ctx context.Context, instance *service.LogService, mutation *gnservice.Mutation[entity.Log, uint64]) error {
 	return nil
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceModifyAfter(ctx context.Context, instance *service.LogService, mutation *coreservice.Mutation[entity.Log, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServiceModifyAfter(ctx context.Context, instance *service.LogService, mutation *gnservice.Mutation[entity.Log, uint64]) error {
 	return nil
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceAdd coreservice.ActionMode = coreservice.ActionModeOverride
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceAdd gnservice.ActionMode = gnservice.ActionModeOverride
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceAdd(ctx context.Context, instance *service.MenuService, input coreservice.AddInput[entity.Menu]) (coreservice.AddResult[uint64], error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceAdd(ctx context.Context, instance *service.MenuService, input gnservice.AddInput[entity.Menu]) (gnservice.AddResult[uint64], error) {
 	return instance.Add(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceDelete coreservice.ActionMode = coreservice.ActionModeOverride
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceDelete gnservice.ActionMode = gnservice.ActionModeOverride
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceDelete(ctx context.Context, instance *service.MenuService, input coreservice.DeleteInput[uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceDelete(ctx context.Context, instance *service.MenuService, input gnservice.DeleteInput[uint64]) error {
 	return instance.Delete(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceUpdate coreservice.ActionMode = coreservice.ActionModeOverride
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceUpdate gnservice.ActionMode = gnservice.ActionModeOverride
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceUpdate(ctx context.Context, instance *service.MenuService, input coreservice.UpdateInput[entity.Menu, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceUpdate(ctx context.Context, instance *service.MenuService, input gnservice.UpdateInput[entity.Menu, uint64]) error {
 	return instance.Update(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceInfo coreservice.ActionMode = coreservice.ActionModeOverride
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceInfo gnservice.ActionMode = gnservice.ActionModeOverride
 
 func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceInfo(ctx context.Context, instance *service.MenuService, input uint64) (any, error) {
 	return instance.Info(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceList coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceList gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceList(ctx context.Context, instance *service.MenuService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceList(ctx context.Context, instance *service.MenuService, input gnservice.Query) (any, error) {
 	return instance.Base.List(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServicePage coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServicePage gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServicePage(ctx context.Context, instance *service.MenuService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServicePage(ctx context.Context, instance *service.MenuService, input gnservice.Query) (any, error) {
 	return instance.Base.Page(ctx, input)
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceModifyBefore(ctx context.Context, instance *service.MenuService, mutation *coreservice.Mutation[entity.Menu, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceModifyBefore(ctx context.Context, instance *service.MenuService, mutation *gnservice.Mutation[entity.Menu, uint64]) error {
 	return nil
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceModifyAfter(ctx context.Context, instance *service.MenuService, mutation *coreservice.Mutation[entity.Menu, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceModifyAfter(ctx context.Context, instance *service.MenuService, mutation *gnservice.Mutation[entity.Menu, uint64]) error {
 	return nil
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceAdd coreservice.ActionMode = coreservice.ActionModeDelegate
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceAdd gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceAdd(ctx context.Context, instance *service.ParamService, input coreservice.AddInput[entity.Param]) (coreservice.AddResult[uint64], error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceAdd(ctx context.Context, instance *service.ParamService, input gnservice.AddInput[entity.Param]) (gnservice.AddResult[uint64], error) {
 	return instance.Add(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceDelete coreservice.ActionMode = coreservice.ActionModeDelegate
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceDelete gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceDelete(ctx context.Context, instance *service.ParamService, input coreservice.DeleteInput[uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceDelete(ctx context.Context, instance *service.ParamService, input gnservice.DeleteInput[uint64]) error {
 	return instance.Delete(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceUpdate coreservice.ActionMode = coreservice.ActionModeDelegate
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceUpdate gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceUpdate(ctx context.Context, instance *service.ParamService, input coreservice.UpdateInput[entity.Param, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceUpdate(ctx context.Context, instance *service.ParamService, input gnservice.UpdateInput[entity.Param, uint64]) error {
 	return instance.Update(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceInfo coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceInfo gnservice.ActionMode = gnservice.ActionModeBase
 
 func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceInfo(ctx context.Context, instance *service.ParamService, input uint64) (any, error) {
 	return instance.Base.Info(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceList coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceList gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceList(ctx context.Context, instance *service.ParamService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceList(ctx context.Context, instance *service.ParamService, input gnservice.Query) (any, error) {
 	return instance.Base.List(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServicePage coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServicePage gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServicePage(ctx context.Context, instance *service.ParamService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServicePage(ctx context.Context, instance *service.ParamService, input gnservice.Query) (any, error) {
 	return instance.Base.Page(ctx, input)
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceModifyBefore(ctx context.Context, instance *service.ParamService, mutation *coreservice.Mutation[entity.Param, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceModifyBefore(ctx context.Context, instance *service.ParamService, mutation *gnservice.Mutation[entity.Param, uint64]) error {
 	return nil
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceModifyAfter(ctx context.Context, instance *service.ParamService, mutation *coreservice.Mutation[entity.Param, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceModifyAfter(ctx context.Context, instance *service.ParamService, mutation *gnservice.Mutation[entity.Param, uint64]) error {
 	return nil
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceAdd coreservice.ActionMode = coreservice.ActionModeOverride
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceAdd gnservice.ActionMode = gnservice.ActionModeOverride
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceAdd(ctx context.Context, instance *service.RoleService, input coreservice.AddInput[entity.Role]) (coreservice.AddResult[uint64], error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceAdd(ctx context.Context, instance *service.RoleService, input gnservice.AddInput[entity.Role]) (gnservice.AddResult[uint64], error) {
 	return instance.Add(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceDelete coreservice.ActionMode = coreservice.ActionModeOverride
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceDelete gnservice.ActionMode = gnservice.ActionModeOverride
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceDelete(ctx context.Context, instance *service.RoleService, input coreservice.DeleteInput[uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceDelete(ctx context.Context, instance *service.RoleService, input gnservice.DeleteInput[uint64]) error {
 	return instance.Delete(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceUpdate coreservice.ActionMode = coreservice.ActionModeOverride
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceUpdate gnservice.ActionMode = gnservice.ActionModeOverride
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceUpdate(ctx context.Context, instance *service.RoleService, input coreservice.UpdateInput[entity.Role, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceUpdate(ctx context.Context, instance *service.RoleService, input gnservice.UpdateInput[entity.Role, uint64]) error {
 	return instance.Update(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceInfo coreservice.ActionMode = coreservice.ActionModeOverride
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceInfo gnservice.ActionMode = gnservice.ActionModeOverride
 
 func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceInfo(ctx context.Context, instance *service.RoleService, input uint64) (any, error) {
 	return instance.Info(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceList coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceList gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceList(ctx context.Context, instance *service.RoleService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceList(ctx context.Context, instance *service.RoleService, input gnservice.Query) (any, error) {
 	return instance.Base.List(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServicePage coreservice.ActionMode = coreservice.ActionModeOverride
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServicePage gnservice.ActionMode = gnservice.ActionModeOverride
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServicePage(ctx context.Context, instance *service.RoleService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServicePage(ctx context.Context, instance *service.RoleService, input gnservice.Query) (any, error) {
 	return instance.Page(ctx, input)
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceModifyBefore(ctx context.Context, instance *service.RoleService, mutation *coreservice.Mutation[entity.Role, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceModifyBefore(ctx context.Context, instance *service.RoleService, mutation *gnservice.Mutation[entity.Role, uint64]) error {
 	return nil
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceModifyAfter(ctx context.Context, instance *service.RoleService, mutation *coreservice.Mutation[entity.Role, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceModifyAfter(ctx context.Context, instance *service.RoleService, mutation *gnservice.Mutation[entity.Role, uint64]) error {
 	return nil
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceAdd coreservice.ActionMode = coreservice.ActionModeDelegate
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceAdd gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceAdd(ctx context.Context, instance *service.UserService, input coreservice.AddInput[entity.User]) (coreservice.AddResult[uint64], error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceAdd(ctx context.Context, instance *service.UserService, input gnservice.AddInput[entity.User]) (gnservice.AddResult[uint64], error) {
 	return instance.Add(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceDelete coreservice.ActionMode = coreservice.ActionModeDelegate
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceDelete gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceDelete(ctx context.Context, instance *service.UserService, input coreservice.DeleteInput[uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceDelete(ctx context.Context, instance *service.UserService, input gnservice.DeleteInput[uint64]) error {
 	return instance.Delete(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceUpdate coreservice.ActionMode = coreservice.ActionModeDelegate
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceUpdate gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceUpdate(ctx context.Context, instance *service.UserService, input coreservice.UpdateInput[entity.User, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceUpdate(ctx context.Context, instance *service.UserService, input gnservice.UpdateInput[entity.User, uint64]) error {
 	return instance.Update(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceInfo coreservice.ActionMode = coreservice.ActionModeDelegate
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceInfo gnservice.ActionMode = gnservice.ActionModeDelegate
 
 func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceInfo(ctx context.Context, instance *service.UserService, input uint64) (any, error) {
 	return instance.Info(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceList coreservice.ActionMode = coreservice.ActionModeBase
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceList gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceList(ctx context.Context, instance *service.UserService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceList(ctx context.Context, instance *service.UserService, input gnservice.Query) (any, error) {
 	return instance.Base.List(ctx, input)
 }
 
-const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServicePage coreservice.ActionMode = coreservice.ActionModeOverride
+const modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServicePage gnservice.ActionMode = gnservice.ActionModeOverride
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServicePage(ctx context.Context, instance *service.UserService, input coreservice.Query) (any, error) {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServicePage(ctx context.Context, instance *service.UserService, input gnservice.Query) (any, error) {
 	return instance.Page(ctx, input)
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceModifyBefore(ctx context.Context, instance *service.UserService, mutation *coreservice.Mutation[entity.User, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceModifyBefore(ctx context.Context, instance *service.UserService, mutation *gnservice.Mutation[entity.User, uint64]) error {
 	return nil
 }
 
-func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceModifyAfter(ctx context.Context, instance *service.UserService, mutation *coreservice.Mutation[entity.User, uint64]) error {
+func adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceModifyAfter(ctx context.Context, instance *service.UserService, mutation *gnservice.Mutation[entity.User, uint64]) error {
 	return nil
 }
 
-const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceAdd coreservice.ActionMode = coreservice.ActionModeBase
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceAdd gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceAdd(ctx context.Context, instance *service2.InfoService, input coreservice.AddInput[entity2.Info]) (coreservice.AddResult[uint64], error) {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceAdd(ctx context.Context, instance *service2.InfoService, input gnservice.AddInput[entity2.Info]) (gnservice.AddResult[uint64], error) {
 	return instance.Base.Add(ctx, input)
 }
 
-const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceDelete coreservice.ActionMode = coreservice.ActionModeDelegate
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceDelete gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceDelete(ctx context.Context, instance *service2.InfoService, input coreservice.DeleteInput[uint64]) error {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceDelete(ctx context.Context, instance *service2.InfoService, input gnservice.DeleteInput[uint64]) error {
 	return instance.Delete(ctx, input)
 }
 
-const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceUpdate coreservice.ActionMode = coreservice.ActionModeBase
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceUpdate gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceUpdate(ctx context.Context, instance *service2.InfoService, input coreservice.UpdateInput[entity2.Info, uint64]) error {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceUpdate(ctx context.Context, instance *service2.InfoService, input gnservice.UpdateInput[entity2.Info, uint64]) error {
 	return instance.Base.Update(ctx, input)
 }
 
-const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceInfo coreservice.ActionMode = coreservice.ActionModeBase
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceInfo gnservice.ActionMode = gnservice.ActionModeBase
 
 func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceInfo(ctx context.Context, instance *service2.InfoService, input uint64) (any, error) {
 	return instance.Base.Info(ctx, input)
 }
 
-const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceList coreservice.ActionMode = coreservice.ActionModeBase
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceList gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceList(ctx context.Context, instance *service2.InfoService, input coreservice.Query) (any, error) {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceList(ctx context.Context, instance *service2.InfoService, input gnservice.Query) (any, error) {
 	return instance.Base.List(ctx, input)
 }
 
-const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServicePage coreservice.ActionMode = coreservice.ActionModeBase
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServicePage gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServicePage(ctx context.Context, instance *service2.InfoService, input coreservice.Query) (any, error) {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServicePage(ctx context.Context, instance *service2.InfoService, input gnservice.Query) (any, error) {
 	return instance.Base.Page(ctx, input)
 }
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceModifyBefore(ctx context.Context, instance *service2.InfoService, mutation *coreservice.Mutation[entity2.Info, uint64]) error {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceModifyBefore(ctx context.Context, instance *service2.InfoService, mutation *gnservice.Mutation[entity2.Info, uint64]) error {
 	return nil
 }
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceModifyAfter(ctx context.Context, instance *service2.InfoService, mutation *coreservice.Mutation[entity2.Info, uint64]) error {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceModifyAfter(ctx context.Context, instance *service2.InfoService, mutation *gnservice.Mutation[entity2.Info, uint64]) error {
 	return nil
 }
 
-const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceAdd coreservice.ActionMode = coreservice.ActionModeBase
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceAdd gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceAdd(ctx context.Context, instance *service2.TypeService, input coreservice.AddInput[entity2.Type]) (coreservice.AddResult[uint64], error) {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceAdd(ctx context.Context, instance *service2.TypeService, input gnservice.AddInput[entity2.Type]) (gnservice.AddResult[uint64], error) {
 	return instance.Base.Add(ctx, input)
 }
 
-const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceDelete coreservice.ActionMode = coreservice.ActionModeDelegate
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceDelete gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceDelete(ctx context.Context, instance *service2.TypeService, input coreservice.DeleteInput[uint64]) error {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceDelete(ctx context.Context, instance *service2.TypeService, input gnservice.DeleteInput[uint64]) error {
 	return instance.Delete(ctx, input)
 }
 
-const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceUpdate coreservice.ActionMode = coreservice.ActionModeBase
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceUpdate gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceUpdate(ctx context.Context, instance *service2.TypeService, input coreservice.UpdateInput[entity2.Type, uint64]) error {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceUpdate(ctx context.Context, instance *service2.TypeService, input gnservice.UpdateInput[entity2.Type, uint64]) error {
 	return instance.Base.Update(ctx, input)
 }
 
-const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceInfo coreservice.ActionMode = coreservice.ActionModeBase
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceInfo gnservice.ActionMode = gnservice.ActionModeBase
 
 func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceInfo(ctx context.Context, instance *service2.TypeService, input uint64) (any, error) {
 	return instance.Base.Info(ctx, input)
 }
 
-const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceList coreservice.ActionMode = coreservice.ActionModeBase
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceList gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceList(ctx context.Context, instance *service2.TypeService, input coreservice.Query) (any, error) {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceList(ctx context.Context, instance *service2.TypeService, input gnservice.Query) (any, error) {
 	return instance.Base.List(ctx, input)
 }
 
-const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServicePage coreservice.ActionMode = coreservice.ActionModeBase
+const modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServicePage gnservice.ActionMode = gnservice.ActionModeBase
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServicePage(ctx context.Context, instance *service2.TypeService, input coreservice.Query) (any, error) {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServicePage(ctx context.Context, instance *service2.TypeService, input gnservice.Query) (any, error) {
 	return instance.Base.Page(ctx, input)
 }
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceModifyBefore(ctx context.Context, instance *service2.TypeService, mutation *coreservice.Mutation[entity2.Type, uint64]) error {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceModifyBefore(ctx context.Context, instance *service2.TypeService, mutation *gnservice.Mutation[entity2.Type, uint64]) error {
 	return nil
 }
 
-func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceModifyAfter(ctx context.Context, instance *service2.TypeService, mutation *coreservice.Mutation[entity2.Type, uint64]) error {
+func adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceModifyAfter(ctx context.Context, instance *service2.TypeService, mutation *gnservice.Mutation[entity2.Type, uint64]) error {
 	return nil
 }
 
-const modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceAdd coreservice.ActionMode = coreservice.ActionModeDelegate
+const modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceAdd gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceAdd(ctx context.Context, instance *service3.InfoService, input coreservice.AddInput[entity3.Info]) (coreservice.AddResult[uint64], error) {
+func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceAdd(ctx context.Context, instance *service3.InfoService, input gnservice.AddInput[entity3.Info]) (gnservice.AddResult[uint64], error) {
 	return instance.Add(ctx, input)
 }
 
-const modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceDelete coreservice.ActionMode = coreservice.ActionModeDelegate
+const modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceDelete gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceDelete(ctx context.Context, instance *service3.InfoService, input coreservice.DeleteInput[uint64]) error {
+func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceDelete(ctx context.Context, instance *service3.InfoService, input gnservice.DeleteInput[uint64]) error {
 	return instance.Delete(ctx, input)
 }
 
-const modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceUpdate coreservice.ActionMode = coreservice.ActionModeDelegate
+const modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceUpdate gnservice.ActionMode = gnservice.ActionModeDelegate
 
-func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceUpdate(ctx context.Context, instance *service3.InfoService, input coreservice.UpdateInput[entity3.Info, uint64]) error {
+func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceUpdate(ctx context.Context, instance *service3.InfoService, input gnservice.UpdateInput[entity3.Info, uint64]) error {
 	return instance.Update(ctx, input)
 }
 
-const modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceInfo coreservice.ActionMode = coreservice.ActionModeBase
+const modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceInfo gnservice.ActionMode = gnservice.ActionModeBase
 
 func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceInfo(ctx context.Context, instance *service3.InfoService, input uint64) (any, error) {
 	return instance.Base.Info(ctx, input)
 }
 
-const modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceList coreservice.ActionMode = coreservice.ActionModeBase
+const modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceList gnservice.ActionMode = gnservice.ActionModeBase
 
-func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceList(ctx context.Context, instance *service3.InfoService, input coreservice.Query) (any, error) {
+func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceList(ctx context.Context, instance *service3.InfoService, input gnservice.Query) (any, error) {
 	return instance.Base.List(ctx, input)
 }
 
-const modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServicePage coreservice.ActionMode = coreservice.ActionModeBase
+const modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServicePage gnservice.ActionMode = gnservice.ActionModeBase
 
-func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServicePage(ctx context.Context, instance *service3.InfoService, input coreservice.Query) (any, error) {
+func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServicePage(ctx context.Context, instance *service3.InfoService, input gnservice.Query) (any, error) {
 	return instance.Base.Page(ctx, input)
 }
 
-func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceModifyBefore(ctx context.Context, instance *service3.InfoService, mutation *coreservice.Mutation[entity3.Info, uint64]) error {
+func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceModifyBefore(ctx context.Context, instance *service3.InfoService, mutation *gnservice.Mutation[entity3.Info, uint64]) error {
 	return nil
 }
 
-func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceModifyAfter(ctx context.Context, instance *service3.InfoService, mutation *coreservice.Mutation[entity3.Info, uint64]) error {
+func adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceModifyAfter(ctx context.Context, instance *service3.InfoService, mutation *gnservice.Mutation[entity3.Info, uint64]) error {
 	return nil
 }
 
-func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCodingController(dependency0 *admin.ToolHandler) corecontroller.Definition {
+func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCodingController(dependency0 *admin.ToolHandler) gnctrl.Definition {
 	return admin.AdminCodingController(dependency0)
 }
 
-func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCommController(dependency0 *admin.CommHandler, dependency1 *service.LoginService, dependency2 *admin.UploadHandler) corecontroller.Definition {
+func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCommController(dependency0 *admin.CommHandler, dependency1 *service.LoginService, dependency2 *admin.UploadHandler) gnctrl.Definition {
 	return admin.AdminCommController(dependency0, dependency1, dependency2)
 }
 
-func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminOpenController(dependency0 *admin.OpenHandler) corecontroller.Definition {
+func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminOpenController(dependency0 *admin.OpenHandler) gnctrl.Definition {
 	return admin.AdminOpenController(dependency0)
 }
 
-func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminUploadController(dependency0 *admin.UploadHandler) corecontroller.Definition {
+func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminUploadController(dependency0 *admin.UploadHandler) gnctrl.Definition {
 	return admin.AdminUploadController(dependency0)
 }
 
-func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysDepartmentController(dependency0 *service.DepartmentService, dependency1 *sys.DepartmentHandler) corecontroller.Definition {
+func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysDepartmentController(dependency0 *service.DepartmentService, dependency1 *sys.DepartmentHandler) gnctrl.Definition {
 	return sys.AdminSysDepartmentController(dependency0, dependency1)
 }
 
-func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysLogController(dependency0 *service.LogService, dependency1 *sys.LogHandler) corecontroller.Definition {
+func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysLogController(dependency0 *service.LogService, dependency1 *sys.LogHandler) gnctrl.Definition {
 	return sys.AdminSysLogController(dependency0, dependency1)
 }
 
-func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController(dependency0 *service.MenuService, dependency1 *sys.MenuToolHandler) corecontroller.Definition {
+func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController(dependency0 *service.MenuService, dependency1 *sys.MenuToolHandler) gnctrl.Definition {
 	return sys.AdminSysMenuController(dependency0, dependency1)
 }
 
-func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController(dependency0 *service.ParamService, dependency1 *sys.ParamHTMLHandler) corecontroller.Definition {
+func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController(dependency0 *service.ParamService, dependency1 *sys.ParamHTMLHandler) gnctrl.Definition {
 	return sys.AdminSysParamController(dependency0, dependency1)
 }
 
-func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController(dependency0 *service.RoleService) corecontroller.Definition {
+func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController(dependency0 *service.RoleService) gnctrl.Definition {
 	return sys.AdminSysRoleController(dependency0)
 }
 
-func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController(dependency0 *service.UserService) corecontroller.Definition {
+func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController(dependency0 *service.UserService) gnctrl.Definition {
 	return sys.AdminSysUserController(dependency0)
 }
 
-func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appAppCommController(dependency0 *app2.CommHandler) corecontroller.Definition {
+func controllerbasegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appAppCommController(dependency0 *app2.CommHandler) gnctrl.Definition {
 	return app2.AppCommController(dependency0)
 }
 
-func controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController(dependency0 *service2.InfoService) corecontroller.Definition {
+func controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController(dependency0 *service2.InfoService) gnctrl.Definition {
 	return admin2.AdminDictInfoController(dependency0)
 }
 
-func controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController(dependency0 *service2.TypeService) corecontroller.Definition {
+func controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController(dependency0 *service2.TypeService) gnctrl.Definition {
 	return admin2.AdminDictTypeController(dependency0)
 }
 
-func controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_appAppDictInfoController(dependency0 *service2.InfoService) corecontroller.Definition {
+func controllerdictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_appAppDictInfoController(dependency0 *service2.InfoService) gnctrl.Definition {
 	return app3.AppDictInfoController(dependency0)
 }
 
-func controllertaskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController(dependency0 *service3.InfoService) corecontroller.Definition {
+func controllertaskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController(dependency0 *service3.InfoService) gnctrl.Definition {
 	return admin3.AdminTaskInfoController(dependency0)
 }
 
@@ -1776,7 +1776,7 @@ func (generatedGRPCRegistrar) Register(server *grpcx.GrpcServer) error {
 	return nil
 }
 
-func GRPCRegistrar() coolgrpc.GRPCRegistrar { return generatedGRPCRegistrar{} }
+func GRPCRegistrar() grpc.GRPCRegistrar { return generatedGRPCRegistrar{} }
 
 func generatedGraph() module.Graph {
 	return module.MustBuildGraph(module.GraphInput{
@@ -1786,107 +1786,107 @@ func generatedGraph() module.Graph {
 			{Key: "task", Name: "任务调度", Description: "任务调度模块，支持分布式任务，由redis整个集群的任务", Order: 0},
 			{Key: ".framework", Name: "Cool Framework", Description: "应用基础设施"},
 		},
-		Controllers: []coreroute.ControllerDefinition{
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCodingController", Module: "base", Path: "/admin/base/coding", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: true, Description: "AI 编码", TagName: "AI 编码", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "AdminCodingController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Module: "base", Path: "/admin/base/comm", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "Base 通用接口", TagName: "Base 通用接口", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "AdminCommController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.CommHandler, *github.com/toothdy/cool-admin-go-next/modules/base/service.LoginService, *github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.UploadHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Module: "base", Path: "/admin/base/open", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "开放接口", TagName: "开放接口", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "AdminOpenController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.OpenHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminUploadController", Module: "base", Path: "/admin/upload", Sensitive: true, IgnoreGlobalPrefix: true, DevelopmentOnly: false, Description: "公开文件", TagName: "公开文件", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "AdminUploadController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.UploadHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Module: "base", Path: "/admin/base/sys/department", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "系统部门", TagName: "系统部门", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysDepartmentController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.DepartmentService, *github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.DepartmentHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysLogController", Module: "base", Path: "/admin/base/sys/log", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "系统操作日志", TagName: "系统操作日志", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysLogController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.LogService, *github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.LogHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Module: "base", Path: "/admin/base/sys/menu", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "系统菜单", TagName: "系统菜单", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysMenuController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService, *github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.MenuToolHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Module: "base", Path: "/admin/base/sys/param", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "参数配置", TagName: "参数配置", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysParamController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService, *github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.ParamHTMLHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Module: "base", Path: "/admin/base/sys/role", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "系统角色", TagName: "系统角色", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysRoleController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Module: "base", Path: "/admin/base/sys/user", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "系统用户", TagName: "系统用户", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysUserController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Module: "base", Path: "/app/base/comm", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "App 通用接口", TagName: "App 通用接口", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "AppCommController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/controller/app.CommHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Module: "dict", Path: "/admin/dict/info", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "字典信息", TagName: "字典信息", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin", Symbol: "AdminDictInfoController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Module: "dict", Path: "/admin/dict/type", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "字典类型", TagName: "字典类型", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin", Symbol: "AdminDictTypeController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Module: "dict", Path: "/app/dict/info", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "字典信息", TagName: "字典信息", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/controller/app", Symbol: "AppDictInfoController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Key: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Module: "task", Path: "/admin/task/info", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "任务", TagName: "任务", Factory: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/controller/admin", Symbol: "AdminTaskInfoController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService) github.com/toothdy/cool-admin-go-next/cool-next/core/controller.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+		Controllers: []route.ControllerDefinition{
+			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCodingController", Module: "base", Path: "/admin/base/coding", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: true, Description: "AI 编码", TagName: "AI 编码", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "AdminCodingController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Module: "base", Path: "/admin/base/comm", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "Base 通用接口", TagName: "Base 通用接口", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "AdminCommController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.CommHandler, *github.com/toothdy/cool-admin-go-next/modules/base/service.LoginService, *github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.UploadHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Module: "base", Path: "/admin/base/open", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "开放接口", TagName: "开放接口", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "AdminOpenController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.OpenHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminUploadController", Module: "base", Path: "/admin/upload", Sensitive: true, IgnoreGlobalPrefix: true, DevelopmentOnly: false, Description: "公开文件", TagName: "公开文件", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "AdminUploadController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.UploadHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Module: "base", Path: "/admin/base/sys/department", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "系统部门", TagName: "系统部门", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysDepartmentController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.DepartmentService, *github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.DepartmentHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysLogController", Module: "base", Path: "/admin/base/sys/log", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "系统操作日志", TagName: "系统操作日志", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysLogController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.LogService, *github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.LogHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Module: "base", Path: "/admin/base/sys/menu", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "系统菜单", TagName: "系统菜单", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysMenuController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService, *github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.MenuToolHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Module: "base", Path: "/admin/base/sys/param", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "参数配置", TagName: "参数配置", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysParamController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService, *github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.ParamHTMLHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Module: "base", Path: "/admin/base/sys/role", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "系统角色", TagName: "系统角色", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysRoleController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Module: "base", Path: "/admin/base/sys/user", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "系统用户", TagName: "系统用户", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "AdminSysUserController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Module: "base", Path: "/app/base/comm", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "App 通用接口", TagName: "App 通用接口", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "AppCommController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/base/controller/app.CommHandler) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Module: "dict", Path: "/admin/dict/info", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "字典信息", TagName: "字典信息", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin", Symbol: "AdminDictInfoController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Module: "dict", Path: "/admin/dict/type", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "字典类型", TagName: "字典类型", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin", Symbol: "AdminDictTypeController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Module: "dict", Path: "/app/dict/info", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "字典信息", TagName: "字典信息", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/controller/app", Symbol: "AppDictInfoController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Key: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Module: "task", Path: "/admin/task/info", Sensitive: true, IgnoreGlobalPrefix: false, DevelopmentOnly: false, Description: "任务", TagName: "任务", Factory: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/controller/admin", Symbol: "AdminTaskInfoController", Method: "", Type: "func(*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService) github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl.Definition", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
 		},
-		Routes: []coreroute.Definition{
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCodingController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/coding/getModuleTree", Summary: "获取模块目录结构", Description: "", DevelopmentOnly: true, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "ToolHandler", Method: "GetModuleTree", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCodingController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/coding/createCode", Summary: "创建代码", Description: "", DevelopmentOnly: true, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "ToolHandler", Method: "CreateCode", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", RequestType: "CodingCreateRequest", ReturnsValue: false}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/comm/person", Summary: "个人信息", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "CommHandler", Method: "Person", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.CommHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/comm/personUpdate", Summary: "修改个人信息", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "CommHandler", Method: "PersonUpdate", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.CommHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "PersonUpdateReq", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/comm/permmenu", Summary: "权限与菜单", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "CommHandler", Method: "PermissionMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.CommHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/comm/upload", Summary: "文件上传", Description: "", DevelopmentOnly: false, Bind: coreroute.BindFile, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "UploadHandler", Method: "AdminUpload", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.UploadHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", RequestType: "UploadRequest", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/comm/uploadMode", Summary: "文件上传模式", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "UploadHandler", Method: "AdminMode", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.UploadHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/comm/logout", Summary: "退出", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "LoginService", Method: "Logout", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.LoginService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/comm/program", Summary: "编程", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "Program", Method: "Program", Type: "func(context.Context) (string, error)", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/open/eps", Summary: "实体信息与路径", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "AdminEPS", Method: "AdminEPS", Type: "func(context.Context) (map[string][]github.com/toothdy/cool-admin-go-next/cool-next/eps.Controller, error)", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/open/html", Summary: "获得网页内容的参数值", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "OpenHandler", Method: "HTML", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.OpenHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", RequestType: "HTMLQuery", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/open/login", Summary: "登录", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "OpenHandler", Method: "Login", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.OpenHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "LoginReq", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/open/captcha", Summary: "验证码", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "OpenHandler", Method: "Captcha", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.OpenHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "CaptchaQuery", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/open/refreshToken", Summary: "刷新token", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "OpenHandler", Method: "Refresh", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.OpenHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "RefreshReq", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminUploadController", Kind: coreroute.KindCustom, Method: "GET", Path: "/upload/{date}/{name}", Summary: "读取上传文件", Description: "", DevelopmentOnly: false, Bind: coreroute.BindPath, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "UploadHandler", Method: "Read", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.UploadHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", RequestType: "UploadReadRequest", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/department/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "DepartmentService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.DepartmentService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/department/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "DepartmentService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.DepartmentService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/department/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "DepartmentService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.DepartmentService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/department/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "DepartmentHandler", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.DepartmentHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "DepartmentDeleteReq", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/department/order", Summary: "排序", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "DepartmentHandler", Method: "Order", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.DepartmentHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", RequestType: "DepartmentOrderBody", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysLogController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/log/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "LogService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.LogService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysLogController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/log/clear", Summary: "清理", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "LogHandler", Method: "Clear", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.LogHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysLogController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/log/setKeep", Summary: "日志保存时间", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "LogHandler", Method: "SetKeep", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.LogHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", RequestType: "LogKeepReq", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysLogController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/sys/log/getKeep", Summary: "获得日志保存时间", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "LogHandler", Method: "GetKeep", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.LogHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/menu/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "MenuService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/menu/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "MenuService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/menu/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "MenuService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: coreroute.KindCRUD, Method: "GET", Path: "/admin/base/sys/menu/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "MenuService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/menu/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "MenuService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "MenuService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/parse", Summary: "解析", Description: "", DevelopmentOnly: true, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "MenuToolHandler", Method: "ParseMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.MenuToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "MenuParseReq", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/create", Summary: "创建代码", Description: "", DevelopmentOnly: true, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "MenuToolHandler", Method: "CreateMenuCode", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.MenuToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/codegen", RequestType: "MenuCreateInput", ReturnsValue: false}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/export", Summary: "导出", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "MenuToolHandler", Method: "ExportMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.MenuToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "MenuExportReq", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/import", Summary: "导入", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "MenuToolHandler", Method: "ImportMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.MenuToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", RequestType: "MenuImportRequest", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/param/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "ParamService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/param/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "ParamService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/param/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "ParamService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Kind: coreroute.KindCRUD, Method: "GET", Path: "/admin/base/sys/param/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "ParamService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/param/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "ParamService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/base/sys/param/html", Summary: "获得网页内容的参数值", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "ParamHTMLHandler", Method: "HTML", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.ParamHTMLHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", RequestType: "ParamHTMLQuery", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/role/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "RoleService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/role/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "RoleService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/role/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "RoleService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Kind: coreroute.KindCRUD, Method: "GET", Path: "/admin/base/sys/role/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "RoleService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/role/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "RoleService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/role/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "RoleService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/user/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/user/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/user/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: coreroute.KindCRUD, Method: "GET", Path: "/admin/base/sys/user/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/user/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/base/sys/user/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/base/sys/user/move", Summary: "移动部门", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "Move", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "UserMoveReq", ReturnsValue: false}},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Kind: coreroute.KindCustom, Method: "GET", Path: "/app/base/comm/param", Summary: "参数配置", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "CommHandler", Method: "Param", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/app.CommHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", RequestType: "ParamQuery", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Kind: coreroute.KindCustom, Method: "GET", Path: "/app/base/comm/eps", Summary: "实体信息与路径", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "AppEPS", Method: "AppEPS", Type: "func(context.Context) (map[string][]github.com/toothdy/cool-admin-go-next/cool-next/eps.Controller, error)", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Kind: coreroute.KindCustom, Method: "POST", Path: "/app/base/comm/upload", Summary: "文件上传", Description: "", DevelopmentOnly: false, Bind: coreroute.BindFile, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "CommHandler", Method: "Upload", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/app.CommHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", RequestType: "UploadRequest", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Kind: coreroute.KindCustom, Method: "GET", Path: "/app/base/comm/uploadMode", Summary: "文件上传模式", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "CommHandler", Method: "UploadMode", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/app.CommHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/info/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/info/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/info/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCRUD, Method: "GET", Path: "/admin/dict/info/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/info/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/info/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/dict/info/data", Summary: "获得字典数据", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Data", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/dto", RequestType: "DataRequest", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/dict/info/types", Summary: "获得所有字典类型", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Types", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/type/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/type/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/type/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: coreroute.KindCRUD, Method: "GET", Path: "/admin/dict/type/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/type/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/dict/type/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Kind: coreroute.KindCustom, Method: "POST", Path: "/app/dict/info/data", Summary: "获得字典数据", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Data", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/dto", RequestType: "DataRequest", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
-			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Kind: coreroute.KindCustom, Method: "GET", Path: "/app/dict/info/types", Summary: "获得所有字典类型", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Types", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: coreroute.NonTransactional()},
-			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/task/info/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/task/info/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/task/info/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
-			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: coreroute.KindCRUD, Method: "GET", Path: "/admin/task/info/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/task/info/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: coreroute.KindCRUD, Method: "POST", Path: "/admin/task/info/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
-			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/task/info/once", Summary: "执行一次", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Once", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/dto", RequestType: "TaskRequest", ReturnsValue: false}, Transaction: coreroute.NonTransactional()},
-			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/task/info/stop", Summary: "停止", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Stop", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/dto", RequestType: "TaskRequest", ReturnsValue: false}},
-			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: coreroute.KindCustom, Method: "POST", Path: "/admin/task/info/start", Summary: "开始", Description: "", DevelopmentOnly: false, Bind: coreroute.BindJSON, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Start", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/dto", RequestType: "StartRequest", ReturnsValue: false}},
-			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: coreroute.KindCustom, Method: "GET", Path: "/admin/task/info/log", Summary: "日志", Description: "", DevelopmentOnly: false, Bind: coreroute.BindQuery, Handler: coreroute.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Log", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/dto", RequestType: "LogRequest", ReturnsValue: true}, Transaction: coreroute.NonTransactional()},
+		Routes: []route.Definition{
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCodingController", Kind: route.KindCustom, Method: "GET", Path: "/admin/base/coding/getModuleTree", Summary: "获取模块目录结构", Description: "", DevelopmentOnly: true, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "ToolHandler", Method: "GetModuleTree", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCodingController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/coding/createCode", Summary: "创建代码", Description: "", DevelopmentOnly: true, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "ToolHandler", Method: "CreateCode", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.ToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", RequestType: "CodingCreateRequest", ReturnsValue: false}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: route.KindCustom, Method: "GET", Path: "/admin/base/comm/person", Summary: "个人信息", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "CommHandler", Method: "Person", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.CommHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/comm/personUpdate", Summary: "修改个人信息", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "CommHandler", Method: "PersonUpdate", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.CommHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "PersonUpdateReq", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: route.KindCustom, Method: "GET", Path: "/admin/base/comm/permmenu", Summary: "权限与菜单", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "CommHandler", Method: "PermissionMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.CommHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/comm/upload", Summary: "文件上传", Description: "", DevelopmentOnly: false, Bind: route.BindFile, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "UploadHandler", Method: "AdminUpload", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.UploadHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", RequestType: "UploadRequest", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: route.KindCustom, Method: "GET", Path: "/admin/base/comm/uploadMode", Summary: "文件上传模式", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "UploadHandler", Method: "AdminMode", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.UploadHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/comm/logout", Summary: "退出", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "LoginService", Method: "Logout", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.LoginService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Kind: route.KindCustom, Method: "GET", Path: "/admin/base/comm/program", Summary: "编程", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "Program", Method: "Program", Type: "func(context.Context) (string, error)", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Kind: route.KindCustom, Method: "GET", Path: "/admin/base/open/eps", Summary: "实体信息与路径", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "AdminEPS", Method: "AdminEPS", Type: "func(context.Context) (map[string][]github.com/toothdy/cool-admin-go-next/cool-next/eps.Controller, error)", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Kind: route.KindCustom, Method: "GET", Path: "/admin/base/open/html", Summary: "获得网页内容的参数值", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "OpenHandler", Method: "HTML", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.OpenHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", RequestType: "HTMLQuery", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/open/login", Summary: "登录", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "OpenHandler", Method: "Login", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.OpenHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "LoginReq", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Kind: route.KindCustom, Method: "GET", Path: "/admin/base/open/captcha", Summary: "验证码", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "OpenHandler", Method: "Captcha", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.OpenHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "CaptchaQuery", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/open/refreshToken", Summary: "刷新token", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "OpenHandler", Method: "Refresh", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.OpenHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "RefreshReq", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminUploadController", Kind: route.KindCustom, Method: "GET", Path: "/upload/{date}/{name}", Summary: "读取上传文件", Description: "", DevelopmentOnly: false, Bind: route.BindPath, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", Symbol: "UploadHandler", Method: "Read", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.UploadHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", RequestType: "UploadReadRequest", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/department/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "DepartmentService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.DepartmentService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/department/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "DepartmentService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.DepartmentService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/sys/department/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "DepartmentService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.DepartmentService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/sys/department/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "DepartmentHandler", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.DepartmentHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "DepartmentDeleteReq", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/sys/department/order", Summary: "排序", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "DepartmentHandler", Method: "Order", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.DepartmentHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", RequestType: "DepartmentOrderBody", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysLogController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/log/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "LogService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.LogService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysLogController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/sys/log/clear", Summary: "清理", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "LogHandler", Method: "Clear", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.LogHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysLogController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/sys/log/setKeep", Summary: "日志保存时间", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "LogHandler", Method: "SetKeep", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.LogHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", RequestType: "LogKeepReq", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysLogController", Kind: route.KindCustom, Method: "GET", Path: "/admin/base/sys/log/getKeep", Summary: "获得日志保存时间", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "LogHandler", Method: "GetKeep", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.LogHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/menu/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "MenuService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/menu/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "MenuService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/menu/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "MenuService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: route.KindCRUD, Method: "GET", Path: "/admin/base/sys/menu/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "MenuService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/menu/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "MenuService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "MenuService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.MenuService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/parse", Summary: "解析", Description: "", DevelopmentOnly: true, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "MenuToolHandler", Method: "ParseMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.MenuToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "MenuParseReq", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/create", Summary: "创建代码", Description: "", DevelopmentOnly: true, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "MenuToolHandler", Method: "CreateMenuCode", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.MenuToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/codegen", RequestType: "MenuCreateInput", ReturnsValue: false}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/export", Summary: "导出", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "MenuToolHandler", Method: "ExportMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.MenuToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "MenuExportReq", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/sys/menu/import", Summary: "导入", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "MenuToolHandler", Method: "ImportMenu", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.MenuToolHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", RequestType: "MenuImportRequest", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/param/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "ParamService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/param/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "ParamService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/param/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "ParamService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Kind: route.KindCRUD, Method: "GET", Path: "/admin/base/sys/param/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "ParamService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/param/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "ParamService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.ParamService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Kind: route.KindCustom, Method: "GET", Path: "/admin/base/sys/param/html", Summary: "获得网页内容的参数值", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", Symbol: "ParamHTMLHandler", Method: "HTML", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.ParamHTMLHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys", RequestType: "ParamHTMLQuery", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/role/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "RoleService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/role/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "RoleService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/role/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "RoleService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Kind: route.KindCRUD, Method: "GET", Path: "/admin/base/sys/role/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "RoleService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/role/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "RoleService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/sys/role/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "RoleService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.RoleService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/user/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/user/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/user/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: route.KindCRUD, Method: "GET", Path: "/admin/base/sys/user/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/user/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/base/sys/user/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Kind: route.KindCustom, Method: "POST", Path: "/admin/base/sys/user/move", Summary: "移动部门", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/service", Symbol: "UserService", Method: "Move", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/service.UserService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/dto", RequestType: "UserMoveReq", ReturnsValue: false}},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Kind: route.KindCustom, Method: "GET", Path: "/app/base/comm/param", Summary: "参数配置", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "CommHandler", Method: "Param", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/app.CommHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", RequestType: "ParamQuery", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Kind: route.KindCustom, Method: "GET", Path: "/app/base/comm/eps", Summary: "实体信息与路径", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "AppEPS", Method: "AppEPS", Type: "func(context.Context) (map[string][]github.com/toothdy/cool-admin-go-next/cool-next/eps.Controller, error)", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Kind: route.KindCustom, Method: "POST", Path: "/app/base/comm/upload", Summary: "文件上传", Description: "", DevelopmentOnly: false, Bind: route.BindFile, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "CommHandler", Method: "Upload", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/app.CommHandler", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/admin", RequestType: "UploadRequest", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Kind: route.KindCustom, Method: "GET", Path: "/app/base/comm/uploadMode", Summary: "文件上传模式", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/base/controller/app", Symbol: "CommHandler", Method: "UploadMode", Type: "*github.com/toothdy/cool-admin-go-next/modules/base/controller/app.CommHandler", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/dict/info/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/dict/info/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/dict/info/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: route.KindCRUD, Method: "GET", Path: "/admin/dict/info/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/dict/info/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/dict/info/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: route.KindCustom, Method: "POST", Path: "/admin/dict/info/data", Summary: "获得字典数据", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Data", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/dto", RequestType: "DataRequest", ReturnsValue: true}, Transaction: route.NonTransactional()},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Kind: route.KindCustom, Method: "GET", Path: "/admin/dict/info/types", Summary: "获得所有字典类型", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Types", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: route.NonTransactional()},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/dict/type/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/dict/type/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/dict/type/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: route.KindCRUD, Method: "GET", Path: "/admin/dict/type/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/dict/type/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/dict/type/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "TypeService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.TypeService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Kind: route.KindCustom, Method: "POST", Path: "/app/dict/info/data", Summary: "获得字典数据", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Data", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/dto", RequestType: "DataRequest", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: route.NonTransactional()},
+			{Controller: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Kind: route.KindCustom, Method: "GET", Path: "/app/dict/info/types", Summary: "获得所有字典类型", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/dict/service", Symbol: "InfoService", Method: "Types", Type: "*github.com/toothdy/cool-admin-go-next/modules/dict/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}, Tags: []string{"ignoreToken"}, Transaction: route.NonTransactional()},
+			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/task/info/add", Summary: "新增", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Add", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/task/info/delete", Summary: "删除", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Delete", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/task/info/update", Summary: "修改", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Update", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: false}},
+			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: route.KindCRUD, Method: "GET", Path: "/admin/task/info/info", Summary: "单个信息", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Info", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/task/info/list", Summary: "列表查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "List", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: route.KindCRUD, Method: "POST", Path: "/admin/task/info/page", Summary: "分页查询", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Page", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: false, RequestPackagePath: "", RequestType: "", ReturnsValue: true}},
+			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: route.KindCustom, Method: "POST", Path: "/admin/task/info/once", Summary: "执行一次", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Once", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/dto", RequestType: "TaskRequest", ReturnsValue: false}, Transaction: route.NonTransactional()},
+			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: route.KindCustom, Method: "POST", Path: "/admin/task/info/stop", Summary: "停止", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Stop", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/dto", RequestType: "TaskRequest", ReturnsValue: false}},
+			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: route.KindCustom, Method: "POST", Path: "/admin/task/info/start", Summary: "开始", Description: "", DevelopmentOnly: false, Bind: route.BindJSON, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Start", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/dto", RequestType: "StartRequest", ReturnsValue: false}},
+			{Controller: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Kind: route.KindCustom, Method: "GET", Path: "/admin/task/info/log", Summary: "日志", Description: "", DevelopmentOnly: false, Bind: route.BindQuery, Handler: route.CallableRef{PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Symbol: "InfoService", Method: "Log", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService", HasRequest: true, RequestPackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/dto", RequestType: "LogRequest", ReturnsValue: true}, Transaction: route.NonTransactional()},
 		},
 		Providers: []module.ProviderDefinition{
 			{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/auth", Name: "Service", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/auth.Service"},
@@ -1956,7 +1956,7 @@ func generatedGraph() module.Graph {
 			{Kind: module.ProviderKindComponent, Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewInfo", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.InfoService"},
 			{Kind: module.ProviderKindComponent, Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewRegistry", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.Registry"},
 			{Kind: module.ProviderKindComponent, Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewScheduler", Type: "*github.com/toothdy/cool-admin-go-next/modules/task/service.Scheduler"},
-			{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/http", Name: "New", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/core/http.Transport"},
+			{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/gnhttp", Name: "New", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/core/gnhttp.Transport"},
 			{Kind: module.ProviderKindComponent, Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New", Type: "*github.com/toothdy/cool-admin-go-next/cool-next/grpc.Transport"},
 		},
 		Components: []module.ComponentDefinition{
@@ -1996,7 +1996,7 @@ func generatedGraph() module.Graph {
 			{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewScheduler"},
 			{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/schedule", Name: "NewTaskJob"},
 			{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewInfo"},
-			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/http", Name: "New"},
+			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/gnhttp", Name: "New"},
 			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New"},
 		},
 		Lifecycles: []module.LifecycleDefinition{
@@ -2036,11 +2036,11 @@ func generatedGraph() module.Graph {
 			{Component: module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewScheduler"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/schedule", Name: "NewTaskJob"}, Initializer: false, Starter: true, Stopper: true, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: "task", PackagePath: "github.com/toothdy/cool-admin-go-next/modules/task/service", Name: "NewInfo"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
-			{Component: module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/http", Name: "New"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
+			{Component: module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/gnhttp", Name: "New"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 			{Component: module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New"}, Initializer: false, Starter: false, Stopper: false, Supervisor: false},
 		},
 		Transports: []module.ComponentDefinition{
-			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/http", Name: "New"},
+			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/gnhttp", Name: "New"},
 			{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/grpc", Name: "New"},
 		},
 		Dependencies: []module.DependencyDefinition{
@@ -2278,7 +2278,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 Auth 服务失败")
 	}
-	bcryptVerifier, err := authbcrypt.New(infrastructure.Cool.Auth.Bcrypt)
+	bcryptVerifier, err := bcrypt.New(infrastructure.Cool.Auth.Bcrypt)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 bcrypt 验证器失败")
 	}
@@ -2512,7 +2512,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Definition: controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_appAppDictInfoController},
 			{Key: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Definition: controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController},
 		},
-		Descriptors: []coreentity.RuntimeDescriptor{
+		Descriptors: []gnentity.RuntimeDescriptor{
 			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf,
 			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment,
 			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog,
@@ -2535,7 +2535,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	if err = eps.PublishViews(epsViews); err != nil {
 		return assembly, exception.WrapCore(err, "发布 EPS 视图失败")
 	}
-	binder, err := corecontroller.NewBinder(infrastructure.Cool.CRUD)
+	binder, err := gnctrl.NewBinder(infrastructure.Cool.CRUD)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 HTTP Binder 失败")
 	}
@@ -2543,7 +2543,7 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 CRUD Dispatcher 失败")
 	}
-	descriptorResolver := corecontroller.DescriptorResolverFunc(func(value any) (coreentity.Metadata, bool) {
+	descriptorResolver := gnctrl.DescriptorResolverFunc(func(value any) (gnentity.Metadata, bool) {
 		switch value.(type) {
 		case entity.Conf:
 			return descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf, true
@@ -2581,868 +2581,868 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 		if server == nil {
 			return exception.Core("HTTP Server 未初始化")
 		}
-		server.Use(corecontroller.NewResponseMiddleware(nil))
+		server.Use(gnctrl.NewResponseMiddleware(nil))
 		server.Use(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewLogHandler.Handle)
 		server.Use(component_basegithub_com_toothdy_cool_admin_go_next_modules_base_middlewareNewTranslateHandler.Handle)
 		if gmode.IsDevelop() {
-			contextMiddleware_baseGET_admin_base_coding_getModuleTree, err := apphttp.NewContextMiddleware(authService, "/admin/base/coding/getModuleTree", false)
+			contextMiddleware_baseGET_admin_base_coding_getModuleTree, err := gnhttp.NewContextMiddleware(authService, "/admin/base/coding/getModuleTree", false)
 			if err != nil {
 				return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/coding/getModuleTree")
 			}
 			server.BindMiddleware("GET:/admin/base/coding/getModuleTree", contextMiddleware_baseGET_admin_base_coding_getModuleTree)
-			server.BindHandler("GET:/admin/base/coding/getModuleTree", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-				return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+			server.BindHandler("GET:/admin/base/coding/getModuleTree", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+				return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 					return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler.GetModuleTree(scopeCtx)
 				})
 			})
 		}
 		if gmode.IsDevelop() {
-			contextMiddleware_basePOST_admin_base_coding_createCode, err := apphttp.NewContextMiddleware(authService, "/admin/base/coding/createCode", false)
+			contextMiddleware_basePOST_admin_base_coding_createCode, err := gnhttp.NewContextMiddleware(authService, "/admin/base/coding/createCode", false)
 			if err != nil {
 				return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/coding/createCode")
 			}
 			server.BindMiddleware("POST:/admin/base/coding/createCode", contextMiddleware_basePOST_admin_base_coding_createCode)
-			server.BindHandler("POST:/admin/base/coding/createCode", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-				return corecontroller.HandleDTO[admin.CodingCreateRequest](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *admin.CodingCreateRequest) (any, error) {
+			server.BindHandler("POST:/admin/base/coding/createCode", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+				return gnctrl.HandleDTO[admin.CodingCreateRequest](ctx, binder, route.BindJSON, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *admin.CodingCreateRequest) (any, error) {
 					err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewToolHandler.CreateCode(scopeCtx, input)
 					return nil, err
 				})
 			})
 		}
-		contextMiddleware_baseGET_admin_base_comm_person, err := apphttp.NewContextMiddleware(authService, "/admin/base/comm/person", false)
+		contextMiddleware_baseGET_admin_base_comm_person, err := gnhttp.NewContextMiddleware(authService, "/admin/base/comm/person", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/comm/person")
 		}
 		server.BindMiddleware("GET:/admin/base/comm/person", contextMiddleware_baseGET_admin_base_comm_person)
-		server.BindHandler("GET:/admin/base/comm/person", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("GET:/admin/base/comm/person", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler.Person(scopeCtx)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_comm_personUpdate, err := apphttp.NewContextMiddleware(authService, "/admin/base/comm/personUpdate", false)
+		contextMiddleware_basePOST_admin_base_comm_personUpdate, err := gnhttp.NewContextMiddleware(authService, "/admin/base/comm/personUpdate", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/comm/personUpdate")
 		}
 		server.BindMiddleware("POST:/admin/base/comm/personUpdate", contextMiddleware_basePOST_admin_base_comm_personUpdate)
-		server.BindHandler("POST:/admin/base/comm/personUpdate", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto2.PersonUpdateReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *dto2.PersonUpdateReq) (any, error) {
+		server.BindHandler("POST:/admin/base/comm/personUpdate", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto.PersonUpdateReq](ctx, binder, route.BindJSON, runtime.Runner(), route.TransactionPolicy{}, func(scopeCtx context.Context, input *dto.PersonUpdateReq) (any, error) {
 				err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler.PersonUpdate(scopeCtx, input)
 				return nil, err
 			})
 		})
-		contextMiddleware_baseGET_admin_base_comm_permmenu, err := apphttp.NewContextMiddleware(authService, "/admin/base/comm/permmenu", false)
+		contextMiddleware_baseGET_admin_base_comm_permmenu, err := gnhttp.NewContextMiddleware(authService, "/admin/base/comm/permmenu", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/comm/permmenu")
 		}
 		server.BindMiddleware("GET:/admin/base/comm/permmenu", contextMiddleware_baseGET_admin_base_comm_permmenu)
-		server.BindHandler("GET:/admin/base/comm/permmenu", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("GET:/admin/base/comm/permmenu", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewCommHandler.PermissionMenu(scopeCtx)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_comm_upload, err := apphttp.NewContextMiddleware(authService, "/admin/base/comm/upload", false)
+		contextMiddleware_basePOST_admin_base_comm_upload, err := gnhttp.NewContextMiddleware(authService, "/admin/base/comm/upload", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/comm/upload")
 		}
 		server.BindMiddleware("POST:/admin/base/comm/upload", contextMiddleware_basePOST_admin_base_comm_upload)
-		server.BindHandler("POST:/admin/base/comm/upload", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[admin.UploadRequest](ctx, binder, coreroute.BindFile, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *admin.UploadRequest) (any, error) {
+		server.BindHandler("POST:/admin/base/comm/upload", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[admin.UploadRequest](ctx, binder, route.BindFile, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *admin.UploadRequest) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler.AdminUpload(scopeCtx, input)
 			})
 		})
-		contextMiddleware_baseGET_admin_base_comm_uploadMode, err := apphttp.NewContextMiddleware(authService, "/admin/base/comm/uploadMode", false)
+		contextMiddleware_baseGET_admin_base_comm_uploadMode, err := gnhttp.NewContextMiddleware(authService, "/admin/base/comm/uploadMode", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/comm/uploadMode")
 		}
 		server.BindMiddleware("GET:/admin/base/comm/uploadMode", contextMiddleware_baseGET_admin_base_comm_uploadMode)
-		server.BindHandler("GET:/admin/base/comm/uploadMode", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("GET:/admin/base/comm/uploadMode", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler.AdminMode(scopeCtx)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_comm_logout, err := apphttp.NewContextMiddleware(authService, "/admin/base/comm/logout", false)
+		contextMiddleware_basePOST_admin_base_comm_logout, err := gnhttp.NewContextMiddleware(authService, "/admin/base/comm/logout", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/comm/logout")
 		}
 		server.BindMiddleware("POST:/admin/base/comm/logout", contextMiddleware_basePOST_admin_base_comm_logout)
-		server.BindHandler("POST:/admin/base/comm/logout", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("POST:/admin/base/comm/logout", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLogin.Logout(scopeCtx)
 				return nil, err
 			})
 		})
-		contextMiddleware_baseGET_admin_base_comm_program, err := apphttp.NewContextMiddleware(authService, "/admin/base/comm/program", true)
+		contextMiddleware_baseGET_admin_base_comm_program, err := gnhttp.NewContextMiddleware(authService, "/admin/base/comm/program", true)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/comm/program")
 		}
 		server.BindMiddleware("GET:/admin/base/comm/program", contextMiddleware_baseGET_admin_base_comm_program)
-		server.BindHandler("GET:/admin/base/comm/program", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("GET:/admin/base/comm/program", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return admin.Program(scopeCtx)
 			})
 		})
-		contextMiddleware_baseGET_admin_base_open_eps, err := apphttp.NewContextMiddleware(authService, "/admin/base/open/eps", true)
+		contextMiddleware_baseGET_admin_base_open_eps, err := gnhttp.NewContextMiddleware(authService, "/admin/base/open/eps", true)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/open/eps")
 		}
 		server.BindMiddleware("GET:/admin/base/open/eps", contextMiddleware_baseGET_admin_base_open_eps)
-		server.BindHandler("GET:/admin/base/open/eps", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("GET:/admin/base/open/eps", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return admin.AdminEPS(scopeCtx)
 			})
 		})
-		contextMiddleware_baseGET_admin_base_open_html, err := apphttp.NewContextMiddleware(authService, "/admin/base/open/html", true)
+		contextMiddleware_baseGET_admin_base_open_html, err := gnhttp.NewContextMiddleware(authService, "/admin/base/open/html", true)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/open/html")
 		}
 		server.BindMiddleware("GET:/admin/base/open/html", contextMiddleware_baseGET_admin_base_open_html)
-		server.BindHandler("GET:/admin/base/open/html", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[admin.HTMLQuery](ctx, binder, coreroute.BindQuery, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *admin.HTMLQuery) (any, error) {
+		server.BindHandler("GET:/admin/base/open/html", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[admin.HTMLQuery](ctx, binder, route.BindQuery, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *admin.HTMLQuery) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler.HTML(scopeCtx, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_open_login, err := apphttp.NewContextMiddleware(authService, "/admin/base/open/login", true)
+		contextMiddleware_basePOST_admin_base_open_login, err := gnhttp.NewContextMiddleware(authService, "/admin/base/open/login", true)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/open/login")
 		}
 		server.BindMiddleware("POST:/admin/base/open/login", contextMiddleware_basePOST_admin_base_open_login)
-		server.BindHandler("POST:/admin/base/open/login", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto2.LoginReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto2.LoginReq) (any, error) {
+		server.BindHandler("POST:/admin/base/open/login", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto.LoginReq](ctx, binder, route.BindJSON, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *dto.LoginReq) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler.Login(scopeCtx, input)
 			})
 		})
-		contextMiddleware_baseGET_admin_base_open_captcha, err := apphttp.NewContextMiddleware(authService, "/admin/base/open/captcha", true)
+		contextMiddleware_baseGET_admin_base_open_captcha, err := gnhttp.NewContextMiddleware(authService, "/admin/base/open/captcha", true)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/open/captcha")
 		}
 		server.BindMiddleware("GET:/admin/base/open/captcha", contextMiddleware_baseGET_admin_base_open_captcha)
-		server.BindHandler("GET:/admin/base/open/captcha", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto2.CaptchaQuery](ctx, binder, coreroute.BindQuery, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto2.CaptchaQuery) (any, error) {
+		server.BindHandler("GET:/admin/base/open/captcha", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto.CaptchaQuery](ctx, binder, route.BindQuery, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *dto.CaptchaQuery) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler.Captcha(scopeCtx, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_open_refreshToken, err := apphttp.NewContextMiddleware(authService, "/admin/base/open/refreshToken", true)
+		contextMiddleware_basePOST_admin_base_open_refreshToken, err := gnhttp.NewContextMiddleware(authService, "/admin/base/open/refreshToken", true)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/open/refreshToken")
 		}
 		server.BindMiddleware("POST:/admin/base/open/refreshToken", contextMiddleware_basePOST_admin_base_open_refreshToken)
-		server.BindHandler("POST:/admin/base/open/refreshToken", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto2.RefreshReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto2.RefreshReq) (any, error) {
+		server.BindHandler("POST:/admin/base/open/refreshToken", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto.RefreshReq](ctx, binder, route.BindJSON, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *dto.RefreshReq) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewOpenHandler.Refresh(scopeCtx, input)
 			})
 		})
-		contextMiddleware_baseGET_upload__date___name, err := apphttp.NewContextMiddleware(authService, "/upload/{date}/{name}", true)
+		contextMiddleware_baseGET_upload__date___name, err := gnhttp.NewContextMiddleware(authService, "/upload/{date}/{name}", true)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /upload/{date}/{name}")
 		}
 		server.BindMiddleware("GET:/upload/{date}/{name}", contextMiddleware_baseGET_upload__date___name)
-		server.BindHandler("GET:/upload/{date}/{name}", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[admin.UploadReadRequest](ctx, binder, coreroute.BindPath, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *admin.UploadReadRequest) (any, error) {
+		server.BindHandler("GET:/upload/{date}/{name}", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[admin.UploadReadRequest](ctx, binder, route.BindPath, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *admin.UploadReadRequest) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminNewUploadHandler.Read(scopeCtx, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_department_add, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/department/add", false)
+		contextMiddleware_basePOST_admin_base_sys_department_add, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/department/add", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/department/add")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/department/add", contextMiddleware_basePOST_admin_base_sys_department_add)
-		server.BindHandler("POST:/admin/base/sys/department/add", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleAdd[entity.Department, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysDepartmentController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceAdd, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, func(scopeCtx context.Context, input coreservice.AddInput[entity.Department]) (coreservice.AddResult[uint64], error) {
+		server.BindHandler("POST:/admin/base/sys/department/add", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleAdd[entity.Department, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysDepartmentController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceAdd, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, func(scopeCtx context.Context, input gnservice.AddInput[entity.Department]) (gnservice.AddResult[uint64], error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceAdd(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_department_update, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/department/update", false)
+		contextMiddleware_basePOST_admin_base_sys_department_update, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/department/update", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/department/update")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/department/update", contextMiddleware_basePOST_admin_base_sys_department_update)
-		server.BindHandler("POST:/admin/base/sys/department/update", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleUpdate[entity.Department, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysDepartmentController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceUpdate, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, func(scopeCtx context.Context, input coreservice.UpdateInput[entity.Department, uint64]) error {
+		server.BindHandler("POST:/admin/base/sys/department/update", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleUpdate[entity.Department, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysDepartmentController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceUpdate, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, func(scopeCtx context.Context, input gnservice.UpdateInput[entity.Department, uint64]) error {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceDepartmentServiceUpdate(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_department_list, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/department/list", false)
+		contextMiddleware_basePOST_admin_base_sys_department_list, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/department/list", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/department/list")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/department/list", contextMiddleware_basePOST_admin_base_sys_department_list)
-		server.BindHandler("POST:/admin/base/sys/department/list", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/department/list", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewDepartment.List(scopeCtx)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_department_delete, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/department/delete", false)
+		contextMiddleware_basePOST_admin_base_sys_department_delete, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/department/delete", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/department/delete")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/department/delete", contextMiddleware_basePOST_admin_base_sys_department_delete)
-		server.BindHandler("POST:/admin/base/sys/department/delete", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto2.DepartmentDeleteReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *dto2.DepartmentDeleteReq) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/department/delete", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto.DepartmentDeleteReq](ctx, binder, route.BindJSON, runtime.Runner(), route.TransactionPolicy{}, func(scopeCtx context.Context, input *dto.DepartmentDeleteReq) (any, error) {
 				err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewDepartmentHandler.Delete(scopeCtx, input)
 				return nil, err
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_department_order, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/department/order", false)
+		contextMiddleware_basePOST_admin_base_sys_department_order, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/department/order", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/department/order")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/department/order", contextMiddleware_basePOST_admin_base_sys_department_order)
-		server.BindHandler("POST:/admin/base/sys/department/order", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[sys.DepartmentOrderBody](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *sys.DepartmentOrderBody) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/department/order", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[sys.DepartmentOrderBody](ctx, binder, route.BindJSON, runtime.Runner(), route.TransactionPolicy{}, func(scopeCtx context.Context, input *sys.DepartmentOrderBody) (any, error) {
 				err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewDepartmentHandler.Order(scopeCtx, input)
 				return nil, err
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_log_page, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/log/page", false)
+		contextMiddleware_basePOST_admin_base_sys_log_page, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/log/page", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/log/page")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/log/page", contextMiddleware_basePOST_admin_base_sys_log_page)
-		server.BindHandler("POST:/admin/base/sys/log/page", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysLogController, crud.ActionPage, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServicePage, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/log/page", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysLogController, crud.ActionPage, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServicePage, func(scopeCtx context.Context, input gnservice.Query) (any, error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceLogServicePage(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewLog, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_log_clear, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/log/clear", false)
+		contextMiddleware_basePOST_admin_base_sys_log_clear, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/log/clear", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/log/clear")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/log/clear", contextMiddleware_basePOST_admin_base_sys_log_clear)
-		server.BindHandler("POST:/admin/base/sys/log/clear", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/log/clear", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.TransactionPolicy{}, func(scopeCtx context.Context) (any, error) {
 				err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler.Clear(scopeCtx)
 				return nil, err
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_log_setKeep, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/log/setKeep", false)
+		contextMiddleware_basePOST_admin_base_sys_log_setKeep, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/log/setKeep", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/log/setKeep")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/log/setKeep", contextMiddleware_basePOST_admin_base_sys_log_setKeep)
-		server.BindHandler("POST:/admin/base/sys/log/setKeep", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[sys.LogKeepReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *sys.LogKeepReq) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/log/setKeep", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[sys.LogKeepReq](ctx, binder, route.BindJSON, runtime.Runner(), route.TransactionPolicy{}, func(scopeCtx context.Context, input *sys.LogKeepReq) (any, error) {
 				err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler.SetKeep(scopeCtx, input)
 				return nil, err
 			})
 		})
-		contextMiddleware_baseGET_admin_base_sys_log_getKeep, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/log/getKeep", false)
+		contextMiddleware_baseGET_admin_base_sys_log_getKeep, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/log/getKeep", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/sys/log/getKeep")
 		}
 		server.BindMiddleware("GET:/admin/base/sys/log/getKeep", contextMiddleware_baseGET_admin_base_sys_log_getKeep)
-		server.BindHandler("GET:/admin/base/sys/log/getKeep", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("GET:/admin/base/sys/log/getKeep", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewLogHandler.GetKeep(scopeCtx)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_menu_add, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/menu/add", false)
+		contextMiddleware_basePOST_admin_base_sys_menu_add, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/menu/add", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/menu/add")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/menu/add", contextMiddleware_basePOST_admin_base_sys_menu_add)
-		server.BindHandler("POST:/admin/base/sys/menu/add", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleAdd[entity.Menu, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceAdd, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, func(scopeCtx context.Context, input coreservice.AddInput[entity.Menu]) (coreservice.AddResult[uint64], error) {
+		server.BindHandler("POST:/admin/base/sys/menu/add", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleAdd[entity.Menu, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceAdd, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, func(scopeCtx context.Context, input gnservice.AddInput[entity.Menu]) (gnservice.AddResult[uint64], error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceAdd(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_menu_delete, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/menu/delete", false)
+		contextMiddleware_basePOST_admin_base_sys_menu_delete, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/menu/delete", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/menu/delete")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/menu/delete", contextMiddleware_basePOST_admin_base_sys_menu_delete)
-		server.BindHandler("POST:/admin/base/sys/menu/delete", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDelete[entity.Menu, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceDelete, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, func(scopeCtx context.Context, input coreservice.DeleteInput[uint64]) error {
+		server.BindHandler("POST:/admin/base/sys/menu/delete", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDelete[entity.Menu, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceDelete, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, func(scopeCtx context.Context, input gnservice.DeleteInput[uint64]) error {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceDelete(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_menu_update, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/menu/update", false)
+		contextMiddleware_basePOST_admin_base_sys_menu_update, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/menu/update", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/menu/update")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/menu/update", contextMiddleware_basePOST_admin_base_sys_menu_update)
-		server.BindHandler("POST:/admin/base/sys/menu/update", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleUpdate[entity.Menu, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceUpdate, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, func(scopeCtx context.Context, input coreservice.UpdateInput[entity.Menu, uint64]) error {
+		server.BindHandler("POST:/admin/base/sys/menu/update", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleUpdate[entity.Menu, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceUpdate, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, func(scopeCtx context.Context, input gnservice.UpdateInput[entity.Menu, uint64]) error {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceUpdate(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu, input)
 			})
 		})
-		contextMiddleware_baseGET_admin_base_sys_menu_info, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/menu/info", false)
+		contextMiddleware_baseGET_admin_base_sys_menu_info, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/menu/info", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/sys/menu/info")
 		}
 		server.BindMiddleware("GET:/admin/base/sys/menu/info", contextMiddleware_baseGET_admin_base_sys_menu_info)
-		server.BindHandler("GET:/admin/base/sys/menu/info", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
+		server.BindHandler("GET:/admin/base/sys/menu/info", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServiceInfo(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_menu_page, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/menu/page", false)
+		contextMiddleware_basePOST_admin_base_sys_menu_page, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/menu/page", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/menu/page")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/menu/page", contextMiddleware_basePOST_admin_base_sys_menu_page)
-		server.BindHandler("POST:/admin/base/sys/menu/page", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController, crud.ActionPage, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServicePage, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/menu/page", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController, crud.ActionPage, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServicePage, func(scopeCtx context.Context, input gnservice.Query) (any, error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceMenuServicePage(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_menu_list, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/menu/list", false)
+		contextMiddleware_basePOST_admin_base_sys_menu_list, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/menu/list", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/menu/list")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/menu/list", contextMiddleware_basePOST_admin_base_sys_menu_list)
-		server.BindHandler("POST:/admin/base/sys/menu/list", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/menu/list", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewMenu.List(scopeCtx)
 			})
 		})
 		if gmode.IsDevelop() {
-			contextMiddleware_basePOST_admin_base_sys_menu_parse, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/menu/parse", false)
+			contextMiddleware_basePOST_admin_base_sys_menu_parse, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/menu/parse", false)
 			if err != nil {
 				return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/menu/parse")
 			}
 			server.BindMiddleware("POST:/admin/base/sys/menu/parse", contextMiddleware_basePOST_admin_base_sys_menu_parse)
-			server.BindHandler("POST:/admin/base/sys/menu/parse", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-				return corecontroller.HandleDTO[dto2.MenuParseReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto2.MenuParseReq) (any, error) {
+			server.BindHandler("POST:/admin/base/sys/menu/parse", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+				return gnctrl.HandleDTO[dto.MenuParseReq](ctx, binder, route.BindJSON, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *dto.MenuParseReq) (any, error) {
 					return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler.ParseMenu(scopeCtx, input)
 				})
 			})
 		}
 		if gmode.IsDevelop() {
-			contextMiddleware_basePOST_admin_base_sys_menu_create, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/menu/create", false)
+			contextMiddleware_basePOST_admin_base_sys_menu_create, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/menu/create", false)
 			if err != nil {
 				return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/menu/create")
 			}
 			server.BindMiddleware("POST:/admin/base/sys/menu/create", contextMiddleware_basePOST_admin_base_sys_menu_create)
-			server.BindHandler("POST:/admin/base/sys/menu/create", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-				return corecontroller.HandleDTO[dto.MenuCreateInput](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto.MenuCreateInput) (any, error) {
+			server.BindHandler("POST:/admin/base/sys/menu/create", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+				return gnctrl.HandleDTO[codegen.MenuCreateInput](ctx, binder, route.BindJSON, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *codegen.MenuCreateInput) (any, error) {
 					err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler.CreateMenuCode(scopeCtx, input)
 					return nil, err
 				})
 			})
 		}
-		contextMiddleware_basePOST_admin_base_sys_menu_export, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/menu/export", false)
+		contextMiddleware_basePOST_admin_base_sys_menu_export, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/menu/export", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/menu/export")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/menu/export", contextMiddleware_basePOST_admin_base_sys_menu_export)
-		server.BindHandler("POST:/admin/base/sys/menu/export", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto2.MenuExportReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto2.MenuExportReq) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/menu/export", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto.MenuExportReq](ctx, binder, route.BindJSON, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *dto.MenuExportReq) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler.ExportMenu(scopeCtx, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_menu_import, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/menu/import", false)
+		contextMiddleware_basePOST_admin_base_sys_menu_import, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/menu/import", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/menu/import")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/menu/import", contextMiddleware_basePOST_admin_base_sys_menu_import)
-		server.BindHandler("POST:/admin/base/sys/menu/import", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[sys.MenuImportRequest](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *sys.MenuImportRequest) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/menu/import", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[sys.MenuImportRequest](ctx, binder, route.BindJSON, runtime.Runner(), route.TransactionPolicy{}, func(scopeCtx context.Context, input *sys.MenuImportRequest) (any, error) {
 				err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewMenuToolHandler.ImportMenu(scopeCtx, input)
 				return nil, err
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_param_add, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/param/add", false)
+		contextMiddleware_basePOST_admin_base_sys_param_add, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/param/add", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/param/add")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/param/add", contextMiddleware_basePOST_admin_base_sys_param_add)
-		server.BindHandler("POST:/admin/base/sys/param/add", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleAdd[entity.Param, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceAdd, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, func(scopeCtx context.Context, input coreservice.AddInput[entity.Param]) (coreservice.AddResult[uint64], error) {
+		server.BindHandler("POST:/admin/base/sys/param/add", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleAdd[entity.Param, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceAdd, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, func(scopeCtx context.Context, input gnservice.AddInput[entity.Param]) (gnservice.AddResult[uint64], error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceAdd(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_param_delete, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/param/delete", false)
+		contextMiddleware_basePOST_admin_base_sys_param_delete, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/param/delete", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/param/delete")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/param/delete", contextMiddleware_basePOST_admin_base_sys_param_delete)
-		server.BindHandler("POST:/admin/base/sys/param/delete", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDelete[entity.Param, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceDelete, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, func(scopeCtx context.Context, input coreservice.DeleteInput[uint64]) error {
+		server.BindHandler("POST:/admin/base/sys/param/delete", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDelete[entity.Param, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceDelete, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, func(scopeCtx context.Context, input gnservice.DeleteInput[uint64]) error {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceDelete(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_param_update, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/param/update", false)
+		contextMiddleware_basePOST_admin_base_sys_param_update, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/param/update", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/param/update")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/param/update", contextMiddleware_basePOST_admin_base_sys_param_update)
-		server.BindHandler("POST:/admin/base/sys/param/update", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleUpdate[entity.Param, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceUpdate, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, func(scopeCtx context.Context, input coreservice.UpdateInput[entity.Param, uint64]) error {
+		server.BindHandler("POST:/admin/base/sys/param/update", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleUpdate[entity.Param, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceUpdate, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, func(scopeCtx context.Context, input gnservice.UpdateInput[entity.Param, uint64]) error {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceUpdate(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam, input)
 			})
 		})
-		contextMiddleware_baseGET_admin_base_sys_param_info, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/param/info", false)
+		contextMiddleware_baseGET_admin_base_sys_param_info, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/param/info", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/sys/param/info")
 		}
 		server.BindMiddleware("GET:/admin/base/sys/param/info", contextMiddleware_baseGET_admin_base_sys_param_info)
-		server.BindHandler("GET:/admin/base/sys/param/info", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
+		server.BindHandler("GET:/admin/base/sys/param/info", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServiceInfo(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_param_page, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/param/page", false)
+		contextMiddleware_basePOST_admin_base_sys_param_page, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/param/page", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/param/page")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/param/page", contextMiddleware_basePOST_admin_base_sys_param_page)
-		server.BindHandler("POST:/admin/base/sys/param/page", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController, crud.ActionPage, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServicePage, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/param/page", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController, crud.ActionPage, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServicePage, func(scopeCtx context.Context, input gnservice.Query) (any, error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceParamServicePage(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewParam, input)
 			})
 		})
-		contextMiddleware_baseGET_admin_base_sys_param_html, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/param/html", false)
+		contextMiddleware_baseGET_admin_base_sys_param_html, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/param/html", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/sys/param/html")
 		}
 		server.BindMiddleware("GET:/admin/base/sys/param/html", contextMiddleware_baseGET_admin_base_sys_param_html)
-		server.BindHandler("GET:/admin/base/sys/param/html", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[sys.ParamHTMLQuery](ctx, binder, coreroute.BindQuery, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *sys.ParamHTMLQuery) (any, error) {
+		server.BindHandler("GET:/admin/base/sys/param/html", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[sys.ParamHTMLQuery](ctx, binder, route.BindQuery, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *sys.ParamHTMLQuery) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysNewParamHTMLHandler.HTML(scopeCtx, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_role_add, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/role/add", false)
+		contextMiddleware_basePOST_admin_base_sys_role_add, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/role/add", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/role/add")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/role/add", contextMiddleware_basePOST_admin_base_sys_role_add)
-		server.BindHandler("POST:/admin/base/sys/role/add", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleAdd[entity.Role, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceAdd, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, func(scopeCtx context.Context, input coreservice.AddInput[entity.Role]) (coreservice.AddResult[uint64], error) {
+		server.BindHandler("POST:/admin/base/sys/role/add", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleAdd[entity.Role, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceAdd, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, func(scopeCtx context.Context, input gnservice.AddInput[entity.Role]) (gnservice.AddResult[uint64], error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceAdd(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_role_delete, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/role/delete", false)
+		contextMiddleware_basePOST_admin_base_sys_role_delete, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/role/delete", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/role/delete")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/role/delete", contextMiddleware_basePOST_admin_base_sys_role_delete)
-		server.BindHandler("POST:/admin/base/sys/role/delete", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDelete[entity.Role, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceDelete, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, func(scopeCtx context.Context, input coreservice.DeleteInput[uint64]) error {
+		server.BindHandler("POST:/admin/base/sys/role/delete", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDelete[entity.Role, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceDelete, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, func(scopeCtx context.Context, input gnservice.DeleteInput[uint64]) error {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceDelete(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_role_update, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/role/update", false)
+		contextMiddleware_basePOST_admin_base_sys_role_update, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/role/update", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/role/update")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/role/update", contextMiddleware_basePOST_admin_base_sys_role_update)
-		server.BindHandler("POST:/admin/base/sys/role/update", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleUpdate[entity.Role, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceUpdate, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, func(scopeCtx context.Context, input coreservice.UpdateInput[entity.Role, uint64]) error {
+		server.BindHandler("POST:/admin/base/sys/role/update", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleUpdate[entity.Role, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceUpdate, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, func(scopeCtx context.Context, input gnservice.UpdateInput[entity.Role, uint64]) error {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceUpdate(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole, input)
 			})
 		})
-		contextMiddleware_baseGET_admin_base_sys_role_info, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/role/info", false)
+		contextMiddleware_baseGET_admin_base_sys_role_info, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/role/info", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/sys/role/info")
 		}
 		server.BindMiddleware("GET:/admin/base/sys/role/info", contextMiddleware_baseGET_admin_base_sys_role_info)
-		server.BindHandler("GET:/admin/base/sys/role/info", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
+		server.BindHandler("GET:/admin/base/sys/role/info", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServiceInfo(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_role_page, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/role/page", false)
+		contextMiddleware_basePOST_admin_base_sys_role_page, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/role/page", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/role/page")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/role/page", contextMiddleware_basePOST_admin_base_sys_role_page)
-		server.BindHandler("POST:/admin/base/sys/role/page", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController, crud.ActionPage, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServicePage, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/role/page", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController, crud.ActionPage, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServicePage, func(scopeCtx context.Context, input gnservice.Query) (any, error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceRoleServicePage(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_role_list, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/role/list", false)
+		contextMiddleware_basePOST_admin_base_sys_role_list, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/role/list", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/role/list")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/role/list", contextMiddleware_basePOST_admin_base_sys_role_list)
-		server.BindHandler("POST:/admin/base/sys/role/list", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/role/list", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewRole.List(scopeCtx)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_user_add, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/user/add", false)
+		contextMiddleware_basePOST_admin_base_sys_user_add, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/user/add", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/user/add")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/user/add", contextMiddleware_basePOST_admin_base_sys_user_add)
-		server.BindHandler("POST:/admin/base/sys/user/add", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleAdd[entity.User, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceAdd, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, func(scopeCtx context.Context, input coreservice.AddInput[entity.User]) (coreservice.AddResult[uint64], error) {
+		server.BindHandler("POST:/admin/base/sys/user/add", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleAdd[entity.User, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceAdd, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, func(scopeCtx context.Context, input gnservice.AddInput[entity.User]) (gnservice.AddResult[uint64], error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceAdd(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_user_delete, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/user/delete", false)
+		contextMiddleware_basePOST_admin_base_sys_user_delete, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/user/delete", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/user/delete")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/user/delete", contextMiddleware_basePOST_admin_base_sys_user_delete)
-		server.BindHandler("POST:/admin/base/sys/user/delete", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDelete[entity.User, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceDelete, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, func(scopeCtx context.Context, input coreservice.DeleteInput[uint64]) error {
+		server.BindHandler("POST:/admin/base/sys/user/delete", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDelete[entity.User, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceDelete, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, func(scopeCtx context.Context, input gnservice.DeleteInput[uint64]) error {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceDelete(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_user_update, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/user/update", false)
+		contextMiddleware_basePOST_admin_base_sys_user_update, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/user/update", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/user/update")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/user/update", contextMiddleware_basePOST_admin_base_sys_user_update)
-		server.BindHandler("POST:/admin/base/sys/user/update", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleUpdate[entity.User, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceUpdate, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, func(scopeCtx context.Context, input coreservice.UpdateInput[entity.User, uint64]) error {
+		server.BindHandler("POST:/admin/base/sys/user/update", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleUpdate[entity.User, uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceUpdate, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, func(scopeCtx context.Context, input gnservice.UpdateInput[entity.User, uint64]) error {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceUpdate(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, input)
 			})
 		})
-		contextMiddleware_baseGET_admin_base_sys_user_info, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/user/info", false)
+		contextMiddleware_baseGET_admin_base_sys_user_info, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/user/info", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/base/sys/user/info")
 		}
 		server.BindMiddleware("GET:/admin/base/sys/user/info", contextMiddleware_baseGET_admin_base_sys_user_info)
-		server.BindHandler("GET:/admin/base/sys/user/info", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
+		server.BindHandler("GET:/admin/base/sys/user/info", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceInfo(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_user_list, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/user/list", false)
+		contextMiddleware_basePOST_admin_base_sys_user_list, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/user/list", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/user/list")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/user/list", contextMiddleware_basePOST_admin_base_sys_user_list)
-		server.BindHandler("POST:/admin/base/sys/user/list", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController, crud.ActionList, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceList, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/user/list", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController, crud.ActionList, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceList, func(scopeCtx context.Context, input gnservice.Query) (any, error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServiceList(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_user_page, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/user/page", false)
+		contextMiddleware_basePOST_admin_base_sys_user_page, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/user/page", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/user/page")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/user/page", contextMiddleware_basePOST_admin_base_sys_user_page)
-		server.BindHandler("POST:/admin/base/sys/user/page", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController, crud.ActionPage, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServicePage, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/user/page", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController, crud.ActionPage, modebasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServicePage, func(scopeCtx context.Context, input gnservice.Query) (any, error) {
 				return adapterbasegithub_com_toothdy_cool_admin_go_next_modules_base_serviceUserServicePage(scopeCtx, component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser, input)
 			})
 		})
-		contextMiddleware_basePOST_admin_base_sys_user_move, err := apphttp.NewContextMiddleware(authService, "/admin/base/sys/user/move", false)
+		contextMiddleware_basePOST_admin_base_sys_user_move, err := gnhttp.NewContextMiddleware(authService, "/admin/base/sys/user/move", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/base/sys/user/move")
 		}
 		server.BindMiddleware("POST:/admin/base/sys/user/move", contextMiddleware_basePOST_admin_base_sys_user_move)
-		server.BindHandler("POST:/admin/base/sys/user/move", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto2.UserMoveReq](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *dto2.UserMoveReq) (any, error) {
+		server.BindHandler("POST:/admin/base/sys/user/move", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto.UserMoveReq](ctx, binder, route.BindJSON, runtime.Runner(), route.TransactionPolicy{}, func(scopeCtx context.Context, input *dto.UserMoveReq) (any, error) {
 				err := component_basegithub_com_toothdy_cool_admin_go_next_modules_base_serviceNewUser.Move(scopeCtx, input)
 				return nil, err
 			})
 		})
-		contextMiddleware_baseGET_app_base_comm_param, err := apphttp.NewContextMiddleware(authService, "/app/base/comm/param", true)
+		contextMiddleware_baseGET_app_base_comm_param, err := gnhttp.NewContextMiddleware(authService, "/app/base/comm/param", true)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /app/base/comm/param")
 		}
 		server.BindMiddleware("GET:/app/base/comm/param", contextMiddleware_baseGET_app_base_comm_param)
-		server.BindHandler("GET:/app/base/comm/param", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[app2.ParamQuery](ctx, binder, coreroute.BindQuery, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *app2.ParamQuery) (any, error) {
+		server.BindHandler("GET:/app/base/comm/param", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[app2.ParamQuery](ctx, binder, route.BindQuery, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *app2.ParamQuery) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler.Param(scopeCtx, input)
 			})
 		})
-		contextMiddleware_baseGET_app_base_comm_eps, err := apphttp.NewContextMiddleware(authService, "/app/base/comm/eps", true)
+		contextMiddleware_baseGET_app_base_comm_eps, err := gnhttp.NewContextMiddleware(authService, "/app/base/comm/eps", true)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /app/base/comm/eps")
 		}
 		server.BindMiddleware("GET:/app/base/comm/eps", contextMiddleware_baseGET_app_base_comm_eps)
-		server.BindHandler("GET:/app/base/comm/eps", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("GET:/app/base/comm/eps", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return app2.AppEPS(scopeCtx)
 			})
 		})
-		contextMiddleware_basePOST_app_base_comm_upload, err := apphttp.NewContextMiddleware(authService, "/app/base/comm/upload", false)
+		contextMiddleware_basePOST_app_base_comm_upload, err := gnhttp.NewContextMiddleware(authService, "/app/base/comm/upload", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /app/base/comm/upload")
 		}
 		server.BindMiddleware("POST:/app/base/comm/upload", contextMiddleware_basePOST_app_base_comm_upload)
-		server.BindHandler("POST:/app/base/comm/upload", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[admin.UploadRequest](ctx, binder, coreroute.BindFile, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *admin.UploadRequest) (any, error) {
+		server.BindHandler("POST:/app/base/comm/upload", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[admin.UploadRequest](ctx, binder, route.BindFile, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *admin.UploadRequest) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler.Upload(scopeCtx, input)
 			})
 		})
-		contextMiddleware_baseGET_app_base_comm_uploadMode, err := apphttp.NewContextMiddleware(authService, "/app/base/comm/uploadMode", false)
+		contextMiddleware_baseGET_app_base_comm_uploadMode, err := gnhttp.NewContextMiddleware(authService, "/app/base/comm/uploadMode", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /app/base/comm/uploadMode")
 		}
 		server.BindMiddleware("GET:/app/base/comm/uploadMode", contextMiddleware_baseGET_app_base_comm_uploadMode)
-		server.BindHandler("GET:/app/base/comm/uploadMode", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("GET:/app/base/comm/uploadMode", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return component_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appNewCommHandler.UploadMode(scopeCtx)
 			})
 		})
-		contextMiddleware_dictPOST_admin_dict_info_add, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/add", false)
+		contextMiddleware_dictPOST_admin_dict_info_add, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/info/add", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/info/add")
 		}
 		server.BindMiddleware("POST:/admin/dict/info/add", contextMiddleware_dictPOST_admin_dict_info_add)
-		server.BindHandler("POST:/admin/dict/info/add", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleAdd[entity2.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceAdd, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, func(scopeCtx context.Context, input coreservice.AddInput[entity2.Info]) (coreservice.AddResult[uint64], error) {
+		server.BindHandler("POST:/admin/dict/info/add", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleAdd[entity2.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceAdd, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, func(scopeCtx context.Context, input gnservice.AddInput[entity2.Info]) (gnservice.AddResult[uint64], error) {
 				return adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceAdd(scopeCtx, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo, input)
 			})
 		})
-		contextMiddleware_dictPOST_admin_dict_info_delete, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/delete", false)
+		contextMiddleware_dictPOST_admin_dict_info_delete, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/info/delete", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/info/delete")
 		}
 		server.BindMiddleware("POST:/admin/dict/info/delete", contextMiddleware_dictPOST_admin_dict_info_delete)
-		server.BindHandler("POST:/admin/dict/info/delete", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDelete[entity2.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceDelete, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, func(scopeCtx context.Context, input coreservice.DeleteInput[uint64]) error {
+		server.BindHandler("POST:/admin/dict/info/delete", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDelete[entity2.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceDelete, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, func(scopeCtx context.Context, input gnservice.DeleteInput[uint64]) error {
 				return adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceDelete(scopeCtx, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo, input)
 			})
 		})
-		contextMiddleware_dictPOST_admin_dict_info_update, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/update", false)
+		contextMiddleware_dictPOST_admin_dict_info_update, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/info/update", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/info/update")
 		}
 		server.BindMiddleware("POST:/admin/dict/info/update", contextMiddleware_dictPOST_admin_dict_info_update)
-		server.BindHandler("POST:/admin/dict/info/update", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleUpdate[entity2.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceUpdate, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, func(scopeCtx context.Context, input coreservice.UpdateInput[entity2.Info, uint64]) error {
+		server.BindHandler("POST:/admin/dict/info/update", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleUpdate[entity2.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceUpdate, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, func(scopeCtx context.Context, input gnservice.UpdateInput[entity2.Info, uint64]) error {
 				return adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceUpdate(scopeCtx, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo, input)
 			})
 		})
-		contextMiddleware_dictGET_admin_dict_info_info, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/info", false)
+		contextMiddleware_dictGET_admin_dict_info_info, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/info/info", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/dict/info/info")
 		}
 		server.BindMiddleware("GET:/admin/dict/info/info", contextMiddleware_dictGET_admin_dict_info_info)
-		server.BindHandler("GET:/admin/dict/info/info", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
+		server.BindHandler("GET:/admin/dict/info/info", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
 				return adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceInfo(scopeCtx, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo, input)
 			})
 		})
-		contextMiddleware_dictPOST_admin_dict_info_list, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/list", false)
+		contextMiddleware_dictPOST_admin_dict_info_list, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/info/list", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/info/list")
 		}
 		server.BindMiddleware("POST:/admin/dict/info/list", contextMiddleware_dictPOST_admin_dict_info_list)
-		server.BindHandler("POST:/admin/dict/info/list", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, crud.ActionList, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceList, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+		server.BindHandler("POST:/admin/dict/info/list", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, crud.ActionList, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceList, func(scopeCtx context.Context, input gnservice.Query) (any, error) {
 				return adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServiceList(scopeCtx, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo, input)
 			})
 		})
-		contextMiddleware_dictPOST_admin_dict_info_page, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/page", false)
+		contextMiddleware_dictPOST_admin_dict_info_page, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/info/page", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/info/page")
 		}
 		server.BindMiddleware("POST:/admin/dict/info/page", contextMiddleware_dictPOST_admin_dict_info_page)
-		server.BindHandler("POST:/admin/dict/info/page", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, crud.ActionPage, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServicePage, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+		server.BindHandler("POST:/admin/dict/info/page", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController, crud.ActionPage, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServicePage, func(scopeCtx context.Context, input gnservice.Query) (any, error) {
 				return adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceInfoServicePage(scopeCtx, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo, input)
 			})
 		})
-		contextMiddleware_dictPOST_admin_dict_info_data, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/data", false)
+		contextMiddleware_dictPOST_admin_dict_info_data, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/info/data", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/info/data")
 		}
 		server.BindMiddleware("POST:/admin/dict/info/data", contextMiddleware_dictPOST_admin_dict_info_data)
-		server.BindHandler("POST:/admin/dict/info/data", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto3.DataRequest](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto3.DataRequest) (any, error) {
+		server.BindHandler("POST:/admin/dict/info/data", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto2.DataRequest](ctx, binder, route.BindJSON, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *dto2.DataRequest) (any, error) {
 				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Data(scopeCtx, input)
 			})
 		})
-		contextMiddleware_dictGET_admin_dict_info_types, err := apphttp.NewContextMiddleware(authService, "/admin/dict/info/types", true)
+		contextMiddleware_dictGET_admin_dict_info_types, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/info/types", true)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/dict/info/types")
 		}
 		server.BindMiddleware("GET:/admin/dict/info/types", contextMiddleware_dictGET_admin_dict_info_types)
-		server.BindHandler("GET:/admin/dict/info/types", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("GET:/admin/dict/info/types", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Types(scopeCtx)
 			})
 		})
-		contextMiddleware_dictPOST_admin_dict_type_add, err := apphttp.NewContextMiddleware(authService, "/admin/dict/type/add", false)
+		contextMiddleware_dictPOST_admin_dict_type_add, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/type/add", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/type/add")
 		}
 		server.BindMiddleware("POST:/admin/dict/type/add", contextMiddleware_dictPOST_admin_dict_type_add)
-		server.BindHandler("POST:/admin/dict/type/add", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleAdd[entity2.Type, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceAdd, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, func(scopeCtx context.Context, input coreservice.AddInput[entity2.Type]) (coreservice.AddResult[uint64], error) {
+		server.BindHandler("POST:/admin/dict/type/add", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleAdd[entity2.Type, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceAdd, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, func(scopeCtx context.Context, input gnservice.AddInput[entity2.Type]) (gnservice.AddResult[uint64], error) {
 				return adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceAdd(scopeCtx, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType, input)
 			})
 		})
-		contextMiddleware_dictPOST_admin_dict_type_delete, err := apphttp.NewContextMiddleware(authService, "/admin/dict/type/delete", false)
+		contextMiddleware_dictPOST_admin_dict_type_delete, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/type/delete", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/type/delete")
 		}
 		server.BindMiddleware("POST:/admin/dict/type/delete", contextMiddleware_dictPOST_admin_dict_type_delete)
-		server.BindHandler("POST:/admin/dict/type/delete", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDelete[entity2.Type, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceDelete, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, func(scopeCtx context.Context, input coreservice.DeleteInput[uint64]) error {
+		server.BindHandler("POST:/admin/dict/type/delete", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDelete[entity2.Type, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceDelete, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, func(scopeCtx context.Context, input gnservice.DeleteInput[uint64]) error {
 				return adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceDelete(scopeCtx, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType, input)
 			})
 		})
-		contextMiddleware_dictPOST_admin_dict_type_update, err := apphttp.NewContextMiddleware(authService, "/admin/dict/type/update", false)
+		contextMiddleware_dictPOST_admin_dict_type_update, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/type/update", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/type/update")
 		}
 		server.BindMiddleware("POST:/admin/dict/type/update", contextMiddleware_dictPOST_admin_dict_type_update)
-		server.BindHandler("POST:/admin/dict/type/update", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleUpdate[entity2.Type, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceUpdate, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, func(scopeCtx context.Context, input coreservice.UpdateInput[entity2.Type, uint64]) error {
+		server.BindHandler("POST:/admin/dict/type/update", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleUpdate[entity2.Type, uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceUpdate, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType, func(scopeCtx context.Context, input gnservice.UpdateInput[entity2.Type, uint64]) error {
 				return adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceUpdate(scopeCtx, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType, input)
 			})
 		})
-		contextMiddleware_dictGET_admin_dict_type_info, err := apphttp.NewContextMiddleware(authService, "/admin/dict/type/info", false)
+		contextMiddleware_dictGET_admin_dict_type_info, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/type/info", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/dict/type/info")
 		}
 		server.BindMiddleware("GET:/admin/dict/type/info", contextMiddleware_dictGET_admin_dict_type_info)
-		server.BindHandler("GET:/admin/dict/type/info", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
+		server.BindHandler("GET:/admin/dict/type/info", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
 				return adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceInfo(scopeCtx, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType, input)
 			})
 		})
-		contextMiddleware_dictPOST_admin_dict_type_list, err := apphttp.NewContextMiddleware(authService, "/admin/dict/type/list", false)
+		contextMiddleware_dictPOST_admin_dict_type_list, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/type/list", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/type/list")
 		}
 		server.BindMiddleware("POST:/admin/dict/type/list", contextMiddleware_dictPOST_admin_dict_type_list)
-		server.BindHandler("POST:/admin/dict/type/list", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, crud.ActionList, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceList, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+		server.BindHandler("POST:/admin/dict/type/list", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, crud.ActionList, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceList, func(scopeCtx context.Context, input gnservice.Query) (any, error) {
 				return adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServiceList(scopeCtx, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType, input)
 			})
 		})
-		contextMiddleware_dictPOST_admin_dict_type_page, err := apphttp.NewContextMiddleware(authService, "/admin/dict/type/page", false)
+		contextMiddleware_dictPOST_admin_dict_type_page, err := gnhttp.NewContextMiddleware(authService, "/admin/dict/type/page", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/dict/type/page")
 		}
 		server.BindMiddleware("POST:/admin/dict/type/page", contextMiddleware_dictPOST_admin_dict_type_page)
-		server.BindHandler("POST:/admin/dict/type/page", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, crud.ActionPage, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServicePage, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+		server.BindHandler("POST:/admin/dict/type/page", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController, crud.ActionPage, modedictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServicePage, func(scopeCtx context.Context, input gnservice.Query) (any, error) {
 				return adapterdictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceTypeServicePage(scopeCtx, component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewType, input)
 			})
 		})
-		contextMiddleware_dictPOST_app_dict_info_data, err := apphttp.NewContextMiddleware(authService, "/app/dict/info/data", true)
+		contextMiddleware_dictPOST_app_dict_info_data, err := gnhttp.NewContextMiddleware(authService, "/app/dict/info/data", true)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /app/dict/info/data")
 		}
 		server.BindMiddleware("POST:/app/dict/info/data", contextMiddleware_dictPOST_app_dict_info_data)
-		server.BindHandler("POST:/app/dict/info/data", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto3.DataRequest](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto3.DataRequest) (any, error) {
+		server.BindHandler("POST:/app/dict/info/data", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto2.DataRequest](ctx, binder, route.BindJSON, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *dto2.DataRequest) (any, error) {
 				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Data(scopeCtx, input)
 			})
 		})
-		contextMiddleware_dictGET_app_dict_info_types, err := apphttp.NewContextMiddleware(authService, "/app/dict/info/types", true)
+		contextMiddleware_dictGET_app_dict_info_types, err := gnhttp.NewContextMiddleware(authService, "/app/dict/info/types", true)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /app/dict/info/types")
 		}
 		server.BindMiddleware("GET:/app/dict/info/types", contextMiddleware_dictGET_app_dict_info_types)
-		server.BindHandler("GET:/app/dict/info/types", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleNoDTO(ctx, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context) (any, error) {
+		server.BindHandler("GET:/app/dict/info/types", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleNoDTO(ctx, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context) (any, error) {
 				return component_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_serviceNewInfo.Types(scopeCtx)
 			})
 		})
-		contextMiddleware_taskPOST_admin_task_info_add, err := apphttp.NewContextMiddleware(authService, "/admin/task/info/add", false)
+		contextMiddleware_taskPOST_admin_task_info_add, err := gnhttp.NewContextMiddleware(authService, "/admin/task/info/add", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/task/info/add")
 		}
 		server.BindMiddleware("POST:/admin/task/info/add", contextMiddleware_taskPOST_admin_task_info_add)
-		server.BindHandler("POST:/admin/task/info/add", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleAdd[entity3.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController, modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceAdd, descriptor_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo, func(scopeCtx context.Context, input coreservice.AddInput[entity3.Info]) (coreservice.AddResult[uint64], error) {
+		server.BindHandler("POST:/admin/task/info/add", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleAdd[entity3.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController, modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceAdd, descriptor_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo, func(scopeCtx context.Context, input gnservice.AddInput[entity3.Info]) (gnservice.AddResult[uint64], error) {
 				return adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceAdd(scopeCtx, component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo, input)
 			})
 		})
-		contextMiddleware_taskPOST_admin_task_info_delete, err := apphttp.NewContextMiddleware(authService, "/admin/task/info/delete", false)
+		contextMiddleware_taskPOST_admin_task_info_delete, err := gnhttp.NewContextMiddleware(authService, "/admin/task/info/delete", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/task/info/delete")
 		}
 		server.BindMiddleware("POST:/admin/task/info/delete", contextMiddleware_taskPOST_admin_task_info_delete)
-		server.BindHandler("POST:/admin/task/info/delete", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDelete[entity3.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController, modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceDelete, descriptor_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo, func(scopeCtx context.Context, input coreservice.DeleteInput[uint64]) error {
+		server.BindHandler("POST:/admin/task/info/delete", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDelete[entity3.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController, modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceDelete, descriptor_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo, func(scopeCtx context.Context, input gnservice.DeleteInput[uint64]) error {
 				return adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceDelete(scopeCtx, component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo, input)
 			})
 		})
-		contextMiddleware_taskPOST_admin_task_info_update, err := apphttp.NewContextMiddleware(authService, "/admin/task/info/update", false)
+		contextMiddleware_taskPOST_admin_task_info_update, err := gnhttp.NewContextMiddleware(authService, "/admin/task/info/update", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/task/info/update")
 		}
 		server.BindMiddleware("POST:/admin/task/info/update", contextMiddleware_taskPOST_admin_task_info_update)
-		server.BindHandler("POST:/admin/task/info/update", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleUpdate[entity3.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController, modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceUpdate, descriptor_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo, func(scopeCtx context.Context, input coreservice.UpdateInput[entity3.Info, uint64]) error {
+		server.BindHandler("POST:/admin/task/info/update", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleUpdate[entity3.Info, uint64](ctx, binder, dispatcher, descriptorResolver, controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController, modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceUpdate, descriptor_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo, func(scopeCtx context.Context, input gnservice.UpdateInput[entity3.Info, uint64]) error {
 				return adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceUpdate(scopeCtx, component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo, input)
 			})
 		})
-		contextMiddleware_taskGET_admin_task_info_info, err := apphttp.NewContextMiddleware(authService, "/admin/task/info/info", false)
+		contextMiddleware_taskGET_admin_task_info_info, err := gnhttp.NewContextMiddleware(authService, "/admin/task/info/info", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/task/info/info")
 		}
 		server.BindMiddleware("GET:/admin/task/info/info", contextMiddleware_taskGET_admin_task_info_info)
-		server.BindHandler("GET:/admin/task/info/info", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController, modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
+		server.BindHandler("GET:/admin/task/info/info", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleInfo[uint64](ctx, binder, dispatcher, descriptorResolver, controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController, modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceInfo, func(scopeCtx context.Context, input uint64) (any, error) {
 				return adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceInfo(scopeCtx, component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo, input)
 			})
 		})
-		contextMiddleware_taskPOST_admin_task_info_list, err := apphttp.NewContextMiddleware(authService, "/admin/task/info/list", false)
+		contextMiddleware_taskPOST_admin_task_info_list, err := gnhttp.NewContextMiddleware(authService, "/admin/task/info/list", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/task/info/list")
 		}
 		server.BindMiddleware("POST:/admin/task/info/list", contextMiddleware_taskPOST_admin_task_info_list)
-		server.BindHandler("POST:/admin/task/info/list", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController, crud.ActionList, modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceList, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+		server.BindHandler("POST:/admin/task/info/list", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController, crud.ActionList, modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceList, func(scopeCtx context.Context, input gnservice.Query) (any, error) {
 				return adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServiceList(scopeCtx, component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo, input)
 			})
 		})
-		contextMiddleware_taskPOST_admin_task_info_page, err := apphttp.NewContextMiddleware(authService, "/admin/task/info/page", false)
+		contextMiddleware_taskPOST_admin_task_info_page, err := gnhttp.NewContextMiddleware(authService, "/admin/task/info/page", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/task/info/page")
 		}
 		server.BindMiddleware("POST:/admin/task/info/page", contextMiddleware_taskPOST_admin_task_info_page)
-		server.BindHandler("POST:/admin/task/info/page", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController, crud.ActionPage, modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServicePage, func(scopeCtx context.Context, input coreservice.Query) (any, error) {
+		server.BindHandler("POST:/admin/task/info/page", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleQuery(ctx, binder, dispatcher, descriptorResolver, controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController, crud.ActionPage, modetaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServicePage, func(scopeCtx context.Context, input gnservice.Query) (any, error) {
 				return adaptertaskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceInfoServicePage(scopeCtx, component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo, input)
 			})
 		})
-		contextMiddleware_taskPOST_admin_task_info_once, err := apphttp.NewContextMiddleware(authService, "/admin/task/info/once", false)
+		contextMiddleware_taskPOST_admin_task_info_once, err := gnhttp.NewContextMiddleware(authService, "/admin/task/info/once", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/task/info/once")
 		}
 		server.BindMiddleware("POST:/admin/task/info/once", contextMiddleware_taskPOST_admin_task_info_once)
-		server.BindHandler("POST:/admin/task/info/once", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto4.TaskRequest](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto4.TaskRequest) (any, error) {
+		server.BindHandler("POST:/admin/task/info/once", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto3.TaskRequest](ctx, binder, route.BindJSON, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *dto3.TaskRequest) (any, error) {
 				err := component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo.Once(scopeCtx, input)
 				return nil, err
 			})
 		})
-		contextMiddleware_taskPOST_admin_task_info_stop, err := apphttp.NewContextMiddleware(authService, "/admin/task/info/stop", false)
+		contextMiddleware_taskPOST_admin_task_info_stop, err := gnhttp.NewContextMiddleware(authService, "/admin/task/info/stop", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/task/info/stop")
 		}
 		server.BindMiddleware("POST:/admin/task/info/stop", contextMiddleware_taskPOST_admin_task_info_stop)
-		server.BindHandler("POST:/admin/task/info/stop", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto4.TaskRequest](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *dto4.TaskRequest) (any, error) {
+		server.BindHandler("POST:/admin/task/info/stop", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto3.TaskRequest](ctx, binder, route.BindJSON, runtime.Runner(), route.TransactionPolicy{}, func(scopeCtx context.Context, input *dto3.TaskRequest) (any, error) {
 				err := component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo.Stop(scopeCtx, input)
 				return nil, err
 			})
 		})
-		contextMiddleware_taskPOST_admin_task_info_start, err := apphttp.NewContextMiddleware(authService, "/admin/task/info/start", false)
+		contextMiddleware_taskPOST_admin_task_info_start, err := gnhttp.NewContextMiddleware(authService, "/admin/task/info/start", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: POST /admin/task/info/start")
 		}
 		server.BindMiddleware("POST:/admin/task/info/start", contextMiddleware_taskPOST_admin_task_info_start)
-		server.BindHandler("POST:/admin/task/info/start", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto4.StartRequest](ctx, binder, coreroute.BindJSON, runtime.Runner(), coreroute.TransactionPolicy{}, func(scopeCtx context.Context, input *dto4.StartRequest) (any, error) {
+		server.BindHandler("POST:/admin/task/info/start", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto3.StartRequest](ctx, binder, route.BindJSON, runtime.Runner(), route.TransactionPolicy{}, func(scopeCtx context.Context, input *dto3.StartRequest) (any, error) {
 				err := component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo.Start(scopeCtx, input)
 				return nil, err
 			})
 		})
-		contextMiddleware_taskGET_admin_task_info_log, err := apphttp.NewContextMiddleware(authService, "/admin/task/info/log", false)
+		contextMiddleware_taskGET_admin_task_info_log, err := gnhttp.NewContextMiddleware(authService, "/admin/task/info/log", false)
 		if err != nil {
 			return exception.WrapCore(err, "构造 HTTP 路由中间件失败: GET /admin/task/info/log")
 		}
 		server.BindMiddleware("GET:/admin/task/info/log", contextMiddleware_taskGET_admin_task_info_log)
-		server.BindHandler("GET:/admin/task/info/log", func(ctx context.Context, _ *corecontroller.HTTPRequest) (any, error) {
-			return corecontroller.HandleDTO[dto4.LogRequest](ctx, binder, coreroute.BindQuery, runtime.Runner(), coreroute.NonTransactional(), func(scopeCtx context.Context, input *dto4.LogRequest) (any, error) {
+		server.BindHandler("GET:/admin/task/info/log", func(ctx context.Context, _ *gnctrl.HTTPRequest) (any, error) {
+			return gnctrl.HandleDTO[dto3.LogRequest](ctx, binder, route.BindQuery, runtime.Runner(), route.NonTransactional(), func(scopeCtx context.Context, input *dto3.LogRequest) (any, error) {
 				return component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo.Log(scopeCtx, input)
 			})
 		})
 		return nil
 	}
-	httpTransport, err := apphttp.New(infrastructure.Cool.Transports.HTTP, generatedHTTPInstaller)
+	httpTransport, err := gnhttp.New(infrastructure.Cool.Transports.HTTP, generatedHTTPInstaller)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 HTTP Transport 失败")
 	}
-	assembly.AddTransport(module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/http", Name: "New"}, httpTransport, app.Hooks{})
-	grpcTransport, err := coolgrpc.New(infrastructure.Cool.Transports.GRPC, GRPCRegistrar(), nil, nil)
+	assembly.AddTransport(module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/core/gnhttp", Name: "New"}, httpTransport, app.Hooks{})
+	grpcTransport, err := grpc.New(infrastructure.Cool.Transports.GRPC, GRPCRegistrar(), nil, nil)
 	if err != nil {
 		return assembly, exception.WrapCore(err, "构造 gRPC Transport 失败")
 	}

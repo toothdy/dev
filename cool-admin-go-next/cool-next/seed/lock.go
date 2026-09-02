@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/gogf/gf/v2/frame/g"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/schema"
 )
 
@@ -15,23 +15,23 @@ const TableName = "cool_seed_lock"
 
 type lockRecord struct {
 	g.Meta `orm:"table:cool_seed_lock" description:"种子导入幂等标记"`
-	coreentity.Base
+	gnentity.Base
 	SeedKey string `json:"seedKey" orm:"seedKey" description:"模块与种子类型标识" cool:"size=191"`
 }
 
 // 种子导入幂等标记的存储与守卫
 type Store struct {
-	runtime    *coredb.Runtime
-	descriptor coreentity.Descriptor[lockRecord, uint64]
+	runtime    *db.Runtime
+	descriptor gnentity.Descriptor[lockRecord, uint64]
 }
 
 // 种子导入幂等守卫
-func NewStore(runtime *coredb.Runtime) (*Store, error) {
+func NewStore(runtime *db.Runtime) (*Store, error) {
 	if runtime == nil || runtime.DB() == nil || runtime.Runner() == nil {
 		return nil, exception.Core("种子导入守卫依赖的框架数据库 Runtime 无效")
 	}
-	descriptor, err := coreentity.Compile[lockRecord, uint64](coreentity.Schema{
-		Indexes: []coreentity.Index{coreentity.UniqueIndexOf("uk_cool_seed_lock_key", "seedKey")},
+	descriptor, err := gnentity.Compile[lockRecord, uint64](gnentity.Schema{
+		Indexes: []gnentity.Index{gnentity.UniqueIndexOf("uk_cool_seed_lock_key", "seedKey")},
 	})
 	if err != nil {
 		return nil, exception.WrapCore(err, "构建种子导入标记 Descriptor 失败")

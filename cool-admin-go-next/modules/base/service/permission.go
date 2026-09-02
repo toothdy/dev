@@ -9,7 +9,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
@@ -61,11 +61,11 @@ type menuPermissionRow struct {
 
 // Base 权威关系表执行后台授权
 type PermissionService struct {
-	user        *coreservice.Base[entity.User, uint64]
-	userRole    *coreservice.Base[entity.UserRole, uint64]
-	role        *coreservice.Base[entity.Role, uint64]
-	roleMenu    *coreservice.Base[entity.RoleMenu, uint64]
-	menu        *coreservice.Base[entity.Menu, uint64]
+	user        *gnservice.Base[entity.User, uint64]
+	userRole    *gnservice.Base[entity.UserRole, uint64]
+	role        *gnservice.Base[entity.Role, uint64]
+	roleMenu    *gnservice.Base[entity.RoleMenu, uint64]
+	menu        *gnservice.Base[entity.Menu, uint64]
 	menuService *MenuService
 	boundary    *auth.Boundary
 }
@@ -73,11 +73,11 @@ type PermissionService struct {
 // 后台权限服务
 func NewPermission(
 	runtime *db.Runtime,
-	user *coreservice.Base[entity.User, uint64],
-	userRole *coreservice.Base[entity.UserRole, uint64],
-	role *coreservice.Base[entity.Role, uint64],
-	roleMenu *coreservice.Base[entity.RoleMenu, uint64],
-	menu *coreservice.Base[entity.Menu, uint64],
+	user *gnservice.Base[entity.User, uint64],
+	userRole *gnservice.Base[entity.UserRole, uint64],
+	role *gnservice.Base[entity.Role, uint64],
+	roleMenu *gnservice.Base[entity.RoleMenu, uint64],
+	menu *gnservice.Base[entity.Menu, uint64],
 	menuService *MenuService,
 	sessions auth.Store,
 ) (*PermissionService, error) {
@@ -541,7 +541,7 @@ func (s *PermissionService) visibleMenus(ctx context.Context, roleIDs []uint64, 
 	return unique, nil
 }
 
-func validPermissionBase[E any](base *coreservice.Base[E, uint64]) bool {
+func validPermissionBase[E any](base *gnservice.Base[E, uint64]) bool {
 	return base != nil && base.Descriptor() != nil
 }
 

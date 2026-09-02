@@ -3,41 +3,41 @@ package admin
 import (
 	"net/http"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"github.com/toothdy/cool-admin-go-next/modules/dict/entity"
 	"github.com/toothdy/cool-admin-go-next/modules/dict/service"
 )
 
 // 字典信息管理路由
-func AdminDictInfoController(info *service.InfoService) controller.Definition {
-	return controller.Admin().
-		Options(controller.RouterOptions{Description: "字典信息", TagName: "字典信息"}).
-		Curd(controller.CurdOption{
-			API:     controller.AllAPI(),
+func AdminDictInfoController(info *service.InfoService) gnctrl.Definition {
+	return gnctrl.Admin().
+		Options(gnctrl.RouterOptions{Description: "字典信息", TagName: "字典信息"}).
+		Curd(gnctrl.CurdOption{
+			API:     gnctrl.AllAPI(),
 			Entity:  entity.Info{},
 			Service: info,
-			ListQueryOp: controller.StaticQuery(controller.QueryOp{
-				KeyWordLikeFields: []controller.ColumnRef{controller.Field("name")},
-				FieldEq:           []controller.FieldEq{controller.Eq(controller.Field("typeId"))},
-				AddOrderBy:        []controller.Order{controller.Asc(controller.Field("createTime"))},
+			ListQueryOp: gnctrl.StaticQuery(gnctrl.QueryOp{
+				KeyWordLikeFields: []gnctrl.ColumnRef{gnctrl.Field("name")},
+				FieldEq:           []gnctrl.FieldEq{gnctrl.Eq(gnctrl.Field("typeId"))},
+				AddOrderBy:        []gnctrl.Order{gnctrl.Asc(gnctrl.Field("createTime"))},
 			}),
 		}).
 		Route(
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/data",
 				Summary:     "获得字典数据",
-				Handler:     controller.Handle(info.Data),
-				Bind:        controller.BindJSON,
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(info.Data),
+				Bind:        gnctrl.BindJSON,
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/types",
 				Summary:     "获得所有字典类型",
-				Handler:     controller.Handle(info.Types),
-				Tags:        []controller.URLTag{{Name: controller.TagIgnoreToken}},
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(info.Types),
+				Tags:        []gnctrl.URLTag{{Name: gnctrl.TagIgnoreToken}},
+				Transaction: gnctrl.NonTransactional(),
 			},
 		).
 		Build()

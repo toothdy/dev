@@ -6,7 +6,7 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/util/guid"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/modules/task/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/task/entity"
@@ -31,8 +31,8 @@ type LogItem struct {
 
 // 任务日志分页结果
 type LogResult struct {
-	List       []LogItem              `json:"list"`
-	Pagination coreservice.Pagination `json:"pagination"`
+	List       []LogItem            `json:"list"`
+	Pagination gnservice.Pagination `json:"pagination"`
 }
 
 type statusWrite struct {
@@ -46,17 +46,17 @@ type statusTypeWrite struct {
 
 // 任务信息 CRUD 与调度联动
 type InfoService struct {
-	*coreservice.Base[entity.Info, uint64]
+	*gnservice.Base[entity.Info, uint64]
 	runtime   *db.Runtime
-	logBase   *coreservice.Base[entity.Log, uint64]
+	logBase   *gnservice.Base[entity.Log, uint64]
 	scheduler *Scheduler
 }
 
 // 任务信息业务服务
 func NewInfo(
 	runtime *db.Runtime,
-	infoBase *coreservice.Base[entity.Info, uint64],
-	logBase *coreservice.Base[entity.Log, uint64],
+	infoBase *gnservice.Base[entity.Info, uint64],
+	logBase *gnservice.Base[entity.Log, uint64],
 	scheduler *Scheduler,
 ) (*InfoService, error) {
 	if runtime == nil || runtime.Runner() == nil || infoBase == nil || infoBase.Descriptor() == nil ||
@@ -70,15 +70,15 @@ func NewInfo(
 // 新增任务并按状态注册定时器
 func (service *InfoService) Add(
 	ctx context.Context,
-	input coreservice.AddInput[entity.Info],
-) (coreservice.AddResult[uint64], error) {
+	input gnservice.AddInput[entity.Info],
+) (gnservice.AddResult[uint64], error) {
 	for _, value := range addValues(input) {
 		if err := prepareSchedule(value); err != nil {
-			return coreservice.AddResult[uint64]{}, err
+			return gnservice.AddResult[uint64]{}, err
 		}
 		if !value.Has("jobId") || value.IsNull("jobId") {
 			if err := value.Set("jobId", guid.S()); err != nil {
-				return coreservice.AddResult[uint64]{}, err
+				return gnservice.AddResult[uint64]{}, err
 			}
 		}
 	}
@@ -95,10 +95,10 @@ func (service *InfoService) Add(
 }
 
 // 更新任务并重新注册定时器
-func (service *InfoService) Update(ctx context.Context, input coreservice.UpdateInput[entity.Info, uint64]) error {
+func (service *InfoService) Update(ctx context.Context, input gnservice.UpdateInput[entity.Info, uint64]) error {
 	items := input.Many()
 	if !input.IsMany() {
-		items = []coreservice.UpdateItem[entity.Info, uint64]{input.One()}
+		items = []gnservice.UpdateItem[entity.Info, uint64]{input.One()}
 	}
 	ids := make([]uint64, len(items))
 	for index, item := range items {
@@ -115,7 +115,7 @@ func (service *InfoService) Update(ctx context.Context, input coreservice.Update
 }
 
 // 删除任务及其日志并移除定时器
-func (service *InfoService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+func (service *InfoService) Delete(ctx context.Context, input gnservice.DeleteInput[uint64]) error {
 	ids := input.IDs()
 	if err := service.Base.Delete(ctx, input); err != nil {
 		return err
@@ -176,7 +176,7 @@ func (service *InfoService) Log(ctx context.Context, request *dto.LogRequest) (L
 		query = query.Where("a.status", *request.Status)
 	}
 	page, size := logWindow(request)
-	pageQuery, err := coreservice.NewQuery(nil, page, size)
+	pageQuery, err := gnservice.NewQuery(nil, page, size)
 	if err != nil {
 		return LogResult{}, err
 	}
@@ -226,16 +226,16 @@ func (service *InfoService) syncAll(ctx context.Context, ids []uint64) error {
 	return nil
 }
 
-func addValues(input coreservice.AddInput[entity.Info]) []*coreservice.Mutable[entity.Info] {
+func addValues(input gnservice.AddInput[entity.Info]) []*gnservice.Mutable[entity.Info] {
 	if input.IsMany() {
 		return input.Many()
 	}
 
-	return []*coreservice.Mutable[entity.Info]{input.One()}
+	return []*gnservice.Mutable[entity.Info]{input.One()}
 }
 
 // cron 与间隔互斥，未生效的一侧清空，与 Node addOrUpdate 一致
-func prepareSchedule(value *coreservice.Mutable[entity.Info]) error {
+func prepareSchedule(value *gnservice.Mutable[entity.Info]) error {
 	if value == nil || !value.Has("taskType") {
 		return nil
 	}

@@ -6,11 +6,11 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
 )
 
-func expectedTable(dialect driver.Dialect, metadata entity.Metadata) (Table, error) {
+func expectedTable(dialect driver.Dialect, metadata gnentity.Metadata) (Table, error) {
 	if metadata == nil {
 		return Table{}, gerror.New("实体元数据不能为 nil")
 	}
@@ -54,7 +54,7 @@ func expectedTable(dialect driver.Dialect, metadata entity.Metadata) (Table, err
 	return table, nil
 }
 
-func columnType(dialect driver.Dialect, field entity.Field) (string, error) {
+func columnType(dialect driver.Dialect, field gnentity.Field) (string, error) {
 	if field.AutoIncrement() {
 		switch dialect.Kind() {
 		case driver.MySQL:

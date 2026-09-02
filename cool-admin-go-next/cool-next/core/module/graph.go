@@ -9,7 +9,7 @@ import (
 	"unicode"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 )
 
 var descriptorTablePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
@@ -23,23 +23,23 @@ type Graph struct {
 	modules      []StaticModule
 	outbox       OutboxGraph
 	providers    []Provider
-	routes       coreroute.Table
+	routes       route.Table
 	transports   []Component
 	validated    bool
 }
 
 // 静态模块图构建输入
 type GraphInput struct {
-	Components   []ComponentDefinition            // 已排序的组件定义
-	Controllers  []coreroute.ControllerDefinition // Controller 静态定义
-	Dependencies []DependencyDefinition           // 组件依赖定义
-	Descriptors  []DescriptorDefinition           // 实体 Descriptor 定义
-	Lifecycles   []LifecycleDefinition            // 组件生命周期定义
-	Modules      []ModuleDefinition               // 模块静态定义
-	Outbox       OutboxDefinition                 // 可靠消息装配定义
-	Providers    []ProviderDefinition             // Provider 定义
-	Routes       []coreroute.Definition           // 路由静态定义
-	Transports   []ComponentDefinition            // Transport 组件引用
+	Components   []ComponentDefinition        // 已排序的组件定义
+	Controllers  []route.ControllerDefinition // Controller 静态定义
+	Dependencies []DependencyDefinition       // 组件依赖定义
+	Descriptors  []DescriptorDefinition       // 实体 Descriptor 定义
+	Lifecycles   []LifecycleDefinition        // 组件生命周期定义
+	Modules      []ModuleDefinition           // 模块静态定义
+	Outbox       OutboxDefinition             // 可靠消息装配定义
+	Providers    []ProviderDefinition         // Provider 定义
+	Routes       []route.Definition           // 路由静态定义
+	Transports   []ComponentDefinition        // Transport 组件引用
 }
 
 // 模块静态定义
@@ -184,7 +184,7 @@ func BuildGraph(input GraphInput) (Graph, error) {
 	if err != nil {
 		return Graph{}, err
 	}
-	routes, err := coreroute.BuildTable(coreroute.TableInput{Controllers: input.Controllers, Routes: input.Routes})
+	routes, err := route.BuildTable(route.TableInput{Controllers: input.Controllers, Routes: input.Routes})
 	if err != nil {
 		return Graph{}, err
 	}
@@ -268,7 +268,7 @@ func (g Graph) Transports() []Component { return append([]Component(nil), g.tran
 func (g Graph) Outbox() OutboxGraph { return g.outbox.clone() }
 
 // 返回静态路由表
-func (g Graph) Routes() coreroute.Table { return g.routes }
+func (g Graph) Routes() route.Table { return g.routes }
 
 // 返回模块身份
 func (m StaticModule) Identity() Identity { return m.identity }

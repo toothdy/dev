@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
@@ -42,34 +42,34 @@ func (handler *LogHandler) GetKeep(ctx context.Context) (int, error) {
 }
 
 // 系统操作日志路由
-func AdminSysLogController(log *service.LogService, handler *LogHandler) controller.Definition {
-	return controller.Admin().
-		Options(controller.RouterOptions{Description: "系统操作日志", TagName: "系统操作日志"}).
-		Curd(controller.CurdOption{
-			API:     controller.API(controller.Page),
+func AdminSysLogController(log *service.LogService, handler *LogHandler) gnctrl.Definition {
+	return gnctrl.Admin().
+		Options(gnctrl.RouterOptions{Description: "系统操作日志", TagName: "系统操作日志"}).
+		Curd(gnctrl.CurdOption{
+			API:     gnctrl.API(gnctrl.Page),
 			Entity:  entity.Log{},
 			Service: log,
 		}).
 		Route(
-			controller.Route{
+			gnctrl.Route{
 				Method:  http.MethodPost,
 				Path:    "/clear",
 				Summary: "清理",
-				Handler: controller.Handle(handler.Clear),
+				Handler: gnctrl.Handle(handler.Clear),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:  http.MethodPost,
 				Path:    "/setKeep",
 				Summary: "日志保存时间",
-				Handler: controller.Handle(handler.SetKeep),
-				Bind:    controller.BindJSON,
+				Handler: gnctrl.Handle(handler.SetKeep),
+				Bind:    gnctrl.BindJSON,
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/getKeep",
 				Summary:     "获得日志保存时间",
-				Handler:     controller.Handle(handler.GetKeep),
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(handler.GetKeep),
+				Transaction: gnctrl.NonTransactional(),
 			},
 		).
 		Build()

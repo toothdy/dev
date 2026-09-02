@@ -11,7 +11,7 @@ import (
 	"github.com/gogf/gf/v2/os/gcron"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/modules/task/entity"
 )
 
@@ -33,7 +33,7 @@ type nextRunTimeWrite struct {
 type Scheduler struct {
 	cron     *gcron.Cron
 	executor *Executor
-	infoBase *coreservice.Base[entity.Info, uint64]
+	infoBase *gnservice.Base[entity.Info, uint64]
 	mu       sync.Mutex
 	entries  map[uint64]string
 	sequence atomic.Uint64
@@ -42,7 +42,7 @@ type Scheduler struct {
 // 任务定时器
 func NewScheduler(
 	executor *Executor,
-	infoBase *coreservice.Base[entity.Info, uint64],
+	infoBase *gnservice.Base[entity.Info, uint64],
 ) (*Scheduler, error) {
 	if executor == nil || infoBase == nil || infoBase.Descriptor() == nil {
 		return nil, exception.Core("任务定时器依赖无效")

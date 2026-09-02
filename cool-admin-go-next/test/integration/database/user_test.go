@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/gogf/gf/v2/database/gdb"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/schema"
 	baseentity "github.com/toothdy/cool-admin-go-next/modules/base/entity"
@@ -20,7 +20,7 @@ func TestUserTransientSchemaMatrix(t *testing.T) {
 	if !config.enabled {
 		t.Skip("未启用数据库集成测试")
 	}
-	descriptor, err := coreentity.Compile[baseentity.User, uint64](baseentity.UserSchema())
+	descriptor, err := gnentity.Compile[baseentity.User, uint64](baseentity.UserSchema())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/net/ghttp"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"github.com/toothdy/cool-admin-go-next/modules/base"
 )
 
@@ -173,51 +173,51 @@ func (service *UploadService) Save(file *ghttp.UploadFile, key string) (string, 
 }
 
 // 校验公开文件路径并构造受控文件响应
-func (service *UploadService) Read(date, name string) (controller.FileResponse, error) {
+func (service *UploadService) Read(date, name string) (gnctrl.FileResponse, error) {
 	if service == nil || !validUploadDate(date) || !validUploadBasename(name) {
-		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+		return gnctrl.FileResponse{}, exception.Validate("上传文件不存在")
 	}
 	root, err := service.openRoot(false)
 	if err != nil {
-		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+		return gnctrl.FileResponse{}, exception.Validate("上传文件不存在")
 	}
 	defer root.Close()
 
 	relative := filepath.Join(date, name)
 	directory, err := root.Lstat(date)
 	if err != nil || !directory.IsDir() {
-		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+		return gnctrl.FileResponse{}, exception.Validate("上传文件不存在")
 	}
 	entry, err := root.Lstat(relative)
 	if err != nil || !entry.Mode().IsRegular() {
-		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+		return gnctrl.FileResponse{}, exception.Validate("上传文件不存在")
 	}
 	file, err := root.Open(relative)
 	if err != nil {
-		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+		return gnctrl.FileResponse{}, exception.Validate("上传文件不存在")
 	}
 	info, err := file.Stat()
 	if err != nil || !info.Mode().IsRegular() {
 		_ = file.Close()
-		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+		return gnctrl.FileResponse{}, exception.Validate("上传文件不存在")
 	}
 
 	sniff := make([]byte, 512)
 	count, err := file.Read(sniff)
 	if err != nil && !errors.Is(err, io.EOF) {
 		_ = file.Close()
-		return controller.FileResponse{}, exception.Core("读取上传文件失败")
+		return gnctrl.FileResponse{}, exception.Core("读取上传文件失败")
 	}
 	contentType := http.DetectContentType(sniff[:count])
-	disposition := controller.FileDispositionAttachment
+	disposition := gnctrl.FileDispositionAttachment
 	extension := strings.ToLower(filepath.Ext(name))
 	if extensions := trustedUploadMedia[contentType]; extensions[extension] {
-		disposition = controller.FileDispositionInline
+		disposition = gnctrl.FileDispositionInline
 	} else {
 		contentType = "application/octet-stream"
 	}
 
-	return controller.FileResponse{
+	return gnctrl.FileResponse{
 		Content:     file,
 		Name:        name,
 		ContentType: contentType,

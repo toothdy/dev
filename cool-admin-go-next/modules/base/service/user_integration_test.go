@@ -13,8 +13,8 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/recycle"
@@ -22,10 +22,10 @@ import (
 )
 
 type userDescriptorResolver struct {
-	descriptor coreentity.Descriptor[entity.User, uint64]
+	descriptor gnentity.Descriptor[entity.User, uint64]
 }
 
-func (resolver userDescriptorResolver) Resolve(value any) (coreentity.Metadata, bool) {
+func (resolver userDescriptorResolver) Resolve(value any) (gnentity.Metadata, bool) {
 	if reflect.TypeOf(value) != reflect.TypeFor[entity.User]() {
 		return nil, false
 	}
@@ -47,20 +47,20 @@ func (store *userSessionStore) RevokeUsers(_ context.Context, _ auth.Kind, ids [
 type userTestFixture struct {
 	service    *UserService
 	runtime    *db.Runtime
-	descriptor coreentity.Descriptor[entity.User, uint64]
+	descriptor gnentity.Descriptor[entity.User, uint64]
 	sessions   *userSessionStore
 }
 
 func TestUserMutationDomain(t *testing.T) {
 	fixture := newUserTestFixture(t)
 	addValue := userMutable(t, fixture.descriptor,
-		coreservice.Value("username", "alice"),
-		coreservice.Value("password", "secret"),
-		coreservice.Value("status", int32(1)),
-		coreservice.Value("departmentId", uint64(5)),
-		coreservice.Value("roleIdList", []uint64{20, 20, 0}),
+		gnservice.Value("username", "alice"),
+		gnservice.Value("password", "secret"),
+		gnservice.Value("status", int32(1)),
+		gnservice.Value("departmentId", uint64(5)),
+		gnservice.Value("roleIdList", []uint64{20, 20, 0}),
 	)
-	addInput, err := coreservice.NewAddObject[entity.User, uint64](fixture.descriptor, addValue)
+	addInput, err := gnservice.NewAddObject[entity.User, uint64](fixture.descriptor, addValue)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,8 +86,8 @@ func TestUserMutationDomain(t *testing.T) {
 	assertUserRoles(t, fixture.runtime, userID, []uint64{20})
 
 	clearRoles := userMutable(t, fixture.descriptor,
-		coreservice.Value("password", ""),
-		coreservice.Null("roleIdList"),
+		gnservice.Value("password", ""),
+		gnservice.Null("roleIdList"),
 	)
 	clearInput := userUpdateInput(t, fixture.descriptor, userID, clearRoles)
 	if err = fixture.dispatch(t, crud.ActionUpdate, func(ctx context.Context) error {
@@ -98,9 +98,9 @@ func TestUserMutationDomain(t *testing.T) {
 	assertUserRoles(t, fixture.runtime, userID, nil)
 
 	updateValue := userMutable(t, fixture.descriptor,
-		coreservice.Value("password", "new-secret"),
-		coreservice.Value("status", int32(0)),
-		coreservice.Value("roleIdList", []uint64{20}),
+		gnservice.Value("password", "new-secret"),
+		gnservice.Value("status", int32(0)),
+		gnservice.Value("roleIdList", []uint64{20}),
 	)
 	updateInput := userUpdateInput(t, fixture.descriptor, userID, updateValue)
 	if err = fixture.dispatch(t, crud.ActionUpdate, func(ctx context.Context) error {
@@ -116,7 +116,7 @@ func TestUserMutationDomain(t *testing.T) {
 		t.Fatalf("updated password = valid:%t version:%d error:%v", verified.Valid, added.PasswordV, err)
 	}
 
-	deleteInput, err := coreservice.NewDeleteInput[entity.User, uint64](fixture.descriptor, []uint64{userID})
+	deleteInput, err := gnservice.NewDeleteInput[entity.User](fixture.descriptor, []uint64{userID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -201,14 +201,14 @@ func userTestBase[E any](
 	t *testing.T,
 	runtime *db.Runtime,
 	recycler *recycle.Store,
-	schema coreentity.Schema,
-) (*coreservice.Base[E, uint64], coreentity.Descriptor[E, uint64]) {
+	schema gnentity.Schema,
+) (*gnservice.Base[E, uint64], gnentity.Descriptor[E, uint64]) {
 	t.Helper()
-	descriptor, err := coreentity.Compile[E, uint64](schema)
+	descriptor, err := gnentity.Compile[E, uint64](schema)
 	if err != nil {
 		t.Fatal(err)
 	}
-	base, err := coreservice.NewBase[E, uint64](descriptor, runtime, recycler)
+	base, err := gnservice.NewBase[E, uint64](descriptor, runtime, recycler)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,11 +239,11 @@ func (fixture userTestFixture) dispatch(t *testing.T, action crud.Action, callba
 
 func userMutable(
 	t *testing.T,
-	descriptor coreentity.Descriptor[entity.User, uint64],
-	fields ...coreservice.FieldValue,
-) *coreservice.Mutable[entity.User] {
+	descriptor gnentity.Descriptor[entity.User, uint64],
+	fields ...gnservice.FieldValue,
+) *gnservice.Mutable[entity.User] {
 	t.Helper()
-	value, err := coreservice.NewMutable[entity.User, uint64](descriptor, fields)
+	value, err := gnservice.NewMutable[entity.User, uint64](descriptor, fields)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -253,16 +253,16 @@ func userMutable(
 
 func userUpdateInput(
 	t *testing.T,
-	descriptor coreentity.Descriptor[entity.User, uint64],
+	descriptor gnentity.Descriptor[entity.User, uint64],
 	id uint64,
-	value *coreservice.Mutable[entity.User],
-) coreservice.UpdateInput[entity.User, uint64] {
+	value *gnservice.Mutable[entity.User],
+) gnservice.UpdateInput[entity.User, uint64] {
 	t.Helper()
-	item, err := coreservice.NewUpdateItem(descriptor, id, value)
+	item, err := gnservice.NewUpdateItem(descriptor, id, value)
 	if err != nil {
 		t.Fatal(err)
 	}
-	input, err := coreservice.NewUpdateObject(descriptor, item)
+	input, err := gnservice.NewUpdateObject(descriptor, item)
 	if err != nil {
 		t.Fatal(err)
 	}

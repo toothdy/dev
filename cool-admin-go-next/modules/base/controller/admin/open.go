@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"github.com/toothdy/cool-admin-go-next/cool-next/eps"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
@@ -37,7 +37,7 @@ func NewOpenHandler(
 }
 
 // 按参数键返回原始 HTML
-func (handler *OpenHandler) HTML(ctx context.Context, request *HTMLQuery) (controller.HTMLResponse, error) {
+func (handler *OpenHandler) HTML(ctx context.Context, request *HTMLQuery) (gnctrl.HTMLResponse, error) {
 	if handler == nil || handler.param == nil || request == nil {
 		return "", exception.Core("Base HTML 接口未初始化")
 	}
@@ -78,55 +78,55 @@ func AdminEPS(context.Context) (map[string][]eps.Controller, error) {
 }
 
 // Base 后台公开路由
-func AdminOpenController(handler *OpenHandler) controller.Definition {
-	public := []controller.URLTag{{Name: controller.TagIgnoreToken}}
+func AdminOpenController(handler *OpenHandler) gnctrl.Definition {
+	public := []gnctrl.URLTag{{Name: gnctrl.TagIgnoreToken}}
 
-	return controller.Admin().
-		Options(controller.RouterOptions{Description: "开放接口", TagName: "开放接口"}).
+	return gnctrl.Admin().
+		Options(gnctrl.RouterOptions{Description: "开放接口", TagName: "开放接口"}).
 		Route(
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/eps",
 				Summary:     "实体信息与路径",
-				Handler:     controller.Handle(AdminEPS),
+				Handler:     gnctrl.Handle(AdminEPS),
 				Tags:        public,
-				Transaction: controller.NonTransactional(),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/html",
 				Summary:     "获得网页内容的参数值",
-				Handler:     controller.Handle(handler.HTML),
-				Bind:        controller.BindQuery,
+				Handler:     gnctrl.Handle(handler.HTML),
+				Bind:        gnctrl.BindQuery,
 				Tags:        public,
-				Transaction: controller.NonTransactional(),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/login",
 				Summary:     "登录",
-				Handler:     controller.Handle(handler.Login),
-				Bind:        controller.BindJSON,
+				Handler:     gnctrl.Handle(handler.Login),
+				Bind:        gnctrl.BindJSON,
 				Tags:        public,
-				Transaction: controller.NonTransactional(),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/captcha",
 				Summary:     "验证码",
-				Handler:     controller.Handle(handler.Captcha),
-				Bind:        controller.BindQuery,
+				Handler:     gnctrl.Handle(handler.Captcha),
+				Bind:        gnctrl.BindQuery,
 				Tags:        public,
-				Transaction: controller.NonTransactional(),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/refreshToken",
 				Summary:     "刷新token",
-				Handler:     controller.Handle(handler.Refresh),
-				Bind:        controller.BindJSON,
+				Handler:     gnctrl.Handle(handler.Refresh),
+				Bind:        gnctrl.BindJSON,
 				Tags:        public,
-				Transaction: controller.NonTransactional(),
+				Transaction: gnctrl.NonTransactional(),
 			},
 		).
 		Build()

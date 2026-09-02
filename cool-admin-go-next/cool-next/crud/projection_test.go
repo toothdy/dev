@@ -6,12 +6,12 @@ import (
 
 	"github.com/gogf/gf/v2/frame/g"
 
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 type projectionRoot struct {
 	g.Meta `orm:"table:projection_root" description:"投影根实体"`
-	coreentity.Base
+	gnentity.Base
 	OwnerID uint64    `json:"ownerId" orm:"ownerId" description:"所有者"`
 	Name    string    `json:"name" orm:"displayName" description:"名称"`
 	Status  int       `json:"status" orm:"status" description:"状态"`
@@ -20,16 +20,16 @@ type projectionRoot struct {
 
 type projectionOwner struct {
 	g.Meta `orm:"table:projection_owner" description:"投影所有者实体"`
-	coreentity.Base
+	gnentity.Base
 	Name string `json:"name" orm:"ownerName" description:"名称"`
 }
 
 type projectionResolver struct {
-	root  coreentity.Metadata
-	owner coreentity.Metadata
+	root  gnentity.Metadata
+	owner gnentity.Metadata
 }
 
-func (resolver projectionResolver) Resolve(value any) (coreentity.Metadata, bool) {
+func (resolver projectionResolver) Resolve(value any) (gnentity.Metadata, bool) {
 	switch value.(type) {
 	case projectionRoot:
 		return resolver.root, true
@@ -172,13 +172,13 @@ func TestProjectColumnsResolvesOnlyRootEntity(t *testing.T) {
 	}
 }
 
-func compileProjectionFixtures(t *testing.T) (coreentity.Metadata, coreentity.Metadata, DescriptorResolver) {
+func compileProjectionFixtures(t *testing.T) (gnentity.Metadata, gnentity.Metadata, DescriptorResolver) {
 	t.Helper()
-	root, err := coreentity.Compile[projectionRoot, uint64](coreentity.Schema{})
+	root, err := gnentity.Compile[projectionRoot, uint64](gnentity.Schema{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	owner, err := coreentity.Compile[projectionOwner, uint64](coreentity.Schema{})
+	owner, err := gnentity.Compile[projectionOwner, uint64](gnentity.Schema{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -2,13 +2,13 @@ package entity
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 // 后台系统用户
 type User struct {
 	g.Meta `orm:"table:base_sys_user" description:"系统用户"`
-	coreentity.Base
+	gnentity.Base
 	DepartmentID *uint64   `json:"departmentId" orm:"departmentId" description:"部门ID"`
 	UserID       *uint64   `json:"userId" orm:"userId" description:"创建者ID"`
 	Name         *string   `json:"name" orm:"name" description:"姓名" cool:"size=255"`
@@ -26,11 +26,11 @@ type User struct {
 }
 
 // 用户表补充索引
-func UserSchema() coreentity.Schema {
-	return coreentity.Schema{Indexes: []coreentity.Index{
-		coreentity.IndexOf("idx_base_sys_user_department_id", "departmentId"),
-		coreentity.IndexOf("idx_base_sys_user_user_id", "userId"),
-		coreentity.UniqueIndexOf("uk_base_sys_user_username", "username"),
-		coreentity.IndexOf("idx_base_sys_user_phone", "phone"),
+func UserSchema() gnentity.Schema {
+	return gnentity.Schema{Indexes: []gnentity.Index{
+		gnentity.IndexOf("idx_base_sys_user_department_id", "departmentId"),
+		gnentity.IndexOf("idx_base_sys_user_user_id", "userId"),
+		gnentity.UniqueIndexOf("uk_base_sys_user_username", "username"),
+		gnentity.IndexOf("idx_base_sys_user_phone", "phone"),
 	}}
 }

@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"github.com/toothdy/cool-admin-go-next/cool-next/eps"
 	"github.com/toothdy/cool-admin-go-next/modules/base/controller/admin"
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
@@ -64,43 +64,43 @@ func AppEPS(context.Context) (map[string][]eps.Controller, error) {
 }
 
 // Base App 通用路由
-func AppCommController(handler *CommHandler) controller.Definition {
-	public := []controller.URLTag{{Name: controller.TagIgnoreToken}}
+func AppCommController(handler *CommHandler) gnctrl.Definition {
+	public := []gnctrl.URLTag{{Name: gnctrl.TagIgnoreToken}}
 
-	return controller.App().
-		Options(controller.RouterOptions{Description: "App 通用接口", TagName: "App 通用接口"}).
+	return gnctrl.App().
+		Options(gnctrl.RouterOptions{Description: "App 通用接口", TagName: "App 通用接口"}).
 		Route(
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/param",
 				Summary:     "参数配置",
-				Handler:     controller.Handle(handler.Param),
-				Bind:        controller.BindQuery,
+				Handler:     gnctrl.Handle(handler.Param),
+				Bind:        gnctrl.BindQuery,
 				Tags:        public,
-				Transaction: controller.NonTransactional(),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/eps",
 				Summary:     "实体信息与路径",
-				Handler:     controller.Handle(AppEPS),
+				Handler:     gnctrl.Handle(AppEPS),
 				Tags:        public,
-				Transaction: controller.NonTransactional(),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/upload",
 				Summary:     "文件上传",
-				Handler:     controller.Handle(handler.Upload),
-				Bind:        controller.BindFile,
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(handler.Upload),
+				Bind:        gnctrl.BindFile,
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/uploadMode",
 				Summary:     "文件上传模式",
-				Handler:     controller.Handle(handler.UploadMode),
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(handler.UploadMode),
+				Transaction: gnctrl.NonTransactional(),
 			},
 		).
 		Build()

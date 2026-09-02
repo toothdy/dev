@@ -5,18 +5,18 @@ import (
 	"testing"
 
 	"github.com/gogf/gf/v2/frame/g"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 type transientSeedEntity struct {
 	g.Meta `orm:"table:transient_seed" description:"临时字段种子"`
-	coreentity.Base
+	gnentity.Base
 	Name    string    `json:"name" orm:"name" description:"名称"`
 	RoleIDs *[]uint64 `json:"roleIds" description:"角色 ID" cool:"transient"`
 }
 
 func TestSeedRejectsTransientFields(t *testing.T) {
-	descriptor, err := coreentity.Compile[transientSeedEntity, uint64](coreentity.Schema{})
+	descriptor, err := gnentity.Compile[transientSeedEntity, uint64](gnentity.Schema{})
 	if err != nil {
 		t.Fatal(err)
 	}

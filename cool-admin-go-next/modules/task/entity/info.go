@@ -3,7 +3,7 @@ package entity
 import (
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gtime"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 // 任务状态
@@ -21,7 +21,7 @@ const (
 // 任务信息
 type Info struct {
 	g.Meta `orm:"table:task_info" description:"任务信息"`
-	coreentity.Base
+	gnentity.Base
 	JobID           *string     `json:"jobId" orm:"jobId" description:"任务ID" cool:"size=255"`
 	RepeatConf      *string     `json:"repeatConf" orm:"repeatConf" description:"任务配置" cool:"size=1000"`
 	Name            string      `json:"name" orm:"name" description:"名称" cool:"size=255"`
@@ -42,6 +42,6 @@ type Info struct {
 }
 
 // 任务信息表约束
-func InfoSchema() coreentity.Schema {
-	return coreentity.Schema{}
+func InfoSchema() gnentity.Schema {
+	return gnentity.Schema{}
 }

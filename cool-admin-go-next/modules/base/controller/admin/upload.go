@@ -6,8 +6,8 @@ import (
 
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
@@ -44,9 +44,9 @@ func NewUploadHandler(upload *service.UploadService) (*UploadHandler, error) {
 }
 
 // 受控公开文件响应
-func (handler *UploadHandler) Read(_ context.Context, request *UploadReadRequest) (controller.FileResponse, error) {
+func (handler *UploadHandler) Read(_ context.Context, request *UploadReadRequest) (gnctrl.FileResponse, error) {
 	if handler == nil || handler.upload == nil || request == nil {
-		return controller.FileResponse{}, exception.Core("Base 文件读取接口未初始化")
+		return gnctrl.FileResponse{}, exception.Core("Base 文件读取接口未初始化")
 	}
 
 	return handler.upload.Read(request.Date, request.Name)
@@ -101,21 +101,21 @@ func localUploadMode() UploadModeResult {
 }
 
 // 不带全局前缀的公开文件路由
-func AdminUploadController(handler *UploadHandler) controller.Definition {
-	return controller.Admin("upload").
-		Options(controller.RouterOptions{
+func AdminUploadController(handler *UploadHandler) gnctrl.Definition {
+	return gnctrl.Admin("upload").
+		Options(gnctrl.RouterOptions{
 			Description:        "公开文件",
 			TagName:            "公开文件",
 			IgnoreGlobalPrefix: true,
 		}).
-		Route(controller.Route{
+		Route(gnctrl.Route{
 			Method:      http.MethodGet,
 			Path:        "/{date}/{name}",
 			Summary:     "读取上传文件",
-			Handler:     controller.Handle(handler.Read),
-			Bind:        controller.BindPath,
-			Tags:        []controller.URLTag{{Name: controller.TagIgnoreToken}},
-			Transaction: controller.NonTransactional(),
+			Handler:     gnctrl.Handle(handler.Read),
+			Bind:        gnctrl.BindPath,
+			Tags:        []gnctrl.URLTag{{Name: gnctrl.TagIgnoreToken}},
+			Transaction: gnctrl.NonTransactional(),
 		}).
 		Build()
 }

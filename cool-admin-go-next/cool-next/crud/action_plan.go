@@ -6,8 +6,8 @@ import (
 	"reflect"
 
 	"github.com/gogf/gf/v2/database/gdb"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 // CRUD 动作
@@ -257,7 +257,7 @@ func compileFieldPolicy(
 }
 
 func compileFieldSet(
-	metadata coreentity.Metadata,
+	metadata gnentity.Metadata,
 	entityType reflect.Type,
 	fields []ColumnRef,
 	target map[string]struct{},
@@ -278,7 +278,7 @@ func compileFieldSet(
 }
 
 func compileSortFields(
-	metadata coreentity.Metadata,
+	metadata gnentity.Metadata,
 	entityType reflect.Type,
 	input FieldPolicyInput,
 	policy *FieldPolicy,
@@ -342,11 +342,11 @@ func compileSortFields(
 }
 
 func resolvePolicyField(
-	metadata coreentity.Metadata,
+	metadata gnentity.Metadata,
 	entityType reflect.Type,
 	reference ColumnRef,
 	label string,
-) (coreentity.Field, error) {
+) (gnentity.Field, error) {
 	if !hasColumnRef(reference) || (reference.alias != "" && reference.alias != rootQueryAlias) {
 		return nil, exception.Core(fmt.Sprintf("%s字段引用无效", label))
 	}

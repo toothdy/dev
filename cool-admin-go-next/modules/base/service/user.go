@@ -9,7 +9,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
@@ -47,13 +47,13 @@ type userWrite struct {
 
 // 用户分页响应
 type UserPageResult struct {
-	List       []dto.UserPageItem     `json:"list"`
-	Pagination coreservice.Pagination `json:"pagination"`
+	List       []dto.UserPageItem   `json:"list"`
+	Pagination gnservice.Pagination `json:"pagination"`
 }
 
 // 后台用户业务服务
 type UserService struct {
-	*coreservice.Base[entity.User, uint64]
+	*gnservice.Base[entity.User, uint64]
 	permission *PermissionService
 	department *DepartmentService
 	password   *bcrypt.Verifier
@@ -61,7 +61,7 @@ type UserService struct {
 
 // 用户业务服务
 func NewUser(
-	user *coreservice.Base[entity.User, uint64],
+	user *gnservice.Base[entity.User, uint64],
 	permission *PermissionService,
 	department *DepartmentService,
 	password *bcrypt.Verifier,
@@ -75,38 +75,38 @@ func NewUser(
 }
 
 // 新增用户及其角色关系
-func (s *UserService) Add(ctx context.Context, input coreservice.AddInput[entity.User]) (coreservice.AddResult[uint64], error) {
+func (s *UserService) Add(ctx context.Context, input gnservice.AddInput[entity.User]) (gnservice.AddResult[uint64], error) {
 	value := input.One()
 	if value == nil {
-		return coreservice.AddResult[uint64]{}, exception.Validate("用户新增只支持单条记录")
+		return gnservice.AddResult[uint64]{}, exception.Validate("用户新增只支持单条记录")
 	}
 	roles, hasRoles := roleIDs(value)
 	if !hasRoles || len(roles) == 0 {
-		return coreservice.AddResult[uint64]{}, exception.Validate("用户至少需要一个角色")
+		return gnservice.AddResult[uint64]{}, exception.Validate("用户至少需要一个角色")
 	}
 	if err := s.hashPassword(value); err != nil {
-		return coreservice.AddResult[uint64]{}, err
+		return gnservice.AddResult[uint64]{}, err
 	}
 	deptIDs := userDeptIDs(value)
 	if err := s.permission.lockRoles(ctx, roles); err != nil {
-		return coreservice.AddResult[uint64]{}, err
+		return gnservice.AddResult[uint64]{}, err
 	}
 	if err := s.department.lockDepts(ctx, deptIDs); err != nil {
-		return coreservice.AddResult[uint64]{}, err
+		return gnservice.AddResult[uint64]{}, err
 	}
 	result, err := s.Base.Add(ctx, input)
 	if err != nil {
-		return coreservice.AddResult[uint64]{}, err
+		return gnservice.AddResult[uint64]{}, err
 	}
 	if err = s.permission.setRoles(ctx, result.One(), roles); err != nil {
-		return coreservice.AddResult[uint64]{}, err
+		return gnservice.AddResult[uint64]{}, err
 	}
 
 	return result, nil
 }
 
 // 更新用户及其可选角色关系
-func (s *UserService) Update(ctx context.Context, input coreservice.UpdateInput[entity.User, uint64]) error {
+func (s *UserService) Update(ctx context.Context, input gnservice.UpdateInput[entity.User, uint64]) error {
 	item := input.One()
 	if input.IsMany() || item.Mutable() == nil {
 		return exception.Validate("用户更新只支持单条记录")
@@ -185,7 +185,7 @@ func (s *UserService) Update(ctx context.Context, input coreservice.UpdateInput[
 }
 
 // 删除用户及其角色关系
-func (s *UserService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+func (s *UserService) Delete(ctx context.Context, input gnservice.DeleteInput[uint64]) error {
 	ids := auth.NormalizeIDs(input.IDs())
 	if len(ids) == 0 {
 		return exception.Validate("用户 ID 不能为空")
@@ -238,7 +238,7 @@ func (s *UserService) Info(ctx context.Context, userID uint64) (*dto.UserInfoRes
 }
 
 // 按当前管理员的数据范围返回用户分页
-func (s *UserService) Page(ctx context.Context, query coreservice.Query) (UserPageResult, error) {
+func (s *UserService) Page(ctx context.Context, query gnservice.Query) (UserPageResult, error) {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
 		return UserPageResult{}, err
@@ -395,7 +395,7 @@ func (s *UserService) PersonUpdate(ctx context.Context, req dto.PersonUpdateReq)
 	return nil
 }
 
-func (s *UserService) hashPassword(value *coreservice.Mutable[entity.User]) error {
+func (s *UserService) hashPassword(value *gnservice.Mutable[entity.User]) error {
 	password, exists := value.Get("password")
 	if !exists || strings.TrimSpace(password.(string)) == "" {
 		return exception.Validate("密码不能为空")
@@ -408,7 +408,7 @@ func (s *UserService) hashPassword(value *coreservice.Mutable[entity.User]) erro
 	return value.Set("password", hash)
 }
 
-func (s *UserService) updatePassword(value *coreservice.Mutable[entity.User], version int32) error {
+func (s *UserService) updatePassword(value *gnservice.Mutable[entity.User], version int32) error {
 	password, exists := value.Get("password")
 	if !exists {
 		return nil
@@ -497,7 +497,7 @@ func (s *UserService) pageItems(ctx context.Context, rows []userRow) ([]dto.User
 	return items, nil
 }
 
-func roleIDs(value *coreservice.Mutable[entity.User]) ([]uint64, bool) {
+func roleIDs(value *gnservice.Mutable[entity.User]) ([]uint64, bool) {
 	if !value.Has("roleIdList") {
 		return nil, false
 	}
@@ -509,7 +509,7 @@ func roleIDs(value *coreservice.Mutable[entity.User]) ([]uint64, bool) {
 	return auth.NormalizeIDs(roles.([]uint64)), true
 }
 
-func userDeptIDs(value *coreservice.Mutable[entity.User]) []uint64 {
+func userDeptIDs(value *gnservice.Mutable[entity.User]) []uint64 {
 	if !value.Has("departmentId") || value.IsNull("departmentId") {
 		return nil
 	}

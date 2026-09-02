@@ -11,7 +11,7 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 )
 
 // 消费事务配置
@@ -29,7 +29,7 @@ type InboxStore interface {
 
 // Inbox 消费事务执行器，仅保护同事务内的本地业务效果
 type Deliverer struct {
-	runtime       *coredb.Runtime
+	runtime       *db.Runtime
 	store         InboxStore
 	config        ConsumerConfig
 	definitions   map[string]ConsumerDefinition
@@ -40,7 +40,7 @@ type consumerInvocation func(context.Context) error
 
 // Inbox 消费事务执行器
 func NewDeliverer(
-	runtime *coredb.Runtime,
+	runtime *db.Runtime,
 	store InboxStore,
 	config ConsumerConfig,
 	definitions ...ConsumerDefinition,

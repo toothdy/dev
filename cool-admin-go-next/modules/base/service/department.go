@@ -8,7 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
@@ -37,18 +37,18 @@ type departmentOrderWrite struct {
 
 // 部门树、用户归属及角色部门关系
 type DepartmentService struct {
-	*coreservice.Base[entity.Department, uint64]
-	user           *coreservice.Base[entity.User, uint64]
-	roleDepartment *coreservice.Base[entity.RoleDepartment, uint64]
+	*gnservice.Base[entity.Department, uint64]
+	user           *gnservice.Base[entity.User, uint64]
+	roleDepartment *gnservice.Base[entity.RoleDepartment, uint64]
 	permission     *PermissionService
 	boundary       *auth.Boundary
 }
 
 // 部门业务服务
 func NewDepartment(
-	department *coreservice.Base[entity.Department, uint64],
-	user *coreservice.Base[entity.User, uint64],
-	roleDepartment *coreservice.Base[entity.RoleDepartment, uint64],
+	department *gnservice.Base[entity.Department, uint64],
+	user *gnservice.Base[entity.User, uint64],
+	roleDepartment *gnservice.Base[entity.RoleDepartment, uint64],
 	permission *PermissionService,
 ) (*DepartmentService, error) {
 	if !validPermissionBase(department) || !validPermissionBase(user) ||
@@ -63,10 +63,10 @@ func NewDepartment(
 }
 
 // 新增部门
-func (s *DepartmentService) Add(ctx context.Context, input coreservice.AddInput[entity.Department]) (coreservice.AddResult[uint64], error) {
+func (s *DepartmentService) Add(ctx context.Context, input gnservice.AddInput[entity.Department]) (gnservice.AddResult[uint64], error) {
 	values := input.Many()
 	if !input.IsMany() {
-		values = []*coreservice.Mutable[entity.Department]{input.One()}
+		values = []*gnservice.Mutable[entity.Department]{input.One()}
 	}
 	parents := make([]uint64, 0, len(values))
 	for _, value := range values {
@@ -75,19 +75,19 @@ func (s *DepartmentService) Add(ctx context.Context, input coreservice.AddInput[
 		}
 	}
 	if err := s.lockDepts(ctx, parents); err != nil {
-		return coreservice.AddResult[uint64]{}, err
+		return gnservice.AddResult[uint64]{}, err
 	}
 
 	return s.Base.Add(ctx, input)
 }
 
 // 更新部门
-func (s *DepartmentService) Update(ctx context.Context, input coreservice.UpdateInput[entity.Department, uint64]) error {
-	var items []coreservice.UpdateItem[entity.Department, uint64]
+func (s *DepartmentService) Update(ctx context.Context, input gnservice.UpdateInput[entity.Department, uint64]) error {
+	var items []gnservice.UpdateItem[entity.Department, uint64]
 	if input.IsMany() {
 		items = input.Many()
 	} else {
-		items = []coreservice.UpdateItem[entity.Department, uint64]{input.One()}
+		items = []gnservice.UpdateItem[entity.Department, uint64]{input.One()}
 	}
 	ids := make([]uint64, 0, len(items)*2)
 	for _, item := range items {
@@ -263,7 +263,7 @@ func (s *DepartmentService) Delete(ctx context.Context, req dto.DepartmentDelete
 	if _, err = model.WhereIn("departmentId", allIDs).Delete(); err != nil {
 		return exception.WrapCore(err, "清理部门角色关系失败")
 	}
-	deleteInput, err := coreservice.NewDeleteInput[entity.Department](s.Descriptor(), allIDs)
+	deleteInput, err := gnservice.NewDeleteInput[entity.Department](s.Descriptor(), allIDs)
 	if err != nil {
 		return err
 	}
@@ -430,7 +430,7 @@ func (s *DepartmentService) userData(parentID *uint64) (any, error) {
 	return value.DBData(), nil
 }
 
-func deptParentID(value *coreservice.Mutable[entity.Department]) (*uint64, bool) {
+func deptParentID(value *gnservice.Mutable[entity.Department]) (*uint64, bool) {
 	if !value.Has("parentId") {
 		return nil, false
 	}

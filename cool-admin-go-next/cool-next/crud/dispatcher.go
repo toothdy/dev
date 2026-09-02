@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	dbtx "github.com/toothdy/cool-admin-go-next/cool-next/db/tx"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db/tx"
 
 	"fmt"
 )
@@ -23,7 +23,7 @@ type Adapter func(context.Context) error
 
 // 协议无关的 CRUD 事务调度器
 type Dispatcher struct {
-	runner dbtx.Runner
+	runner tx.Runner
 }
 
 // 单次 CRUD 调度状态
@@ -35,7 +35,7 @@ type DispatchScope struct {
 type dispatchContextKey struct{}
 
 // CRUD Dispatcher
-func NewDispatcher(runner dbtx.Runner) (*Dispatcher, error) {
+func NewDispatcher(runner tx.Runner) (*Dispatcher, error) {
 	if isNilPlanValue(runner) {
 		return nil, exception.Core("CRUD Dispatcher 的事务 Runner 不能为空")
 	}

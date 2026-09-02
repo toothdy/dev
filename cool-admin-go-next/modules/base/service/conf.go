@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
 
@@ -23,11 +23,11 @@ type confValueUpdate struct {
 
 // Base 内部配置读写
 type ConfService struct {
-	*coreservice.Base[entity.Conf, uint64]
+	*gnservice.Base[entity.Conf, uint64]
 }
 
 // 内部配置服务
-func NewConf(baseService *coreservice.Base[entity.Conf, uint64]) (*ConfService, error) {
+func NewConf(baseService *gnservice.Base[entity.Conf, uint64]) (*ConfService, error) {
 	if baseService == nil || baseService.Descriptor() == nil {
 		return nil, exception.Core("配置基础 Service 无效")
 	}

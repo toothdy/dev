@@ -9,7 +9,7 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
@@ -37,27 +37,27 @@ type roleRelationWrite struct {
 
 // 角色分页响应
 type RolePageResult struct {
-	List       []dto.RoleInfoResult   `json:"list"`
-	Pagination coreservice.Pagination `json:"pagination"`
+	List       []dto.RoleInfoResult `json:"list"`
+	Pagination gnservice.Pagination `json:"pagination"`
 }
 
 // 角色及其权威菜单、部门关系
 type RoleService struct {
-	*coreservice.Base[entity.Role, uint64]
+	*gnservice.Base[entity.Role, uint64]
 	runtime        *db.Runtime
-	userRole       *coreservice.Base[entity.UserRole, uint64]
-	roleMenu       *coreservice.Base[entity.RoleMenu, uint64]
-	roleDepartment *coreservice.Base[entity.RoleDepartment, uint64]
+	userRole       *gnservice.Base[entity.UserRole, uint64]
+	roleMenu       *gnservice.Base[entity.RoleMenu, uint64]
+	roleDepartment *gnservice.Base[entity.RoleDepartment, uint64]
 	boundary       *auth.Boundary
 }
 
 // 角色业务服务
 func NewRole(
 	runtime *db.Runtime,
-	role *coreservice.Base[entity.Role, uint64],
-	userRole *coreservice.Base[entity.UserRole, uint64],
-	roleMenu *coreservice.Base[entity.RoleMenu, uint64],
-	roleDepartment *coreservice.Base[entity.RoleDepartment, uint64],
+	role *gnservice.Base[entity.Role, uint64],
+	userRole *gnservice.Base[entity.UserRole, uint64],
+	roleMenu *gnservice.Base[entity.RoleMenu, uint64],
+	roleDepartment *gnservice.Base[entity.RoleDepartment, uint64],
 	sessions auth.Store,
 ) (*RoleService, error) {
 	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(role) ||
@@ -88,17 +88,17 @@ func (s *RoleService) lockPerms(ctx context.Context, menuIDs, deptIDs []uint64) 
 // 新建角色并同步菜单、部门权限关系
 func (s *RoleService) Add(
 	ctx context.Context,
-	input coreservice.AddInput[entity.Role],
-) (coreservice.AddResult[uint64], error) {
+	input gnservice.AddInput[entity.Role],
+) (gnservice.AddResult[uint64], error) {
 	value := input.One()
 	if value == nil {
-		return coreservice.AddResult[uint64]{}, exception.Validate("角色新增只支持单条记录")
+		return gnservice.AddResult[uint64]{}, exception.Validate("角色新增只支持单条记录")
 	}
 	perms := dto.RolePermissionInput{}
 	if submitted := rolePerms(value); submitted != nil {
 		perms = *submitted
 	}
-	var result coreservice.AddResult[uint64]
+	var result gnservice.AddResult[uint64]
 	err := s.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
 		if err := setRolePerms(value, perms); err != nil {
 			return err
@@ -121,13 +121,13 @@ func (s *RoleService) Add(
 // 更新角色及可选权限关系，并撤销受影响用户 Session
 func (s *RoleService) Update(
 	ctx context.Context,
-	input coreservice.UpdateInput[entity.Role, uint64],
+	input gnservice.UpdateInput[entity.Role, uint64],
 ) error {
-	var items []coreservice.UpdateItem[entity.Role, uint64]
+	var items []gnservice.UpdateItem[entity.Role, uint64]
 	if input.IsMany() {
 		items = input.Many()
 	} else {
-		items = []coreservice.UpdateItem[entity.Role, uint64]{input.One()}
+		items = []gnservice.UpdateItem[entity.Role, uint64]{input.One()}
 	}
 	if len(items) != 1 {
 		return exception.Validate("角色更新只支持单条记录")
@@ -214,7 +214,7 @@ func (s *RoleService) Update(
 }
 
 // 删除角色及全部关系，并保护平台管理员角色
-func (s *RoleService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+func (s *RoleService) Delete(ctx context.Context, input gnservice.DeleteInput[uint64]) error {
 	return s.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
 		roleIDs := auth.NormalizeIDs(input.IDs())
 		menuIDs, deptIDs, err := s.permIDs(txCtx, roleIDs)
@@ -318,7 +318,7 @@ func (s *RoleService) List(ctx context.Context) ([]dto.RoleInfoResult, error) {
 }
 
 // 当前管理员可见的角色分页
-func (s *RoleService) Page(ctx context.Context, query coreservice.Query) (RolePageResult, error) {
+func (s *RoleService) Page(ctx context.Context, query gnservice.Query) (RolePageResult, error) {
 	identity, err := auth.Admin(ctx)
 	if err != nil {
 		return RolePageResult{}, err
@@ -465,7 +465,7 @@ func (s *RoleService) isAdmin(ctx context.Context, identity auth.AdminIdentity) 
 	return count > 0, nil
 }
 
-func protectAdminRoleUpdate(row roleRow, mutable *coreservice.Mutable[entity.Role]) error {
+func protectAdminRoleUpdate(row roleRow, mutable *gnservice.Mutable[entity.Role]) error {
 	if row.Label == nil || *row.Label != adminRoleLabel {
 		return nil
 	}
@@ -483,7 +483,7 @@ func protectAdminRoleUpdate(row roleRow, mutable *coreservice.Mutable[entity.Rol
 }
 
 func setRolePerms(
-	mutable *coreservice.Mutable[entity.Role],
+	mutable *gnservice.Mutable[entity.Role],
 	perms dto.RolePermissionInput,
 ) error {
 	if err := mutable.Set("menuIdList", auth.NormalizeIDs(perms.MenuIDList)); err != nil {
@@ -493,7 +493,7 @@ func setRolePerms(
 	return mutable.Set("departmentIdList", auth.NormalizeIDs(perms.DepartmentIDList))
 }
 
-func rolePerms(mutable *coreservice.Mutable[entity.Role]) *dto.RolePermissionInput {
+func rolePerms(mutable *gnservice.Mutable[entity.Role]) *dto.RolePermissionInput {
 	perms := new(dto.RolePermissionInput)
 	has := false
 	if value, ok := mutable.Get("menuIdList"); ok {
@@ -513,7 +513,7 @@ func rolePerms(mutable *coreservice.Mutable[entity.Role]) *dto.RolePermissionInp
 
 func replaceRoleRelation[E any](
 	ctx context.Context,
-	base *coreservice.Base[E, uint64],
+	base *gnservice.Base[E, uint64],
 	column string,
 	roleID uint64,
 	ids []uint64,
@@ -549,7 +549,7 @@ func replaceRoleRelation[E any](
 
 func roleRelationIDs[E any](
 	ctx context.Context,
-	base *coreservice.Base[E, uint64],
+	base *gnservice.Base[E, uint64],
 	column string,
 	roleID uint64,
 ) ([]uint64, error) {
@@ -573,7 +573,7 @@ func roleRelationIDs[E any](
 
 func roleRelationIDsForRoles[E any](
 	ctx context.Context,
-	base *coreservice.Base[E, uint64],
+	base *gnservice.Base[E, uint64],
 	column string,
 	roleIDs []uint64,
 ) ([]uint64, error) {

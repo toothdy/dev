@@ -10,15 +10,15 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/module"
-	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 )
 
 type epsItem struct {
 	g.Meta `orm:"table:eps_item" description:"EPS 项目"`
-	coreentity.Base
+	gnentity.Base
 	Name    string    `json:"name" orm:"name" description:"名称" cool:"size=80"`
 	Secret  string    `json:"secret" orm:"secret" description:"密钥"`
 	Status  int32     `json:"status" orm:"status" description:"状态" cool:"default=1"`
@@ -28,13 +28,13 @@ type epsItem struct {
 
 type epsGroup struct {
 	g.Meta `orm:"table:eps_group" description:"EPS 分组"`
-	coreentity.Base
+	gnentity.Base
 	Name string `json:"name" orm:"name" description:"名称"`
 }
 
 type epsColumnTypes struct {
 	g.Meta `orm:"table:eps_column_types" description:"EPS 字段类型"`
-	coreentity.Base
+	gnentity.Base
 	Score   float64        `json:"score" orm:"score" description:"评分"`
 	Price   float64        `json:"price" orm:"price" description:"价格" cool:"precision=10,scale=2"`
 	RunAt   time.Time      `json:"runAt" orm:"runAt" description:"执行时间"`
@@ -55,7 +55,7 @@ func TestCompileViewsProjectsFinalContract(t *testing.T) {
 	views, err := CompileViews(Input{
 		Graph:       epsGraph(t),
 		Controllers: definitions,
-		Descriptors: []coreentity.RuntimeDescriptor{itemDescriptor, groupDescriptor},
+		Descriptors: []gnentity.RuntimeDescriptor{itemDescriptor, groupDescriptor},
 	}, false)
 	if err != nil {
 		fatalError(t, err)
@@ -149,7 +149,7 @@ func TestCompileViewsProjectsFinalContract(t *testing.T) {
 }
 
 func TestColumnTypeMatchesNodeContract(t *testing.T) {
-	descriptor, err := coreentity.Compile[epsColumnTypes, uint64](coreentity.Schema{})
+	descriptor, err := gnentity.Compile[epsColumnTypes, uint64](gnentity.Schema{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +210,7 @@ func TestCompileViewsIncludesDevelopmentRoutesOnDemand(t *testing.T) {
 			{Key: "demo:dynamic", Definition: dynamicDefinition(new(bool))},
 			{Key: "demo:app", Definition: appDefinition()},
 		},
-		Descriptors: []coreentity.RuntimeDescriptor{itemDescriptor, groupDescriptor},
+		Descriptors: []gnentity.RuntimeDescriptor{itemDescriptor, groupDescriptor},
 	}, true)
 	if err != nil {
 		fatalError(t, err)
@@ -229,7 +229,7 @@ func TestCompileViewsRejectsIncompleteRuntimeInput(t *testing.T) {
 			{Key: "demo:item", Definition: itemDefinition()},
 			{Key: "demo:dynamic", Definition: dynamicDefinition(new(bool))},
 		},
-		Descriptors: []coreentity.RuntimeDescriptor{itemDescriptor, groupDescriptor},
+		Descriptors: []gnentity.RuntimeDescriptor{itemDescriptor, groupDescriptor},
 	}
 	if _, err := CompileViews(input, false); err == nil || !strings.Contains(err.Error(), "缺少运行时 Definition") {
 		t.Fatalf("missing definition error = %v", err)
@@ -241,71 +241,71 @@ func TestCompileViewsRejectsIncompleteRuntimeInput(t *testing.T) {
 	}
 }
 
-func itemDefinition() controller.Definition {
-	return controller.Admin("public/items").
-		Options(controller.RouterOptions{Description: "项目"}).
-		Curd(controller.CurdOption{
+func itemDefinition() gnctrl.Definition {
+	return gnctrl.Admin("public/items").
+		Options(gnctrl.RouterOptions{Description: "项目"}).
+		Curd(gnctrl.CurdOption{
 			Prefix:  "archive/items",
-			API:     controller.API(controller.Page),
+			API:     gnctrl.API(gnctrl.Page),
 			Entity:  epsItem{},
 			Service: &epsService{},
-			PageQueryOp: controller.StaticQuery(controller.QueryOp{
-				KeyWordLikeFields: []controller.ColumnRef{controller.Field("name")},
-				FieldEq:           []controller.FieldEq{controller.Eq(controller.Field("status"))},
-				FieldLike:         []controller.FieldLike{controller.LikeFrom(controller.Field("name"), "query")},
-				Join: []controller.JoinOp{controller.LeftJoin(
+			PageQueryOp: gnctrl.StaticQuery(gnctrl.QueryOp{
+				KeyWordLikeFields: []gnctrl.ColumnRef{gnctrl.Field("name")},
+				FieldEq:           []gnctrl.FieldEq{gnctrl.Eq(gnctrl.Field("status"))},
+				FieldLike:         []gnctrl.FieldLike{gnctrl.LikeFrom(gnctrl.Field("name"), "query")},
+				Join: []gnctrl.JoinOp{gnctrl.LeftJoin(
 					epsGroup{},
 					"g",
-					controller.On(controller.FieldOf[epsGroup]("id").Of("g"), controller.FieldOf[epsItem]("groupId")),
+					gnctrl.On(gnctrl.FieldOf[epsGroup]("id").Of("g"), gnctrl.FieldOf[epsItem]("groupId")),
 				)},
-				Select: []controller.SelectField{
-					controller.As(controller.FieldOf[epsGroup]("name").Of("g"), "groupName"),
-					controller.As(controller.FieldOf[epsGroup]("name").Of("g"), "groupLabel"),
-					controller.As(controller.FieldOf[epsGroup]("createTime").Of("g"), "groupCreated"),
-					controller.As(controller.FieldOf[epsGroup]("name").Of("g"), "createTime"),
-					controller.As(controller.FieldOf[epsGroup]("updateTime").Of("g"), "updateTime"),
-					controller.As(controller.Field("secret"), "secretAlias"),
+				Select: []gnctrl.SelectField{
+					gnctrl.As(gnctrl.FieldOf[epsGroup]("name").Of("g"), "groupName"),
+					gnctrl.As(gnctrl.FieldOf[epsGroup]("name").Of("g"), "groupLabel"),
+					gnctrl.As(gnctrl.FieldOf[epsGroup]("createTime").Of("g"), "groupCreated"),
+					gnctrl.As(gnctrl.FieldOf[epsGroup]("name").Of("g"), "createTime"),
+					gnctrl.As(gnctrl.FieldOf[epsGroup]("updateTime").Of("g"), "updateTime"),
+					gnctrl.As(gnctrl.Field("secret"), "secretAlias"),
 				},
 			}),
-			HiddenFields:   []controller.ColumnRef{controller.Field("secret")},
-			ReadonlyFields: []controller.ColumnRef{controller.Field("status")},
+			HiddenFields:   []gnctrl.ColumnRef{gnctrl.Field("secret")},
+			ReadonlyFields: []gnctrl.ColumnRef{gnctrl.Field("status")},
 		}).
 		Route(
-			controller.Route{Method: http.MethodGet, Path: "/export", Handler: controller.Handle(func() {}), Tags: []controller.URLTag{{Name: controller.TagIgnoreToken}}},
-			controller.Route{Method: http.MethodGet, Path: "/v1/export", Handler: controller.Handle(func() {})},
-			controller.Route{Method: http.MethodGet, Path: "/detail/{id}", Handler: controller.Handle(func() {})},
-			controller.Route{Method: http.MethodGet, Path: "/preview", DevelopmentOnly: true, Handler: controller.Handle(func() {})},
+			gnctrl.Route{Method: http.MethodGet, Path: "/export", Handler: gnctrl.Handle(func() {}), Tags: []gnctrl.URLTag{{Name: gnctrl.TagIgnoreToken}}},
+			gnctrl.Route{Method: http.MethodGet, Path: "/v1/export", Handler: gnctrl.Handle(func() {})},
+			gnctrl.Route{Method: http.MethodGet, Path: "/detail/{id}", Handler: gnctrl.Handle(func() {})},
+			gnctrl.Route{Method: http.MethodGet, Path: "/preview", DevelopmentOnly: true, Handler: gnctrl.Handle(func() {})},
 		).
 		Build()
 }
 
-func dynamicDefinition(called *bool) controller.Definition {
-	return controller.Admin("dynamic").
-		Curd(controller.CurdOption{
-			API:     controller.API(controller.Page),
+func dynamicDefinition(called *bool) gnctrl.Definition {
+	return gnctrl.Admin("dynamic").
+		Curd(gnctrl.CurdOption{
+			API:     gnctrl.API(gnctrl.Page),
 			Entity:  epsItem{},
 			Service: &epsService{},
-			PageQueryOp: controller.DynamicQuery(func(context.Context) (controller.QueryOp, error) {
+			PageQueryOp: gnctrl.DynamicQuery(func(context.Context) (gnctrl.QueryOp, error) {
 				*called = true
-				return controller.QueryOp{FieldEq: []controller.FieldEq{controller.Eq(controller.Field("status"))}}, nil
+				return gnctrl.QueryOp{FieldEq: []gnctrl.FieldEq{gnctrl.Eq(gnctrl.Field("status"))}}, nil
 			}),
 		}).
 		Build()
 }
 
-func appDefinition() controller.Definition {
-	return controller.App("open").
-		Route(controller.Route{Method: http.MethodGet, Path: "/ping", Handler: controller.Handle(func() {})}).
+func appDefinition() gnctrl.Definition {
+	return gnctrl.App("open").
+		Route(gnctrl.Route{Method: http.MethodGet, Path: "/ping", Handler: gnctrl.Handle(func() {})}).
 		Build()
 }
 
-func epsDescriptors(t *testing.T) (coreentity.RuntimeDescriptor, coreentity.RuntimeDescriptor) {
+func epsDescriptors(t *testing.T) (gnentity.RuntimeDescriptor, gnentity.RuntimeDescriptor) {
 	t.Helper()
-	item, err := coreentity.Compile[epsItem, uint64](coreentity.Schema{})
+	item, err := gnentity.Compile[epsItem, uint64](gnentity.Schema{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	group, err := coreentity.Compile[epsGroup, uint64](coreentity.Schema{})
+	group, err := gnentity.Compile[epsGroup, uint64](gnentity.Schema{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -319,19 +319,19 @@ func epsGraph(t *testing.T) module.Graph {
 		{Kind: module.ProviderKindDescriptor, Module: "demo", PackagePath: "example.test/entity", Name: "ItemDescriptor", Type: "entity.Descriptor[epsItem, uint64]"},
 		{Kind: module.ProviderKindDescriptor, Module: "demo", PackagePath: "example.test/entity", Name: "GroupDescriptor", Type: "entity.Descriptor[epsGroup, uint64]"},
 	}
-	controllers := []coreroute.ControllerDefinition{
+	controllers := []route.ControllerDefinition{
 		graphController("demo:item", "/admin/demo/public/items"),
 		graphController("demo:dynamic", "/admin/demo/dynamic"),
 		graphController("demo:app", "/app/demo/open"),
 	}
-	routes := []coreroute.Definition{
-		graphRoute("demo:item", coreroute.KindCRUD, http.MethodPost, "/admin/demo/archive/items/page", false, nil),
-		graphRoute("demo:item", coreroute.KindCustom, http.MethodGet, "/admin/demo/public/items/export", false, []string{controller.TagIgnoreToken}),
-		graphRoute("demo:item", coreroute.KindCustom, http.MethodGet, "/admin/demo/public/items/v1/export", false, nil),
-		graphRoute("demo:item", coreroute.KindCustom, http.MethodGet, "/admin/demo/public/items/detail/{id}", false, nil),
-		graphRoute("demo:item", coreroute.KindCustom, http.MethodGet, "/admin/demo/public/items/preview", true, nil),
-		graphRoute("demo:dynamic", coreroute.KindCRUD, http.MethodPost, "/admin/demo/dynamic/page", false, nil),
-		graphRoute("demo:app", coreroute.KindCustom, http.MethodGet, "/app/demo/open/ping", false, nil),
+	routes := []route.Definition{
+		graphRoute("demo:item", route.KindCRUD, http.MethodPost, "/admin/demo/archive/items/page", false, nil),
+		graphRoute("demo:item", route.KindCustom, http.MethodGet, "/admin/demo/public/items/export", false, []string{gnctrl.TagIgnoreToken}),
+		graphRoute("demo:item", route.KindCustom, http.MethodGet, "/admin/demo/public/items/v1/export", false, nil),
+		graphRoute("demo:item", route.KindCustom, http.MethodGet, "/admin/demo/public/items/detail/{id}", false, nil),
+		graphRoute("demo:item", route.KindCustom, http.MethodGet, "/admin/demo/public/items/preview", true, nil),
+		graphRoute("demo:dynamic", route.KindCRUD, http.MethodPost, "/admin/demo/dynamic/page", false, nil),
+		graphRoute("demo:app", route.KindCustom, http.MethodGet, "/app/demo/open/ping", false, nil),
 	}
 	graph, err := module.BuildGraph(module.GraphInput{
 		Modules:     []module.ModuleDefinition{{Key: "demo", Name: "示例", Description: "示例模块"}},
@@ -347,26 +347,26 @@ func epsGraph(t *testing.T) module.Graph {
 	return graph
 }
 
-func graphController(key, routePath string) coreroute.ControllerDefinition {
-	return coreroute.ControllerDefinition{
+func graphController(key, routePath string) route.ControllerDefinition {
+	return route.ControllerDefinition{
 		Key:         key,
 		Module:      "demo",
 		Path:        routePath,
-		Factory:     coreroute.CallableRef{PackagePath: "example.test/controller", Symbol: strings.ReplaceAll(key, ":", ""), Type: "func() controller.Definition"},
+		Factory:     route.CallableRef{PackagePath: "example.test/controller", Symbol: strings.ReplaceAll(key, ":", ""), Type: "func() controller.Definition"},
 		Description: "项目",
 	}
 }
 
-func graphRoute(controllerKey string, kind coreroute.Kind, method, routePath string, development bool, tags []string) coreroute.Definition {
-	return coreroute.Definition{
+func graphRoute(controllerKey string, kind route.Kind, method, routePath string, development bool, tags []string) route.Definition {
+	return route.Definition{
 		Controller:      controllerKey,
 		Kind:            kind,
 		Method:          method,
 		Path:            routePath,
-		Bind:            coreroute.BindJSON,
+		Bind:            route.BindJSON,
 		DevelopmentOnly: development,
 		Tags:            tags,
-		Handler: coreroute.CallableRef{
+		Handler: route.CallableRef{
 			Method:      "Handle",
 			PackagePath: "example.test/controller",
 			Symbol:      "Handler",

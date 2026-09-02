@@ -9,11 +9,11 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 // 将实体元数据编译为方言 DDL
-func (d Dialect) Compile(metadata entity.Metadata) (DDL, error) {
+func (d Dialect) Compile(metadata gnentity.Metadata) (DDL, error) {
 	if metadata == nil {
 		return DDL{}, gerror.New("实体元数据不能为 nil")
 	}
@@ -61,11 +61,11 @@ func (d Dialect) Compile(metadata entity.Metadata) (DDL, error) {
 }
 
 // 将单个实体字段编译为方言列定义
-func (d Dialect) CompileColumn(field entity.Field) (string, error) {
+func (d Dialect) CompileColumn(field gnentity.Field) (string, error) {
 	return d.compileColumn(field)
 }
 
-func (d Dialect) compileColumn(field entity.Field) (string, error) {
+func (d Dialect) compileColumn(field gnentity.Field) (string, error) {
 	if field == nil {
 		return "", gerror.New("字段元数据不能为 nil")
 	}
@@ -79,7 +79,7 @@ func (d Dialect) compileColumn(field entity.Field) (string, error) {
 	}
 	if field.AutoIncrement() {
 		if !field.Primary() || field.Nullable() ||
-			field.LogicalType() != entity.LogicalInt && field.LogicalType() != entity.LogicalUint {
+			field.LogicalType() != gnentity.LogicalInt && field.LogicalType() != gnentity.LogicalUint {
 			return "", gerror.Newf("字段 %s 不满足自增主键约束", field.Name())
 		}
 		if field.Constraints().HasDefault {
@@ -128,26 +128,26 @@ func (d Dialect) compileColumn(field entity.Field) (string, error) {
 	return strings.Join(parts, " "), nil
 }
 
-func (d Dialect) compileChecks(column string, field entity.Field) []string {
+func (d Dialect) compileChecks(column string, field gnentity.Field) []string {
 	checks := make([]string, 0, 2)
-	if field.LogicalType() == entity.LogicalUint && d.kind != MySQL {
+	if field.LogicalType() == gnentity.LogicalUint && d.kind != MySQL {
 		checks = append(checks, fmt.Sprintf("CHECK (%s >= 0)", column))
 	}
-	if field.LogicalType() == entity.LogicalBool && d.kind == SQLite {
+	if field.LogicalType() == gnentity.LogicalBool && d.kind == SQLite {
 		checks = append(checks, fmt.Sprintf("CHECK (%s IN (0, 1))", column))
 	}
-	if field.LogicalType() == entity.LogicalJSON && d.kind == SQLite {
+	if field.LogicalType() == gnentity.LogicalJSON && d.kind == SQLite {
 		checks = append(checks, fmt.Sprintf("CHECK (json_valid(%s))", column))
 	}
 
 	constraints := field.Constraints()
 	if constraints.HasSize {
 		switch {
-		case field.LogicalType() == entity.LogicalString && d.kind == SQLite:
+		case field.LogicalType() == gnentity.LogicalString && d.kind == SQLite:
 			checks = append(checks, fmt.Sprintf("CHECK (length(%s) <= %d)", column, constraints.Size))
-		case field.LogicalType() == entity.LogicalBytes && d.kind == PostgreSQL:
+		case field.LogicalType() == gnentity.LogicalBytes && d.kind == PostgreSQL:
 			checks = append(checks, fmt.Sprintf("CHECK (octet_length(%s) <= %d)", column, constraints.Size))
-		case field.LogicalType() == entity.LogicalBytes && d.kind == SQLite:
+		case field.LogicalType() == gnentity.LogicalBytes && d.kind == SQLite:
 			checks = append(checks, fmt.Sprintf("CHECK (length(%s) <= %d)", column, constraints.Size))
 		}
 	}
@@ -155,7 +155,7 @@ func (d Dialect) compileChecks(column string, field entity.Field) []string {
 	return checks
 }
 
-func (d Dialect) compileDefault(field entity.Field) (string, error) {
+func (d Dialect) compileDefault(field gnentity.Field) (string, error) {
 	raw := field.Constraints().Default
 	fieldType := field.GoType()
 	if fieldType == nil {
@@ -166,7 +166,7 @@ func (d Dialect) compileDefault(field entity.Field) (string, error) {
 	}
 
 	switch field.LogicalType() {
-	case entity.LogicalBool:
+	case gnentity.LogicalBool:
 		value, err := strconv.ParseBool(raw)
 		if err != nil {
 			return "", gerror.Wrapf(err, "字段 %s 的布尔默认值无效", field.Name())
@@ -178,7 +178,7 @@ func (d Dialect) compileDefault(field entity.Field) (string, error) {
 			return "0", nil
 		}
 		return strings.ToUpper(strconv.FormatBool(value)), nil
-	case entity.LogicalInt:
+	case gnentity.LogicalInt:
 		bits, err := integerBits(fieldType.Kind(), false)
 		if err != nil {
 			return "", err
@@ -188,7 +188,7 @@ func (d Dialect) compileDefault(field entity.Field) (string, error) {
 			return "", gerror.Wrapf(err, "字段 %s 的整数默认值无效", field.Name())
 		}
 		return strconv.FormatInt(value, 10), nil
-	case entity.LogicalUint:
+	case gnentity.LogicalUint:
 		bits, err := integerBits(fieldType.Kind(), true)
 		if err != nil {
 			return "", err
@@ -198,7 +198,7 @@ func (d Dialect) compileDefault(field entity.Field) (string, error) {
 			return "", gerror.Wrapf(err, "字段 %s 的无符号整数默认值无效", field.Name())
 		}
 		return strconv.FormatUint(value, 10), nil
-	case entity.LogicalFloat:
+	case gnentity.LogicalFloat:
 		bits := 64
 		if fieldType.Kind() == reflect.Float32 {
 			bits = 32
@@ -211,7 +211,7 @@ func (d Dialect) compileDefault(field entity.Field) (string, error) {
 			return "", gerror.Newf("字段 %s 的浮点默认值必须是有限数", field.Name())
 		}
 		return strconv.FormatFloat(value, 'g', -1, bits), nil
-	case entity.LogicalString:
+	case gnentity.LogicalString:
 		if d.kind == MySQL && !field.Constraints().HasSize {
 			return "", gerror.Newf(
 				"MySQL 8.0.0 基线不支持字段 %s 的 TEXT 默认值",
@@ -219,11 +219,11 @@ func (d Dialect) compileDefault(field entity.Field) (string, error) {
 			)
 		}
 		return d.stringLiteral(raw)
-	case entity.LogicalBytes:
+	case gnentity.LogicalBytes:
 		return "", gerror.Newf("字段 %s 的字节默认值不可跨数据库表达", field.Name())
-	case entity.LogicalJSON:
+	case gnentity.LogicalJSON:
 		return "", gerror.Newf("字段 %s 的 JSON 默认值不可跨数据库表达", field.Name())
-	case entity.LogicalTime:
+	case gnentity.LogicalTime:
 		if !strings.EqualFold(raw, "CURRENT_TIMESTAMP") {
 			return "", gerror.Newf("字段 %s 的时间默认值无效", field.Name())
 		}
@@ -238,8 +238,8 @@ func (d Dialect) compileDefault(field entity.Field) (string, error) {
 
 func (d Dialect) compilePostgreSQLComments(
 	table string,
-	metadata entity.Metadata,
-	fields []entity.Field,
+	metadata gnentity.Metadata,
+	fields []gnentity.Field,
 ) ([]string, error) {
 	description, err := d.stringLiteral(metadata.Description())
 	if err != nil {
@@ -264,7 +264,7 @@ func (d Dialect) compilePostgreSQLComments(
 	return comments, nil
 }
 
-func (d Dialect) compileIndexes(table string, metadata entity.Metadata) ([]string, error) {
+func (d Dialect) compileIndexes(table string, metadata gnentity.Metadata) ([]string, error) {
 	indexes := metadata.Indexes()
 	statements := make([]string, 0, len(indexes))
 	for _, index := range indexes {

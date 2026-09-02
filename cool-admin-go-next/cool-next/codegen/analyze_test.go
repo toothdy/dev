@@ -253,34 +253,34 @@ func TestAnalyzeClassifiesServiceActionsAndHooks(t *testing.T) {
 		"modules/demo/service/product.go": `package service
 import (
 	"context"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"example.test/app/modules/demo/dto"
 	"example.test/app/modules/demo/entity"
 )
-type ProductService struct { *coreservice.Base[entity.Product, uint64] }
-func (service *ProductService) Add(ctx context.Context, input coreservice.AddInput[entity.Product]) (coreservice.AddResult[uint64], error) {
+type ProductService struct { *gnservice.Base[entity.Product, uint64] }
+func (service *ProductService) Add(ctx context.Context, input gnservice.AddInput[entity.Product]) (gnservice.AddResult[uint64], error) {
 	return service.Base.Add(ctx, input)
 }
-func (service *ProductService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+func (service *ProductService) Delete(ctx context.Context, input gnservice.DeleteInput[uint64]) error {
 	return service.delete(ctx, input)
 }
-func (service *ProductService) delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+func (service *ProductService) delete(ctx context.Context, input gnservice.DeleteInput[uint64]) error {
 	return service.Base.Delete(ctx, input)
 }
-func (service *ProductService) Update(ctx context.Context, input coreservice.UpdateInput[entity.Product, uint64]) error {
+func (service *ProductService) Update(ctx context.Context, input gnservice.UpdateInput[entity.Product, uint64]) error {
 	if input.IsMany() { return service.Base.Update(ctx, input) }
 	return nil
 }
 func (*ProductService) Info(context.Context, uint64) (map[string]string, error) {
 	return map[string]string{"name": "product"}, nil
 }
-func (*ProductService) List(context.Context, coreservice.Query) ([]string, error) {
+func (*ProductService) List(context.Context, gnservice.Query) ([]string, error) {
 	return []string{"product"}, nil
 }
 func (*ProductService) Page(context.Context, *dto.PageReq) (dto.PageResult, error) {
 	return dto.PageResult{Total: 1}, nil
 }
-func (service *ProductService) ModifyBefore(context.Context, *coreservice.Mutation[entity.Product, uint64]) error {
+func (service *ProductService) ModifyBefore(context.Context, *gnservice.Mutation[entity.Product, uint64]) error {
 	return nil
 }
 `,
@@ -481,32 +481,32 @@ func TestAnalyzeDiscoversControllerDeclarations(t *testing.T) {
 	files["modules/demo/controller/admin/sys/goods.go"] = `package sys
 import (
 	"context"
-	controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"example.test/app/modules/demo/entity"
 	demoservice "example.test/app/modules/demo/service"
 )
-func GoodsController(service *demoservice.ProductService) controller.Definition {
+func GoodsController(service *demoservice.ProductService) gnctrl.Definition {
 	entityValue := entity.Product{}
-	insert := controller.Insert[entity.Product](func(context.Context, *coreservice.Mutable[entity.Product]) error { return nil })
-	option := controller.CurdOption{
-		API: controller.AllAPI(),
+	insert := gnctrl.Insert[entity.Product](func(context.Context, *gnservice.Mutable[entity.Product]) error { return nil })
+	option := gnctrl.CurdOption{
+		API: gnctrl.AllAPI(),
 		Entity: entityValue,
 		Service: service,
 		InsertParam: insert,
 	}
-	return controller.Admin("").Curd(option).Build()
+	return gnctrl.Admin("").Curd(option).Build()
 }
 `
 	files["modules/demo/controller/app/item.go"] = `package app
 import (
-	controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"example.test/app/modules/demo/entity"
 	demoservice "example.test/app/modules/demo/service"
 )
 const route = "public/items"
-func ItemController(service *demoservice.ProductService) controller.Definition {
-	return controller.App(route).Curd(controller.CurdOption{
+func ItemController(service *demoservice.ProductService) gnctrl.Definition {
+	return gnctrl.App(route).Curd(gnctrl.CurdOption{
 		Prefix: "archive/items",
 		Entity: entity.Product{},
 		Service: service,
@@ -514,8 +514,8 @@ func ItemController(service *demoservice.ProductService) controller.Definition {
 }
 `
 	files["modules/demo/controller/app/health.go"] = `package app
-import controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
-func HealthController() controller.Definition { return controller.App("").Build() }
+import "github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+func HealthController() gnctrl.Definition { return gnctrl.App("").Build() }
 `
 	root := writeWorkspace(t, files)
 	model, err := Analyze(context.Background(), Options{Dir: root, ModulesRoot: "modules"})
@@ -559,9 +559,9 @@ func TestAnalyzeReportsControllerDiagnostics(t *testing.T) {
 			name: "dynamic factory",
 			file: "modules/demo/controller/admin/product.go",
 			controller: `package admin
-import controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
-func ProductController() controller.Definition {
-	builder := controller.Admin("")
+import "github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+func ProductController() gnctrl.Definition {
+	builder := gnctrl.Admin("")
 	return builder.Build()
 }
 `,
@@ -571,8 +571,8 @@ func ProductController() controller.Definition {
 			name: "area mismatch",
 			file: "modules/demo/controller/admin/product.go",
 			controller: `package admin
-import controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
-func ProductController() controller.Definition { return controller.App("").Build() }
+import "github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+func ProductController() gnctrl.Definition { return gnctrl.App("").Build() }
 `,
 			code: "CG024",
 		},
@@ -581,13 +581,13 @@ func ProductController() controller.Definition { return controller.App("").Build
 			file: "modules/demo/controller/admin/product.go",
 			controller: `package admin
 import (
-	controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"example.test/app/modules/demo/entity"
 	demoservice "example.test/app/modules/demo/service"
 )
-func ProductController(service *demoservice.ProductService) controller.Definition {
-	option := controller.CurdOption{Entity: entity.Product{}, Service: service}
-	return controller.Admin("").Curd(option).Curd(option).Build()
+func ProductController(service *demoservice.ProductService) gnctrl.Definition {
+	option := gnctrl.CurdOption{Entity: entity.Product{}, Service: service}
+	return gnctrl.Admin("").Curd(option).Curd(option).Build()
 }
 `,
 			code: "CG025",
@@ -597,12 +597,12 @@ func ProductController(service *demoservice.ProductService) controller.Definitio
 			file: "modules/demo/controller/admin/product.go",
 			controller: `package admin
 import (
-	controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"example.test/app/modules/demo/entity"
 	demoservice "example.test/app/modules/demo/service"
 )
-func ProductController(service *demoservice.ProductService) controller.Definition {
-	return controller.Admin("").Curd(controller.CurdOption{Entity: entity.Product{Name: "x"}, Service: service}).Build()
+func ProductController(service *demoservice.ProductService) gnctrl.Definition {
+	return gnctrl.Admin("").Curd(gnctrl.CurdOption{Entity: entity.Product{Name: "x"}, Service: service}).Build()
 }
 `,
 			code: "CG026",
@@ -612,12 +612,12 @@ func ProductController(service *demoservice.ProductService) controller.Definitio
 			file: "modules/demo/controller/admin/product.go",
 			controller: `package admin
 import (
-	controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"example.test/app/modules/demo/entity"
 	demoservice "example.test/app/modules/demo/service"
 )
-func ProductController() controller.Definition {
-	return controller.Admin("").Curd(controller.CurdOption{Entity: entity.Product{}, Service: &demoservice.ProductService{}}).Build()
+func ProductController() gnctrl.Definition {
+	return gnctrl.Admin("").Curd(gnctrl.CurdOption{Entity: entity.Product{}, Service: &demoservice.ProductService{}}).Build()
 }
 `,
 			code: "CG027",
@@ -627,12 +627,12 @@ func ProductController() controller.Definition {
 			file: "modules/demo/controller/admin/product.go",
 			controller: `package admin
 import (
-	controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"example.test/app/modules/demo/entity"
 	demoservice "example.test/app/modules/demo/service"
 )
-func ProductController(service *demoservice.ProductService) controller.Definition {
-	return controller.Admin("").Curd(controller.CurdOption{Entity: entity.Other{}, Service: service}).Build()
+func ProductController(service *demoservice.ProductService) gnctrl.Definition {
+	return gnctrl.Admin("").Curd(gnctrl.CurdOption{Entity: entity.Other{}, Service: service}).Build()
 }
 `,
 			code: "CG028",
@@ -643,15 +643,15 @@ func ProductController(service *demoservice.ProductService) controller.Definitio
 			controller: `package admin
 import (
 	"context"
-	controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"example.test/app/modules/demo/entity"
 	demoservice "example.test/app/modules/demo/service"
 )
-func ProductController(service *demoservice.ProductService) controller.Definition {
-	return controller.Admin("").Curd(controller.CurdOption{
+func ProductController(service *demoservice.ProductService) gnctrl.Definition {
+	return gnctrl.Admin("").Curd(gnctrl.CurdOption{
 		Entity: entity.Product{}, Service: service,
-		InsertParam: controller.Insert[entity.Other](func(context.Context, *coreservice.Mutable[entity.Other]) error { return nil }),
+		InsertParam: gnctrl.Insert[entity.Other](func(context.Context, *gnservice.Mutable[entity.Other]) error { return nil }),
 	}).Build()
 }
 `,
@@ -679,31 +679,31 @@ func ProductController(service *demoservice.ProductService) controller.Definitio
 func controllerAnalysisWorkspace() map[string]string {
 	return map[string]string{
 		"modules/demo/config.go": `package demo
-import module "github.com/toothdy/cool-admin-go-next/cool-next/core/module"
+import "github.com/toothdy/cool-admin-go-next/cool-next/core/module"
 type Config struct{}
 func ModuleConfig() module.Declaration[Config] { return module.Declaration[Config]{Name: "Demo", Description: "Demo module"} }
 `,
 		"modules/demo/entity/product.go": `package entity
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 type Product struct {
 	g.Meta ` + "`orm:\"table:product\" description:\"Product\"`" + `
-	coreentity.Base
+	gnentity.Base
 	Name string ` + "`json:\"name\" orm:\"name\" description:\"Name\"`" + `
 }
 type Other struct {
 	g.Meta ` + "`orm:\"table:other\" description:\"Other\"`" + `
-	coreentity.Base
+	gnentity.Base
 }
 `,
 		"modules/demo/service/product.go": `package service
 import (
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"example.test/app/modules/demo/entity"
 )
-type ProductService struct { *coreservice.Base[entity.Product, uint64] }
+type ProductService struct { *gnservice.Base[entity.Product, uint64] }
 `,
 	}
 }
@@ -717,7 +717,7 @@ func TestAnalyzeValidatesTransientEntityFields(t *testing.T) {
 	}{
 		{name: "valid", field: `RoleIDList *[]uint64 ` + "`json:\"roleIdList\" description:\"角色 ID 列表\" cool:\"transient\"`"},
 		{name: "orm", field: `RoleIDList *[]uint64 ` + "`json:\"roleIdList\" orm:\"roleIdList\" description:\"角色 ID 列表\" cool:\"transient\"`", wantError: true},
-		{name: "index", field: `RoleIDList *[]uint64 ` + "`json:\"roleIdList\" description:\"角色 ID 列表\" cool:\"transient\"`", index: `coreentity.IndexOf("idx_product_role_ids", "roleIdList"),`, wantError: true},
+		{name: "index", field: `RoleIDList *[]uint64 ` + "`json:\"roleIdList\" description:\"角色 ID 列表\" cool:\"transient\"`", index: `gnentity.IndexOf("idx_product_role_ids", "roleIdList"),`, wantError: true},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -725,19 +725,19 @@ func TestAnalyzeValidatesTransientEntityFields(t *testing.T) {
 package entity
 
 import (
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 	"github.com/gogf/gf/v2/frame/g"
 )
 
 type Product struct {
 	g.Meta `+"`orm:\"table:demo_product\" description:\"商品\"`"+`
-	coreentity.Base
+	gnentity.Base
 	Name string `+"`json:\"name\" orm:\"name\" description:\"名称\"`"+`
 	%s
 }
 
-func ProductSchema() coreentity.Schema {
-	return coreentity.Schema{Indexes: []coreentity.Index{%s}}
+func ProductSchema() gnentity.Schema {
+	return gnentity.Schema{Indexes: []gnentity.Index{%s}}
 }
 `, test.field, test.index))
 			set, err := CompileDescriptors(model)

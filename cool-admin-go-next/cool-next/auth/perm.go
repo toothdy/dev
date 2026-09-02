@@ -10,7 +10,7 @@ import (
 	"unicode"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 )
 
 // 参与菜单权限校验的后台路由前缀
@@ -242,12 +242,12 @@ func (service *Service) authenticateProtocol(
 
 // 授权关系变更的统一入口：先锁目标行再写入，必要时撤销 Session
 type Boundary struct {
-	runtime  *coredb.Runtime
+	runtime  *db.Runtime
 	sessions Store
 }
 
 // 授权变更边界
-func NewBoundary(runtime *coredb.Runtime, sessions Store) (*Boundary, error) {
+func NewBoundary(runtime *db.Runtime, sessions Store) (*Boundary, error) {
 	if runtime == nil || runtime.Runner() == nil || sessions == nil {
 		return nil, exception.Core("授权变更边界依赖无效")
 	}

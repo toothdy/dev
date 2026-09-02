@@ -19,13 +19,13 @@ func (*ProductService) Page(context.Context, *dto.DeleteReq) (map[string]int, er
 	files["modules/demo/controller/admin/coding.go"] = `package admin
 import (
 	"context"
-	controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 )
 type CodingHandler struct{}
 func NewCodingHandler() *CodingHandler { return &CodingHandler{} }
 func (*CodingHandler) Ping(context.Context) error { return nil }
-func CodingController(handler *CodingHandler) controller.Definition {
-	return controller.Admin("coding").Route(controller.Route{Method: "GET", Path: "/ping", Handler: controller.Handle(handler.Ping)}).Build()
+func CodingController(handler *CodingHandler) gnctrl.Definition {
+	return gnctrl.Admin("coding").Route(gnctrl.Route{Method: "GET", Path: "/ping", Handler: gnctrl.Handle(handler.Ping)}).Build()
 }
 `
 	root := writeWorkspace(t, files)
@@ -48,27 +48,27 @@ func CodingController(handler *CodingHandler) controller.Definition {
 	content := string(source)
 	for _, want := range []string{
 		"func controllerdemoexample_test_app_modules_demo_controller_admin_sysGoodsController",
-		"Controllers: []coreroute.ControllerDefinition",
-		"Routes: []coreroute.Definition",
-		"Kind: coreroute.KindCRUD",
-		"Kind: coreroute.KindCustom",
-		"Bind: coreroute.BindPath",
+		"Controllers: []route.ControllerDefinition",
+		"Routes: []route.Definition",
+		"Kind: route.KindCRUD",
+		"Kind: route.KindCustom",
+		"Bind: route.BindPath",
 		"Path: \"/demo/sys/goods/disable/{id}\"",
 		", \"/demo/sys/goods/disable/{id}\", false)",
 		", \"/demo/sys/goods/info\", true)",
 		"eps.CompileViews(eps.Input{",
 		"Controllers: []eps.ControllerInput",
 		"Definition: controller_demoexample_test_app_modules_demo_controller_adminCodingController",
-		"Descriptors: []coreentity.RuntimeDescriptor",
+		"Descriptors: []gnentity.RuntimeDescriptor",
 		"gmode.IsDevelop()",
 		"eps.PublishViews(epsViews)",
 		"generatedHTTPInstaller := func(server *ghttp.Server) error",
 		"if gmode.IsDevelop()",
 		"server.BindMiddleware(\"POST:/demo/sys/goods/disable/{id}\"",
 		"server.BindHandler(\"GET:/demo/sys/goods/health\"",
-		"corecontroller.HandleDTO[dto.DisableReq]",
-		"corecontroller.HandleCRUDDTO[dto.DeleteReq]",
-		"corecontroller.HandleNoDTO",
+		"gnctrl.HandleDTO[dto.DisableReq]",
+		"gnctrl.HandleCRUDDTO[dto.DeleteReq]",
+		"gnctrl.HandleNoDTO",
 		"component_demoexample_test_app_modules_demo_controller_admin_sysNewGoodsHandler.Delete(scopeCtx, input)",
 		"return instance.Base.Delete(ctx, input)",
 		"return adapterdemoexample_test_app_modules_demo_serviceProductServicePage(scopeCtx, component_demoexample_test_app_modules_demo_serviceNewProductService, input)",

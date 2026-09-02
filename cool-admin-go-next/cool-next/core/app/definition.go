@@ -11,7 +11,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/config"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/module"
-	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 )
 
 const (
@@ -57,7 +57,7 @@ type Definition struct {
 }
 
 // 静态路由表
-func (definition Definition) Routes() coreroute.Table { return definition.graph.Routes() }
+func (definition Definition) Routes() route.Table { return definition.graph.Routes() }
 
 // 静态 Graph
 func (definition Definition) Graph() module.Graph { return definition.graph }

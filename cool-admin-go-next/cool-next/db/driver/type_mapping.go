@@ -7,11 +7,11 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 // 将实体字段映射为方言类型
-func (d Dialect) ColumnType(field entity.Field) (string, error) {
+func (d Dialect) ColumnType(field gnentity.Field) (string, error) {
 	if !d.kind.valid() {
 		return "", gerror.Newf("不支持的数据库类型: %s", d.kind)
 	}
@@ -28,21 +28,21 @@ func (d Dialect) ColumnType(field entity.Field) (string, error) {
 	}
 
 	switch field.LogicalType() {
-	case entity.LogicalBool:
+	case gnentity.LogicalBool:
 		return d.boolType(), nil
-	case entity.LogicalInt:
+	case gnentity.LogicalInt:
 		return d.integerType(fieldType.Kind(), false)
-	case entity.LogicalUint:
+	case gnentity.LogicalUint:
 		return d.integerType(fieldType.Kind(), true)
-	case entity.LogicalFloat:
+	case gnentity.LogicalFloat:
 		return d.floatType(fieldType.Kind(), field.Constraints())
-	case entity.LogicalString:
+	case gnentity.LogicalString:
 		return d.stringType(field.Constraints())
-	case entity.LogicalBytes:
+	case gnentity.LogicalBytes:
 		return d.bytesType(field.Constraints())
-	case entity.LogicalJSON:
+	case gnentity.LogicalJSON:
 		return d.jsonType(fieldType)
-	case entity.LogicalTime:
+	case gnentity.LogicalTime:
 		return d.timeType(), nil
 	default:
 		return "", gerror.Newf("字段 %s 的逻辑类型 %q 不受支持", field.Name(), field.LogicalType())
@@ -164,7 +164,7 @@ func integerBits(kind reflect.Kind, unsigned bool) (int, error) {
 	}
 }
 
-func (d Dialect) floatType(kind reflect.Kind, constraints entity.Constraints) (string, error) {
+func (d Dialect) floatType(kind reflect.Kind, constraints gnentity.Constraints) (string, error) {
 	if kind != reflect.Float32 && kind != reflect.Float64 {
 		return "", gerror.Newf("浮点数不支持 Go %s", kind)
 	}
@@ -209,7 +209,7 @@ func (d Dialect) floatType(kind reflect.Kind, constraints entity.Constraints) (s
 	}
 }
 
-func (d Dialect) stringType(constraints entity.Constraints) (string, error) {
+func (d Dialect) stringType(constraints gnentity.Constraints) (string, error) {
 	if !constraints.HasSize {
 		return "TEXT", nil
 	}
@@ -223,7 +223,7 @@ func (d Dialect) stringType(constraints entity.Constraints) (string, error) {
 	return fmt.Sprintf("VARCHAR(%d)", constraints.Size), nil
 }
 
-func (d Dialect) bytesType(constraints entity.Constraints) (string, error) {
+func (d Dialect) bytesType(constraints gnentity.Constraints) (string, error) {
 	if d.kind == PostgreSQL {
 		return "BYTEA", nil
 	}

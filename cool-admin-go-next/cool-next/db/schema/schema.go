@@ -9,7 +9,7 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
 )
 
@@ -31,7 +31,7 @@ func New(database gdb.DB, dialect driver.Dialect) (*Manager, error) {
 }
 
 // 按模式处理业务实体结构
-func (m *Manager) Apply(ctx context.Context, mode Mode, metadata ...entity.Metadata) (Report, error) {
+func (m *Manager) Apply(ctx context.Context, mode Mode, metadata ...gnentity.Metadata) (Report, error) {
 	if m == nil || m.database == nil {
 		return Report{}, gerror.New("Schema 管理器未初始化")
 	}
@@ -73,7 +73,7 @@ func (m *Manager) Apply(ctx context.Context, mode Mode, metadata ...entity.Metad
 	return report, nil
 }
 
-func (m *Manager) sync(ctx context.Context, metadata entity.Metadata, expected Table, actual Table, differences []Difference) error {
+func (m *Manager) sync(ctx context.Context, metadata gnentity.Metadata, expected Table, actual Table, differences []Difference) error {
 	if hasUnsafeDiff(metadata, differences) {
 		return &ValidationError{Report: Report{Dialect: m.dialect.Kind(), Differences: differences}}
 	}
@@ -119,7 +119,7 @@ func (m *Manager) sync(ctx context.Context, metadata entity.Metadata, expected T
 	return nil
 }
 
-func (m *Manager) createIndex(ctx context.Context, metadata entity.Metadata, name string) error {
+func (m *Manager) createIndex(ctx context.Context, metadata gnentity.Metadata, name string) error {
 	for _, index := range metadata.Indexes() {
 		if index.Name != name {
 			continue
@@ -157,7 +157,7 @@ func (m *Manager) createIndex(ctx context.Context, metadata entity.Metadata, nam
 	return gerror.Newf("表 %s 的索引 %s 未在 Descriptor 中找到", metadata.Table(), name)
 }
 
-func hasUnsafeDiff(metadata entity.Metadata, differences []Difference) bool {
+func hasUnsafeDiff(metadata gnentity.Metadata, differences []Difference) bool {
 	for _, difference := range differences {
 		if difference.Safe {
 			continue

@@ -13,13 +13,13 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
 )
 
 // 三数据库可靠消息存储
 type DatabaseStore struct {
-	runtime    *coredb.Runtime
+	runtime    *db.Runtime
 	statements sqlStatements
 }
 
@@ -75,7 +75,7 @@ type sqliteErrorCoder interface {
 }
 
 // 当前 Framework Database Group 的 Store
-func New(runtime *coredb.Runtime) (*DatabaseStore, error) {
+func New(runtime *db.Runtime) (*DatabaseStore, error) {
 	if runtime == nil || runtime.DB() == nil || runtime.Group() == "" {
 		return nil, gerror.New("outbox store: 数据库 Runtime 无效")
 	}

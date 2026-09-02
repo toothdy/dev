@@ -2,13 +2,13 @@ package entity
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 // 后台目录、菜单和按钮
 type Menu struct {
 	g.Meta `orm:"table:base_sys_menu" description:"系统菜单"`
-	coreentity.Base
+	gnentity.Base
 	ParentID  *uint64 `json:"parentId" orm:"parentId" description:"父菜单ID"`
 	Name      string  `json:"name" orm:"name" description:"菜单名称" cool:"size=255"`
 	Router    *string `json:"router" orm:"router" description:"菜单地址" cool:"size=255"`
@@ -23,9 +23,9 @@ type Menu struct {
 }
 
 // 菜单表补充索引
-func MenuSchema() coreentity.Schema {
-	return coreentity.Schema{Indexes: []coreentity.Index{
-		coreentity.IndexOf("idx_base_sys_menu_parent_id", "parentId"),
-		coreentity.UniqueIndexOf("uk_base_sys_menu_seed_key", "seedKey"),
+func MenuSchema() gnentity.Schema {
+	return gnentity.Schema{Indexes: []gnentity.Index{
+		gnentity.IndexOf("idx_base_sys_menu_parent_id", "parentId"),
+		gnentity.UniqueIndexOf("uk_base_sys_menu_seed_key", "seedKey"),
 	}}
 }

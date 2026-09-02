@@ -11,7 +11,7 @@ import (
 	"unicode"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/modules/dict/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/dict/entity"
 )
@@ -50,14 +50,14 @@ type DataItem struct {
 
 // 字典信息查询与树形删除
 type InfoService struct {
-	*coreservice.Base[entity.Info, uint64]
-	typeBase *coreservice.Base[entity.Type, uint64]
+	*gnservice.Base[entity.Info, uint64]
+	typeBase *gnservice.Base[entity.Type, uint64]
 }
 
 // 字典信息业务服务
 func NewInfo(
-	infoBase *coreservice.Base[entity.Info, uint64],
-	typeBase *coreservice.Base[entity.Type, uint64],
+	infoBase *gnservice.Base[entity.Info, uint64],
+	typeBase *gnservice.Base[entity.Type, uint64],
 ) (*InfoService, error) {
 	if infoBase == nil || infoBase.Descriptor() == nil || typeBase == nil || typeBase.Descriptor() == nil {
 		return nil, exception.Core("字典信息服务依赖无效")
@@ -161,12 +161,12 @@ func (service *InfoService) GetValues(ctx context.Context, values []string, key 
 }
 
 // 删除节点及全部后代
-func (service *InfoService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+func (service *InfoService) Delete(ctx context.Context, input gnservice.DeleteInput[uint64]) error {
 	ids, err := service.descendantIDs(ctx, input.IDs())
 	if err != nil {
 		return err
 	}
-	deleteInput, err := coreservice.NewDeleteInput[entity.Info](service.Descriptor(), ids)
+	deleteInput, err := gnservice.NewDeleteInput[entity.Info](service.Descriptor(), ids)
 	if err != nil {
 		return err
 	}

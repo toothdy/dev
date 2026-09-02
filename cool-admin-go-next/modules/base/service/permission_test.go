@@ -10,8 +10,8 @@ import (
 	_ "github.com/gogf/gf/contrib/drivers/sqlite/v2"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/recycle"
@@ -123,11 +123,11 @@ func TestVisibleMenusReturnsOrderedUniqueRows(t *testing.T) {
 func newPermissionMenuTestService(t *testing.T) (*PermissionService, *db.Runtime) {
 	t.Helper()
 
-	menuDescriptor, err := coreentity.Compile[baseentity.Menu, uint64](baseentity.MenuSchema())
+	menuDescriptor, err := gnentity.Compile[baseentity.Menu, uint64](baseentity.MenuSchema())
 	if err != nil {
 		t.Fatal(err)
 	}
-	roleMenuDescriptor, err := coreentity.Compile[baseentity.RoleMenu, uint64](baseentity.RoleMenuSchema())
+	roleMenuDescriptor, err := gnentity.Compile[baseentity.RoleMenu, uint64](baseentity.RoleMenuSchema())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,11 +172,11 @@ func newPermissionMenuTestService(t *testing.T) (*PermissionService, *db.Runtime
 	if err != nil {
 		t.Fatal(err)
 	}
-	menu, err := coreservice.NewBase[baseentity.Menu, uint64](menuDescriptor, runtime, recycler)
+	menu, err := gnservice.NewBase[baseentity.Menu, uint64](menuDescriptor, runtime, recycler)
 	if err != nil {
 		t.Fatal(err)
 	}
-	roleMenu, err := coreservice.NewBase[baseentity.RoleMenu, uint64](roleMenuDescriptor, runtime, recycler)
+	roleMenu, err := gnservice.NewBase[baseentity.RoleMenu, uint64](roleMenuDescriptor, runtime, recycler)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,15 +190,15 @@ func newPermissionMenuTestService(t *testing.T) (*PermissionService, *db.Runtime
 func newPermissionRoleTestService(t *testing.T) (*PermissionService, *db.Runtime) {
 	t.Helper()
 
-	userDescriptor, err := coreentity.Compile[baseentity.User, uint64](baseentity.UserSchema())
+	userDescriptor, err := gnentity.Compile[baseentity.User, uint64](baseentity.UserSchema())
 	if err != nil {
 		t.Fatal(err)
 	}
-	roleDescriptor, err := coreentity.Compile[baseentity.Role, uint64](baseentity.RoleSchema())
+	roleDescriptor, err := gnentity.Compile[baseentity.Role, uint64](baseentity.RoleSchema())
 	if err != nil {
 		t.Fatal(err)
 	}
-	userRoleDescriptor, err := coreentity.Compile[baseentity.UserRole, uint64](baseentity.UserRoleSchema())
+	userRoleDescriptor, err := gnentity.Compile[baseentity.UserRole, uint64](baseentity.UserRoleSchema())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,15 +224,15 @@ func newPermissionRoleTestService(t *testing.T) (*PermissionService, *db.Runtime
 	if err != nil {
 		t.Fatal(err)
 	}
-	user, err := coreservice.NewBase[baseentity.User, uint64](userDescriptor, runtime, recycler)
+	user, err := gnservice.NewBase[baseentity.User, uint64](userDescriptor, runtime, recycler)
 	if err != nil {
 		t.Fatal(err)
 	}
-	role, err := coreservice.NewBase[baseentity.Role, uint64](roleDescriptor, runtime, recycler)
+	role, err := gnservice.NewBase[baseentity.Role, uint64](roleDescriptor, runtime, recycler)
 	if err != nil {
 		t.Fatal(err)
 	}
-	userRole, err := coreservice.NewBase[baseentity.UserRole, uint64](userRoleDescriptor, runtime, recycler)
+	userRole, err := gnservice.NewBase[baseentity.UserRole, uint64](userRoleDescriptor, runtime, recycler)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -9,8 +9,8 @@ import (
 
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/os/gtime"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 // 种子写入所需的最小 gdb 事务能力
@@ -29,7 +29,7 @@ type TreeNode struct {
 }
 
 // 按 Descriptor 构造插入/更新用 DO，自动补齐 createTime/updateTime
-func NewDO(descriptor coreentity.RuntimeDescriptor, values map[string]any, isInsert bool) (coreentity.DOValue, error) {
+func NewDO(descriptor gnentity.RuntimeDescriptor, values map[string]any, isInsert bool) (gnentity.DOValue, error) {
 	do := descriptor.NewDO()
 	now := gtime.Now()
 	if isInsert {
@@ -56,7 +56,7 @@ func NewDO(descriptor coreentity.RuntimeDescriptor, values map[string]any, isIns
 func SyncTree(
 	ctx context.Context,
 	transaction Model,
-	descriptor coreentity.RuntimeDescriptor,
+	descriptor gnentity.RuntimeDescriptor,
 	nodes []TreeNode,
 ) (map[string]uint64, error) {
 	ids := make(map[string]uint64, len(nodes))
@@ -125,7 +125,7 @@ func SyncTree(
 }
 
 // 解码完整种子记录并保留显式主键
-func (record Record) SeedData(descriptor coreentity.RuntimeDescriptor) (any, error) {
+func (record Record) SeedData(descriptor gnentity.RuntimeDescriptor) (any, error) {
 	for name := range record {
 		field, exists := descriptor.JSON(name)
 		if !exists {
@@ -148,11 +148,11 @@ func (record Record) SeedData(descriptor coreentity.RuntimeDescriptor) (any, err
 }
 
 // 按 Descriptor 把 JSON 字段解码为可写入的列值
-func (record Record) Values(descriptor coreentity.RuntimeDescriptor) (map[string]any, error) {
+func (record Record) Values(descriptor gnentity.RuntimeDescriptor) (map[string]any, error) {
 	return record.seedValues(descriptor, false)
 }
 
-func (record Record) seedValues(descriptor coreentity.RuntimeDescriptor, includePrimary bool) (map[string]any, error) {
+func (record Record) seedValues(descriptor gnentity.RuntimeDescriptor, includePrimary bool) (map[string]any, error) {
 	values := make(map[string]any, len(record))
 	for name, raw := range record {
 		field, exists := descriptor.JSON(name)
@@ -201,9 +201,9 @@ func (record Record) Uint64(name string) (uint64, bool) {
 }
 
 // 按字段的逻辑类型和 Go 类型解码一段 JSON 原始值
-func DecodeValue(raw json.RawMessage, field coreentity.Field) (any, error) {
+func DecodeValue(raw json.RawMessage, field gnentity.Field) (any, error) {
 	target := reflect.New(field.GoType())
-	if field.LogicalType() == coreentity.LogicalBool {
+	if field.LogicalType() == gnentity.LogicalBool {
 		if err := json.Unmarshal(raw, target.Interface()); err == nil {
 			return target.Elem().Interface(), nil
 		}
@@ -212,7 +212,7 @@ func DecodeValue(raw json.RawMessage, field coreentity.Field) (any, error) {
 			return number == 1, nil
 		}
 	}
-	if field.LogicalType() == coreentity.LogicalJSON {
+	if field.LogicalType() == gnentity.LogicalJSON {
 		var encoded string
 		if json.Unmarshal(raw, &encoded) == nil && strings.EqualFold(strings.TrimSpace(encoded), "null") {
 			return reflect.MakeSlice(field.GoType(), 0, 0).Interface(), nil

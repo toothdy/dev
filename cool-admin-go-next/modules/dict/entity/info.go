@@ -2,13 +2,13 @@ package entity
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 // 字典信息
 type Info struct {
 	g.Meta `orm:"table:dict_info" description:"字典信息"`
-	coreentity.Base
+	gnentity.Base
 	TypeID   uint64  `json:"typeId" orm:"typeId" description:"类型ID"`
 	Name     string  `json:"name" orm:"name" description:"名称" cool:"size=255"`
 	Value    *string `json:"value" orm:"value" description:"值" cool:"size=255"`
@@ -18,6 +18,6 @@ type Info struct {
 }
 
 // 字典信息表约束
-func InfoSchema() coreentity.Schema {
-	return coreentity.Schema{}
+func InfoSchema() gnentity.Schema {
+	return gnentity.Schema{}
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/seed"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
@@ -47,21 +47,21 @@ type menuExportRow struct {
 
 // 菜单树及角色菜单关系
 type MenuService struct {
-	*coreservice.Base[entity.Menu, uint64]
+	*gnservice.Base[entity.Menu, uint64]
 	runtime  *db.Runtime
-	role     *coreservice.Base[entity.Role, uint64]
-	roleMenu *coreservice.Base[entity.RoleMenu, uint64]
-	userRole *coreservice.Base[entity.UserRole, uint64]
+	role     *gnservice.Base[entity.Role, uint64]
+	roleMenu *gnservice.Base[entity.RoleMenu, uint64]
+	userRole *gnservice.Base[entity.UserRole, uint64]
 	boundary *auth.Boundary
 }
 
 // 菜单业务服务
 func NewMenu(
 	runtime *db.Runtime,
-	menu *coreservice.Base[entity.Menu, uint64],
-	role *coreservice.Base[entity.Role, uint64],
-	roleMenu *coreservice.Base[entity.RoleMenu, uint64],
-	userRole *coreservice.Base[entity.UserRole, uint64],
+	menu *gnservice.Base[entity.Menu, uint64],
+	role *gnservice.Base[entity.Role, uint64],
+	roleMenu *gnservice.Base[entity.RoleMenu, uint64],
+	userRole *gnservice.Base[entity.UserRole, uint64],
 	sessions auth.Store,
 ) (*MenuService, error) {
 	if runtime == nil || runtime.Runner() == nil || !validPermissionBase(menu) || !validPermissionBase(role) ||
@@ -77,12 +77,12 @@ func NewMenu(
 }
 
 // 新增菜单
-func (s *MenuService) Add(ctx context.Context, input coreservice.AddInput[entity.Menu]) (coreservice.AddResult[uint64], error) {
-	var result coreservice.AddResult[uint64]
+func (s *MenuService) Add(ctx context.Context, input gnservice.AddInput[entity.Menu]) (gnservice.AddResult[uint64], error) {
+	var result gnservice.AddResult[uint64]
 	err := s.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
 		values := input.Many()
 		if !input.IsMany() {
-			values = []*coreservice.Mutable[entity.Menu]{input.One()}
+			values = []*gnservice.Mutable[entity.Menu]{input.One()}
 		}
 		parents := make([]uint64, 0, len(values))
 		for _, value := range values {
@@ -101,13 +101,13 @@ func (s *MenuService) Add(ctx context.Context, input coreservice.AddInput[entity
 }
 
 // 更新菜单并撤销受影响用户 Session
-func (s *MenuService) Update(ctx context.Context, input coreservice.UpdateInput[entity.Menu, uint64]) error {
+func (s *MenuService) Update(ctx context.Context, input gnservice.UpdateInput[entity.Menu, uint64]) error {
 	return s.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
-		var items []coreservice.UpdateItem[entity.Menu, uint64]
+		var items []gnservice.UpdateItem[entity.Menu, uint64]
 		if input.IsMany() {
 			items = input.Many()
 		} else {
-			items = []coreservice.UpdateItem[entity.Menu, uint64]{input.One()}
+			items = []gnservice.UpdateItem[entity.Menu, uint64]{input.One()}
 		}
 		targets := make([]uint64, 0, len(items))
 		locks := make([]uint64, 0, len(items)*2)
@@ -156,7 +156,7 @@ func (s *MenuService) Update(ctx context.Context, input coreservice.UpdateInput[
 }
 
 // 递归删除菜单和角色关系
-func (s *MenuService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+func (s *MenuService) Delete(ctx context.Context, input gnservice.DeleteInput[uint64]) error {
 	return s.runtime.Runner().Within(ctx, func(txCtx context.Context) error {
 		ids, err := s.lockTree(txCtx, input.IDs())
 		if err != nil {
@@ -176,7 +176,7 @@ func (s *MenuService) Delete(ctx context.Context, input coreservice.DeleteInput[
 		if _, err = model.WhereIn("menuId", ids).Delete(); err != nil {
 			return exception.WrapCore(err, "清理菜单角色关系失败")
 		}
-		deleteInput, err := coreservice.NewDeleteInput[entity.Menu](s.Descriptor(), ids)
+		deleteInput, err := gnservice.NewDeleteInput[entity.Menu](s.Descriptor(), ids)
 		if err != nil {
 			return err
 		}
@@ -469,7 +469,7 @@ func (s *MenuService) checkParents(ctx context.Context, changes map[uint64]*uint
 	return nil
 }
 
-func menuParentID(value *coreservice.Mutable[entity.Menu]) (*uint64, bool) {
+func menuParentID(value *gnservice.Mutable[entity.Menu]) (*uint64, bool) {
 	if !value.Has("parentId") {
 		return nil, false
 	}
@@ -486,7 +486,7 @@ func (s *MenuService) userIDs(ctx context.Context, menuIDs []uint64) ([]uint64, 
 	if len(menuIDs) == 0 {
 		return nil, nil
 	}
-	statement, err := coreservice.NativeSQL(`SELECT DISTINCT ur.userId FROM base_sys_role_menu rm INNER JOIN base_sys_user_role ur ON ur.roleId = rm.roleId WHERE rm.menuId IN (?)`, menuIDs)
+	statement, err := gnservice.NativeSQL(`SELECT DISTINCT ur.userId FROM base_sys_role_menu rm INNER JOIN base_sys_user_role ur ON ur.roleId = rm.roleId WHERE rm.menuId IN (?)`, menuIDs)
 	if err != nil {
 		return nil, err
 	}

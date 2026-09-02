@@ -7,8 +7,8 @@ import (
 	"math"
 	"reflect"
 
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 const (
@@ -22,7 +22,7 @@ const operatorKeyword conditionOperator = "keyword"
 
 // Descriptor 解析器
 type DescriptorResolver interface {
-	Resolve(entity any) (coreentity.Metadata, bool)
+	Resolve(entity any) (gnentity.Metadata, bool)
 }
 
 // 不可变查询计划
@@ -44,7 +44,7 @@ type planEntity struct {
 
 type resolvedPlanEntity struct {
 	planEntity
-	metadata coreentity.Metadata
+	metadata gnentity.Metadata
 }
 
 type planColumn struct {
@@ -54,7 +54,7 @@ type planColumn struct {
 	name        string
 	jsonName    string
 	goType      reflect.Type
-	logicalType coreentity.LogicalType
+	logicalType gnentity.LogicalType
 	nullable    bool
 }
 
@@ -459,7 +459,7 @@ func (compiler *queryPlanCompiler) compileCondition(condition Condition) (planCo
 		}
 		result.value = values
 	case operatorLike:
-		if column.logicalType != coreentity.LogicalString {
+		if column.logicalType != gnentity.LogicalString {
 			return planCondition{}, exception.Core(fmt.Sprintf("字段 %s 不支持模糊查询", column.name))
 		}
 		value, matches := node.value.(string)
@@ -495,7 +495,7 @@ func (compiler *queryPlanCompiler) compileKeyword(fields []ColumnRef, request *Q
 		if err != nil {
 			return err
 		}
-		if column.logicalType != coreentity.LogicalString {
+		if column.logicalType != gnentity.LogicalString {
 			return exception.Core(fmt.Sprintf("字段 %s 不支持关键词查询", column.name))
 		}
 		columns = append(columns, column)
@@ -540,7 +540,7 @@ func (compiler *queryPlanCompiler) compileFieldLikes(matches []FieldLike, reques
 		if err != nil {
 			return err
 		}
-		if column.logicalType != coreentity.LogicalString {
+		if column.logicalType != gnentity.LogicalString {
 			return exception.Core(fmt.Sprintf("字段 %s 不支持模糊查询", column.name))
 		}
 		value, exists := request.Value(match.RequestParam)
@@ -697,7 +697,7 @@ func (compiler *queryPlanCompiler) addBindings(count int, fromRequest bool) erro
 	return exception.Core("查询绑定值数量超过上限")
 }
 
-func makePlanColumn(resolved resolvedPlanEntity, field coreentity.Field) planColumn {
+func makePlanColumn(resolved resolvedPlanEntity, field gnentity.Field) planColumn {
 	return planColumn{
 		table:       resolved.table,
 		alias:       resolved.alias,
@@ -834,9 +834,9 @@ func planValueType(valueType reflect.Type) reflect.Type {
 	return valueType
 }
 
-func supportsOrdering(logicalType coreentity.LogicalType) bool {
+func supportsOrdering(logicalType gnentity.LogicalType) bool {
 	switch logicalType {
-	case coreentity.LogicalInt, coreentity.LogicalUint, coreentity.LogicalFloat, coreentity.LogicalString, coreentity.LogicalTime:
+	case gnentity.LogicalInt, gnentity.LogicalUint, gnentity.LogicalFloat, gnentity.LogicalString, gnentity.LogicalTime:
 		return true
 	default:
 		return false

@@ -409,7 +409,7 @@ func findSeedDataType(model *Model) types.Type {
 	return nil
 }
 
-// 任意构造器参数中的 *coredb.Runtime 类型，返回其 types.Type 对象
+// 任意构造器参数中的 *db.Runtime 类型，返回其 types.Type 对象
 func runtimeProviderType(model *Model) types.Type {
 	runtimePackagePath := databasePackagePath
 	for _, current := range model.modules {

@@ -11,10 +11,10 @@ import (
 	"strings"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/module"
-	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 )
 
-const controllerPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+const controllerPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 
 func (a *analysis) analyzeControllers(
 	root string,
@@ -118,7 +118,7 @@ func (a *analysis) analyzeControllerFactory(
 	if chain.path != nil {
 		var exists bool
 		explicitPath, exists = constantControllerString(pkg, chain.path)
-		if !exists || !coreroute.ValidRelativePath(explicitPath) {
+		if !exists || !route.ValidRelativePath(explicitPath) {
 			a.add("CG024", "Controller 路径必须是合法常量相对路径", a.position(pkg, chain.path.Pos()))
 			return ControllerDeclaration{}, false
 		}
@@ -149,7 +149,7 @@ func (a *analysis) analyzeControllerFactory(
 			return ControllerDeclaration{}, false
 		}
 		prefix, prefixValid := controllerPrefix(pkg, literal)
-		if !prefixValid || !coreroute.ValidRelativePath(prefix) {
+		if !prefixValid || !route.ValidRelativePath(prefix) {
 			position := literal.Pos()
 			if value, exists := controllerLiteralField(literal, "Prefix"); exists {
 				position = value.Pos()

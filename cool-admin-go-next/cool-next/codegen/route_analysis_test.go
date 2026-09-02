@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 )
 
 func TestAnalyzeDiscoversStaticRoutes(t *testing.T) {
@@ -40,20 +40,20 @@ func TestAnalyzeDiscoversStaticRoutes(t *testing.T) {
 		t.Fatalf("Routes() = %#v", routes)
 	}
 	want := map[string]struct {
-		bind   coreroute.BindSource
-		kind   coreroute.Kind
+		bind   route.BindSource
+		kind   route.Kind
 		path   string
 		symbol string
 	}{
-		"POST add":     {bind: coreroute.BindJSON, kind: coreroute.KindCRUD, path: "/demo/sys/goods/add"},
-		"POST delete":  {bind: coreroute.BindJSON, kind: coreroute.KindCustom, path: "/demo/sys/goods/delete", symbol: "GoodsHandler"},
-		"POST update":  {bind: coreroute.BindJSON, kind: coreroute.KindCRUD, path: "/demo/sys/goods/update"},
-		"GET info":     {bind: coreroute.BindQuery, kind: coreroute.KindCRUD, path: "/demo/sys/goods/info"},
-		"POST list":    {bind: coreroute.BindJSON, kind: coreroute.KindCRUD, path: "/demo/sys/goods/list"},
-		"POST page":    {bind: coreroute.BindJSON, kind: coreroute.KindCRUD, path: "/demo/sys/goods/page"},
-		"POST disable": {bind: coreroute.BindPath, kind: coreroute.KindCustom, path: "/demo/sys/goods/disable/{id}"},
-		"GET health":   {bind: coreroute.BindQuery, kind: coreroute.KindCustom, path: "/demo/sys/goods/health"},
-		"POST ping":    {bind: coreroute.BindJSON, kind: coreroute.KindCustom, path: "/demo/sys/goods/ping"},
+		"POST add":     {bind: route.BindJSON, kind: route.KindCRUD, path: "/demo/sys/goods/add"},
+		"POST delete":  {bind: route.BindJSON, kind: route.KindCustom, path: "/demo/sys/goods/delete", symbol: "GoodsHandler"},
+		"POST update":  {bind: route.BindJSON, kind: route.KindCRUD, path: "/demo/sys/goods/update"},
+		"GET info":     {bind: route.BindQuery, kind: route.KindCRUD, path: "/demo/sys/goods/info"},
+		"POST list":    {bind: route.BindJSON, kind: route.KindCRUD, path: "/demo/sys/goods/list"},
+		"POST page":    {bind: route.BindJSON, kind: route.KindCRUD, path: "/demo/sys/goods/page"},
+		"POST disable": {bind: route.BindPath, kind: route.KindCustom, path: "/demo/sys/goods/disable/{id}"},
+		"GET health":   {bind: route.BindQuery, kind: route.KindCustom, path: "/demo/sys/goods/health"},
+		"POST ping":    {bind: route.BindJSON, kind: route.KindCustom, path: "/demo/sys/goods/ping"},
 	}
 	for _, route := range routes {
 		name := route.Method() + " " + routeName(route.Path())
@@ -80,7 +80,7 @@ func TestAnalyzeDiscoversStaticRoutes(t *testing.T) {
 func TestAnalyzeKeepsTypedServiceOverridesAsCRUDRoutes(t *testing.T) {
 	files := controllerAnalysisWorkspace()
 	files["modules/demo/entity/product.go"] += `
-func ProductSchema() coreentity.Schema { return coreentity.Schema{} }
+func ProductSchema() gnentity.Schema { return gnentity.Schema{} }
 `
 	files["modules/demo/dto/page.go"] = `package dto
 type ProductPageReq struct { Page int }
@@ -89,15 +89,15 @@ type ProductPageResult struct { Total int }
 	files["modules/demo/service/product.go"] = `package service
 import (
 	"context"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"example.test/app/modules/demo/dto"
 	"example.test/app/modules/demo/entity"
 )
-type ProductService struct { *coreservice.Base[entity.Product, uint64] }
+type ProductService struct { *gnservice.Base[entity.Product, uint64] }
 func (*ProductService) Info(context.Context, uint64) (map[string]string, error) {
 	return map[string]string{"name": "product"}, nil
 }
-func (*ProductService) List(context.Context, coreservice.Query) ([]string, error) {
+func (*ProductService) List(context.Context, gnservice.Query) ([]string, error) {
 	return []string{"product"}, nil
 }
 func (*ProductService) Page(context.Context, *dto.ProductPageReq) (dto.ProductPageResult, error) {
@@ -106,13 +106,13 @@ func (*ProductService) Page(context.Context, *dto.ProductPageReq) (dto.ProductPa
 `
 	files["modules/demo/controller/admin/product.go"] = `package admin
 import (
-	controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"example.test/app/modules/demo/entity"
 	demoservice "example.test/app/modules/demo/service"
 )
-func ProductController(service *demoservice.ProductService) controller.Definition {
-	return controller.Admin("product").Curd(controller.CurdOption{
-		API: controller.AllAPI(),
+func ProductController(service *demoservice.ProductService) gnctrl.Definition {
+	return gnctrl.Admin("product").Curd(gnctrl.CurdOption{
+		API: gnctrl.AllAPI(),
 		Entity: entity.Product{},
 		Service: service,
 	}).Build()
@@ -127,14 +127,14 @@ func ProductController(service *demoservice.ProductService) controller.Definitio
 	if len(routes) != 6 {
 		t.Fatalf("Routes() = %#v", routes)
 	}
-	for _, route := range routes {
-		if route.Kind() != coreroute.KindCRUD {
-			t.Fatalf("Route kind = %s", route.Kind())
+	for _, routeDeclaration := range routes {
+		if routeDeclaration.Kind() != route.KindCRUD {
+			t.Fatalf("Route kind = %s", routeDeclaration.Kind())
 		}
-		if route.handler.Method == "Page" {
-			if !route.handler.HasRequest || route.handler.RequestType != "ProductPageReq" ||
-				route.handler.RequestPackagePath != "example.test/app/modules/demo/dto" {
-				t.Fatalf("Page handler = %#v", route.handler)
+		if routeDeclaration.handler.Method == "Page" {
+			if !routeDeclaration.handler.HasRequest || routeDeclaration.handler.RequestType != "ProductPageReq" ||
+				routeDeclaration.handler.RequestPackagePath != "example.test/app/modules/demo/dto" {
+				t.Fatalf("Page handler = %#v", routeDeclaration.handler)
 			}
 		}
 	}
@@ -151,13 +151,13 @@ func TestAnalyzeReportsRouteDiagnostics(t *testing.T) {
 			name: "invalid CRUD override",
 			controller: `package admin
 import (
-	controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"example.test/app/modules/demo/entity"
 	demoservice "example.test/app/modules/demo/service"
 )
-func GoodsController(service *demoservice.ProductService) controller.Definition {
-	return controller.Admin("").Curd(controller.CurdOption{
-		API: controller.API(controller.Delete), Entity: entity.Product{}, Service: service,
+func GoodsController(service *demoservice.ProductService) gnctrl.Definition {
+	return gnctrl.Admin("").Curd(gnctrl.CurdOption{
+		API: gnctrl.API(gnctrl.Delete), Entity: entity.Product{}, Service: service,
 	}).Build()
 }
 `,
@@ -166,10 +166,10 @@ func GoodsController(service *demoservice.ProductService) controller.Definition 
 		{
 			name: "invalid handler signature",
 			controller: `package admin
-import controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+import "github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 import demoservice "example.test/app/modules/demo/service"
-func GoodsController(service *demoservice.ProductService) controller.Definition {
-	return controller.Admin("").Route(controller.Route{Method: "POST", Path: "/disable", Handler: controller.Handle(service.Invalid)}).Build()
+func GoodsController(service *demoservice.ProductService) gnctrl.Definition {
+	return gnctrl.Admin("").Route(gnctrl.Route{Method: "POST", Path: "/disable", Handler: gnctrl.Handle(service.Invalid)}).Build()
 }
 `,
 			service: `func (service *ProductService) Invalid(context.Context, *dto.DisableReq, string) error { return nil }
@@ -179,10 +179,10 @@ func GoodsController(service *demoservice.ProductService) controller.Definition 
 		{
 			name: "ambiguous bind",
 			controller: `package admin
-import controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+import "github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 import demoservice "example.test/app/modules/demo/service"
-func GoodsController(service *demoservice.ProductService) controller.Definition {
-	return controller.Admin("").Route(controller.Route{Method: "POST", Path: "/disable/{id}", Handler: controller.Handle(service.Ambiguous)}).Build()
+func GoodsController(service *demoservice.ProductService) gnctrl.Definition {
+	return gnctrl.Admin("").Route(gnctrl.Route{Method: "POST", Path: "/disable/{id}", Handler: gnctrl.Handle(service.Ambiguous)}).Build()
 }
 `,
 			service: `func (service *ProductService) Ambiguous(context.Context, *dto.AmbiguousReq) error { return nil }
@@ -192,11 +192,11 @@ func GoodsController(service *demoservice.ProductService) controller.Definition 
 		{
 			name: "duplicate route",
 			controller: `package admin
-import controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+import "github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 import demoservice "example.test/app/modules/demo/service"
-func GoodsController(service *demoservice.ProductService) controller.Definition {
-	route := controller.Route{Method: "POST", Path: "/disable/{id}", Handler: controller.Handle(service.Disable)}
-	return controller.Admin("").Route(route, route).Build()
+func GoodsController(service *demoservice.ProductService) gnctrl.Definition {
+	route := gnctrl.Route{Method: "POST", Path: "/disable/{id}", Handler: gnctrl.Handle(service.Disable)}
+	return gnctrl.Admin("").Route(route, route).Build()
 }
 `,
 			code: "CG103",
@@ -226,8 +226,8 @@ func GoodsController(service *demoservice.ProductService) controller.Definition 
 func controllerRouteWorkspace() map[string]string {
 	files := controllerAnalysisWorkspace()
 	files["modules/demo/entity/product.go"] += `
-func ProductSchema() coreentity.Schema { return coreentity.Schema{} }
-func OtherSchema() coreentity.Schema { return coreentity.Schema{} }
+func ProductSchema() gnentity.Schema { return gnentity.Schema{} }
+func OtherSchema() gnentity.Schema { return gnentity.Schema{} }
 `
 	files["modules/demo/dto/route.go"] = `package dto
 type DisableReq struct { ID uint64 ` + "`in:\"path\"`" + ` }
@@ -257,11 +257,11 @@ func (*Route) Handle(request *ghttp.Request) { request.Middleware.Next() }
 	files["modules/demo/service/product.go"] = `package service
 import (
 	"context"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"example.test/app/modules/demo/dto"
 	"example.test/app/modules/demo/entity"
 )
-type ProductService struct { *coreservice.Base[entity.Product, uint64] }
+type ProductService struct { *gnservice.Base[entity.Product, uint64] }
 func NewProductService() *ProductService { return &ProductService{} }
 func (service *ProductService) Delete(context.Context, dto.DeleteReq) error { return nil }
 func (service *ProductService) Disable(context.Context, *dto.DisableReq) error { return nil }
@@ -271,8 +271,8 @@ func (service *ProductService) Ping(context.Context) error { return nil }
 	files["modules/demo/controller/admin/sys/goods.go"] = `package sys
 import (
 	"context"
-	controller "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
-	module "github.com/toothdy/cool-admin-go-next/cool-next/core/module"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/module"
 	"example.test/app/modules/demo/dto"
 	"example.test/app/modules/demo/entity"
 	demoservice "example.test/app/modules/demo/service"
@@ -280,40 +280,40 @@ import (
 type GoodsHandler struct{}
 func NewGoodsHandler() *GoodsHandler { return &GoodsHandler{} }
 func (*GoodsHandler) Delete(context.Context, *dto.DeleteReq) error { return nil }
-func GoodsController(service *demoservice.ProductService, handler *GoodsHandler) controller.Definition {
-	return controller.Admin("").
-		Options(controller.RouterOptions{
+func GoodsController(service *demoservice.ProductService, handler *GoodsHandler) gnctrl.Definition {
+	return gnctrl.Admin("").
+		Options(gnctrl.RouterOptions{
 			Alias: []string{"goods"},
 			DevelopmentOnly: true,
-			Middleware: []controller.MiddlewareRef{module.Ref("middleware.NewAudit")},
+			Middleware: []gnctrl.MiddlewareRef{module.Ref("middleware.NewAudit")},
 			Description: "商品管理",
 			TagName: "商品",
 			IgnoreGlobalPrefix: true,
 		}).
-		Curd(controller.CurdOption{
-			API: controller.API(controller.Add, controller.Update, controller.Info, controller.List, controller.Page),
+		Curd(gnctrl.CurdOption{
+			API: gnctrl.API(gnctrl.Add, gnctrl.Update, gnctrl.Info, gnctrl.List, gnctrl.Page),
 			Entity: entity.Product{},
 			Service: service,
-			URLTag: &controller.URLTag{Name: controller.TagIgnoreToken, URL: controller.API(controller.Info)},
+			URLTag: &gnctrl.URLTag{Name: gnctrl.TagIgnoreToken, URL: gnctrl.API(gnctrl.Info)},
 		}).
 		Route(
-			controller.Route{
+			gnctrl.Route{
 				Method: "POST",
 				Path: "/delete",
-				Handler: controller.Handle(handler.Delete),
+				Handler: gnctrl.Handle(handler.Delete),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method: "POST",
 				Path: "/disable/{id}",
-				Handler: controller.Handle(service.Disable),
-				Middleware: []controller.MiddlewareRef{module.Ref("middleware.NewRoute")},
-				Tags: []controller.URLTag{{Name: "audit"}},
+				Handler: gnctrl.Handle(service.Disable),
+				Middleware: []gnctrl.MiddlewareRef{module.Ref("middleware.NewRoute")},
+				Tags: []gnctrl.URLTag{{Name: "audit"}},
 				DevelopmentOnly: true,
 			},
 		).
 		Route(
-			controller.Route{Method: "GET", Path: "/health", Handler: controller.Handle(service.Health), Transaction: controller.NonTransactional()},
-			controller.Route{Method: "POST", Path: "/ping", Handler: controller.Handle(service.Ping), Transaction: controller.NonTransactional()},
+			gnctrl.Route{Method: "GET", Path: "/health", Handler: gnctrl.Handle(service.Health), Transaction: gnctrl.NonTransactional()},
+			gnctrl.Route{Method: "POST", Path: "/ping", Handler: gnctrl.Handle(service.Ping), Transaction: gnctrl.NonTransactional()},
 		).
 		Build()
 }

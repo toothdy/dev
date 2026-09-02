@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"github.com/gogf/gf/v2/database/gdb"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/schema"
 
@@ -21,17 +21,17 @@ import (
 
 // 删除归档与恢复存储
 type Store struct {
-	runtime          *coredb.Runtime
+	runtime          *db.Runtime
 	config           crud.Config
-	descriptors      map[string]entity.RuntimeDescriptor
-	recordDescriptor entity.Descriptor[Record, uint64]
+	descriptors      map[string]gnentity.RuntimeDescriptor
+	recordDescriptor gnentity.Descriptor[Record, uint64]
 }
 
 // 创建删除归档与恢复 Store
 func New(
-	runtime *coredb.Runtime,
+	runtime *db.Runtime,
 	config crud.Config,
-	descriptors ...entity.RuntimeDescriptor,
+	descriptors ...gnentity.RuntimeDescriptor,
 ) (*Store, error) {
 	if runtime == nil || runtime.DB() == nil || runtime.Group() == "" {
 		return nil, exception.Core("回收站的框架数据库 Runtime 无效")
@@ -82,7 +82,7 @@ func (store *Store) Prepare(ctx context.Context, mode schema.Mode) error {
 // 按配置归档后删除或直接物理删除
 func (store *Store) Delete(
 	ctx context.Context,
-	descriptor entity.RuntimeDescriptor,
+	descriptor gnentity.RuntimeDescriptor,
 	ids []any,
 ) error {
 	if err := store.validate(); err != nil {
@@ -171,7 +171,7 @@ func (store *Store) Restore(ctx context.Context, id uint64) error {
 func (store *Store) archiveDelete(
 	ctx context.Context,
 	transaction gdb.TX,
-	descriptor entity.RuntimeDescriptor,
+	descriptor gnentity.RuntimeDescriptor,
 	ids []any,
 ) error {
 	model := transaction.Model(descriptor.Table()).
@@ -275,7 +275,7 @@ func (store *Store) insertRecord(
 func (store *Store) deleteRows(
 	ctx context.Context,
 	transaction gdb.TX,
-	descriptor entity.RuntimeDescriptor,
+	descriptor gnentity.RuntimeDescriptor,
 	ids []any,
 	checkCount bool,
 ) error {
@@ -323,7 +323,7 @@ func (store *Store) lockRecord(ctx context.Context, transaction gdb.TX, id uint6
 func (store *Store) insertSnapshot(
 	ctx context.Context,
 	transaction gdb.TX,
-	descriptor entity.RuntimeDescriptor,
+	descriptor gnentity.RuntimeDescriptor,
 	entities reflect.Value,
 ) error {
 	for index := 0; index < entities.Len(); index++ {
@@ -354,7 +354,7 @@ func (store *Store) insertSnapshot(
 
 func decodeSnapshot(
 	data []byte,
-	descriptor entity.RuntimeDescriptor,
+	descriptor gnentity.RuntimeDescriptor,
 	count uint64,
 ) (reflect.Value, error) {
 	if count == 0 || len(data) == 0 {
@@ -406,7 +406,7 @@ func requireJSONEnd(decoder *json.Decoder) error {
 	return nil
 }
 
-func checkIDs(descriptor entity.RuntimeDescriptor, ids []any) ([]any, error) {
+func checkIDs(descriptor gnentity.RuntimeDescriptor, ids []any) ([]any, error) {
 	if isNilDescriptor(descriptor) || descriptor.IDType() == nil || !descriptor.IDType().Comparable() {
 		return nil, exception.Core("删除目标 Descriptor 无效")
 	}
@@ -429,7 +429,7 @@ func checkIDs(descriptor entity.RuntimeDescriptor, ids []any) ([]any, error) {
 	return unique, nil
 }
 
-func columns(descriptor entity.RuntimeDescriptor) []string {
+func columns(descriptor gnentity.RuntimeDescriptor) []string {
 	columns := make([]string, 0, len(descriptor.PersistentFields()))
 	for _, field := range descriptor.PersistentFields() {
 		columns = append(columns, field.Column())
@@ -438,7 +438,7 @@ func columns(descriptor entity.RuntimeDescriptor) []string {
 	return columns
 }
 
-func entityFieldValue(value reflect.Value, field entity.Field) (data any, isNull bool, err error) {
+func entityFieldValue(value reflect.Value, field gnentity.Field) (data any, isNull bool, err error) {
 	if value.Kind() == reflect.Pointer {
 		value = value.Elem()
 	}

@@ -5,7 +5,7 @@ import (
 	"go/types"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/module"
-	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 )
 
 // 源码位置
@@ -281,22 +281,22 @@ func (d ControllerDeclaration) Routes() []RouteDeclaration {
 
 // 静态路由声明
 type RouteDeclaration struct {
-	bind            coreroute.BindSource
+	bind            route.BindSource
 	description     string
 	developmentOnly bool
-	handler         coreroute.CallableRef
-	kind            coreroute.Kind
+	handler         route.CallableRef
+	kind            route.Kind
 	method          string
 	middleware      []string
 	path            string
 	position        Position
 	summary         string
 	tags            []string
-	transaction     coreroute.TransactionPolicy
+	transaction     route.TransactionPolicy
 }
 
 // 返回路由种类
-func (d RouteDeclaration) Kind() coreroute.Kind { return d.kind }
+func (d RouteDeclaration) Kind() route.Kind { return d.kind }
 
 // 返回 HTTP Method
 func (d RouteDeclaration) Method() string { return d.method }
@@ -305,7 +305,7 @@ func (d RouteDeclaration) Method() string { return d.method }
 func (d RouteDeclaration) Path() string { return d.path }
 
 // 返回绑定来源
-func (d RouteDeclaration) Bind() coreroute.BindSource { return d.bind }
+func (d RouteDeclaration) Bind() route.BindSource { return d.bind }
 
 // 返回权限字符串
 

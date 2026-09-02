@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/codegen"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"github.com/toothdy/cool-admin-go-next/modules/base"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
@@ -14,56 +14,56 @@ import (
 )
 
 // 菜单 CRUD 与解析/创建/导出/导入同源同表，与 Node 版 BaseSysMenuController 一致
-func AdminSysMenuController(menu *service.MenuService, tool *MenuToolHandler) controller.Definition {
-	return controller.Admin().
-		Options(controller.RouterOptions{Description: "系统菜单", TagName: "系统菜单"}).
-		Curd(controller.CurdOption{
-			API:            controller.API(controller.Add, controller.Delete, controller.Update, controller.Info, controller.Page),
+func AdminSysMenuController(menu *service.MenuService, tool *MenuToolHandler) gnctrl.Definition {
+	return gnctrl.Admin().
+		Options(gnctrl.RouterOptions{Description: "系统菜单", TagName: "系统菜单"}).
+		Curd(gnctrl.CurdOption{
+			API:            gnctrl.API(gnctrl.Add, gnctrl.Delete, gnctrl.Update, gnctrl.Info, gnctrl.Page),
 			Entity:         entity.Menu{},
 			Service:        menu,
-			HiddenFields:   []controller.ColumnRef{controller.Field("seedKey")},
-			ReadonlyFields: []controller.ColumnRef{controller.Field("seedKey")},
+			HiddenFields:   []gnctrl.ColumnRef{gnctrl.Field("seedKey")},
+			ReadonlyFields: []gnctrl.ColumnRef{gnctrl.Field("seedKey")},
 		}).
 		Route(
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/list",
 				Summary:     "列表查询",
-				Handler:     controller.Handle(menu.List),
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(menu.List),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:          http.MethodPost,
 				Path:            "/parse",
 				Summary:         "解析",
 				DevelopmentOnly: true,
-				Handler:         controller.Handle(tool.ParseMenu),
-				Bind:            controller.BindJSON,
-				Transaction:     controller.NonTransactional(),
+				Handler:         gnctrl.Handle(tool.ParseMenu),
+				Bind:            gnctrl.BindJSON,
+				Transaction:     gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:          http.MethodPost,
 				Path:            "/create",
 				Summary:         "创建代码",
 				DevelopmentOnly: true,
-				Handler:         controller.Handle(tool.CreateMenuCode),
-				Bind:            controller.BindJSON,
-				Transaction:     controller.NonTransactional(),
+				Handler:         gnctrl.Handle(tool.CreateMenuCode),
+				Bind:            gnctrl.BindJSON,
+				Transaction:     gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/export",
 				Summary:     "导出",
-				Handler:     controller.Handle(tool.ExportMenu),
-				Bind:        controller.BindJSON,
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(tool.ExportMenu),
+				Bind:        gnctrl.BindJSON,
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:  http.MethodPost,
 				Path:    "/import",
 				Summary: "导入",
-				Handler: controller.Handle(tool.ImportMenu),
-				Bind:    controller.BindJSON,
+				Handler: gnctrl.Handle(tool.ImportMenu),
+				Bind:    gnctrl.BindJSON,
 			},
 		).
 		Build()

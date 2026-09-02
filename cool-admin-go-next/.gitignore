@@ -13,6 +13,10 @@ coverage.out
 /reports/
 *_test.go
 !cool-next/core/controller/binder_test.go
+!cool-next/core/gnhttp/*_test.go
+!cool-next/core/gnctrl/*_test.go
+!cool-next/core/gnentity/*_test.go
+!cool-next/core/gnservice/*_test.go
 !cool-next/seed/record_test.go
 !cool-next/codegen/analyze_test.go
 !cool-next/codegen/route_analysis_test.go

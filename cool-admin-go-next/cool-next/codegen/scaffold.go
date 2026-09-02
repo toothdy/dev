@@ -19,8 +19,8 @@ var codeNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 const (
 	gMetaImportPath      = "github.com/gogf/gf/v2/frame/g"
-	coreEntityImportPath = "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
-	controllerImportPath = "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	coreEntityImportPath = "github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
+	controllerImportPath = "github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 )
 
 // 开发端"生成代码"向导使用的实体字段元数据
@@ -192,7 +192,7 @@ func parseMenuEntity(source string) (parsedEntity, error) {
 	}
 	current := candidates[0]
 	if !current.hasBase {
-		return parsedEntity{}, exception.Validate("实体必须嵌入 coreentity.Base")
+		return parsedEntity{}, exception.Validate("实体必须嵌入 gnentity.Base")
 	}
 	tableName := structTagOption(current.meta.Get("orm"), "table")
 	if !validCodeName(tableName) {

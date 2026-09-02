@@ -3,14 +3,14 @@ package crud
 import (
 	"fmt"
 
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 // QueryColumn 是已解析的查询字段来源
 type QueryColumn struct {
-	Descriptor coreentity.Metadata
-	Field      coreentity.Field
+	Descriptor gnentity.Metadata
+	Field      gnentity.Field
 	Source     string
 }
 
@@ -93,7 +93,7 @@ func ProjectQuery(
 		if resolveErr != nil {
 			return QueryProjection{}, resolveErr
 		}
-		if column.logicalType != coreentity.LogicalString {
+		if column.logicalType != gnentity.LogicalString {
 			return QueryProjection{}, exception.Core(fmt.Sprintf("字段 %s 不支持关键词查询", column.name))
 		}
 		result.KeyWordLikeFields = append(result.KeyWordLikeFields, compiler.projectColumn(column))
@@ -134,7 +134,7 @@ func (compiler *queryPlanCompiler) projectMatch(match FieldMatch, isLike bool) (
 	if err != nil {
 		return QueryMatch{}, err
 	}
-	if isLike && column.logicalType != coreentity.LogicalString {
+	if isLike && column.logicalType != gnentity.LogicalString {
 		return QueryMatch{}, exception.Core(fmt.Sprintf("字段 %s 不支持模糊查询", column.name))
 	}
 

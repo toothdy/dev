@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"go/types"
+	"path"
 	"sort"
 	"strconv"
 )
@@ -28,33 +29,10 @@ func (m *importManager) finalize() {
 	if len(m.aliases) > 0 {
 		return
 	}
-	fixed := []struct {
-		alias string
-		path  string
-	}{
-		{alias: "module", path: modulePackagePath},
-		{alias: "corecontroller", path: controllerPackagePath},
-		{alias: "coreroute", path: routePackagePath},
-		{alias: "coreentity", path: entityPackagePath},
-		{alias: "coreservice", path: servicePackagePath},
-		{alias: "coredb", path: databasePackagePath},
-		{alias: "corerecycle", path: recyclePackagePath},
-		{alias: "gdb", path: gdbPackagePath},
-		{alias: "g", path: gPackagePath},
-	}
 	used := make(map[string]bool, len(m.paths))
-	for _, item := range fixed {
-		if _, exists := m.paths[item.path]; !exists {
-			continue
-		}
-		m.aliases[item.path] = item.alias
-		used[item.alias] = true
-	}
 	paths := make([]string, 0, len(m.paths))
 	for path := range m.paths {
-		if _, fixed := m.aliases[path]; !fixed {
-			paths = append(paths, path)
-		}
+		paths = append(paths, path)
 	}
 	sort.Strings(paths)
 	for _, path := range paths {
@@ -72,6 +50,10 @@ func (m *importManager) finalize() {
 }
 
 func (m *importManager) alias(path string) string { return m.aliases[path] }
+
+func (m *importManager) needsAlias(importPath string) bool {
+	return m.alias(importPath) != path.Base(importPath)
+}
 
 func (m *importManager) pathsInOrder() []string {
 	paths := make([]string, 0, len(m.paths))

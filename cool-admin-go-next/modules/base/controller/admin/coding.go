@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/codegen"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"github.com/toothdy/cool-admin-go-next/modules/base"
 )
 
@@ -53,28 +53,28 @@ func (handler *ToolHandler) CreateCode(ctx context.Context, request *CodingCreat
 }
 
 // 开发环境代码生成路由
-func AdminCodingController(handler *ToolHandler) controller.Definition {
-	return controller.Admin().
-		Options(controller.RouterOptions{
+func AdminCodingController(handler *ToolHandler) gnctrl.Definition {
+	return gnctrl.Admin().
+		Options(gnctrl.RouterOptions{
 			Description:     "AI 编码",
 			TagName:         "AI 编码",
 			DevelopmentOnly: true,
 		}).
 		Route(
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/getModuleTree",
 				Summary:     "获取模块目录结构",
-				Handler:     controller.Handle(handler.GetModuleTree),
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(handler.GetModuleTree),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/createCode",
 				Summary:     "创建代码",
-				Handler:     controller.Handle(handler.CreateCode),
-				Bind:        controller.BindJSON,
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(handler.CreateCode),
+				Bind:        gnctrl.BindJSON,
+				Transaction: gnctrl.NonTransactional(),
 			},
 		).
 		Build()

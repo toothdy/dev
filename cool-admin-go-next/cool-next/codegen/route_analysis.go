@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"strings"
 
-	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 )
 
 const contextPackagePath = "context"
@@ -175,7 +175,7 @@ func (a *analysis) analyzeDefaultRoutes(
 			bind:            bind,
 			developmentOnly: declaration.developmentOnly,
 			handler:         handler,
-			kind:            coreroute.KindCRUD,
+			kind:            route.KindCRUD,
 			method:          method,
 			path:            path.Join(basePath, api),
 			position:        a.position(pkg, expression.Pos()),
@@ -219,16 +219,16 @@ func (a *analysis) analyzeCustomRoute(
 		a.add("CG102", "Route Handler 必须使用 Handle 包装合法 Handler", a.position(pkg, literal.Pos()))
 		return RouteDeclaration{}, false
 	}
-	bind := coreroute.BindAuto
+	bind := route.BindAuto
 	if value, exists := controllerLiteralField(literal, "Bind"); exists {
 		resolved, valid := constantControllerString(pkg, value)
-		bind = coreroute.BindSource(resolved)
+		bind = route.BindSource(resolved)
 		if !valid || !validBindSource(bind) {
 			a.add("CG101", "Route Bind 必须是合法绑定来源常量", a.position(pkg, value.Pos()))
 			return RouteDeclaration{}, false
 		}
 	}
-	if bind == coreroute.BindAuto {
+	if bind == route.BindAuto {
 		resolved, valid := inferBindSource(method, dtoType)
 		if !valid {
 			a.add("CG101", "Route BindAuto 无法无歧义推导", a.position(pkg, handlerExpression.Pos()))
@@ -289,7 +289,7 @@ func (a *analysis) analyzeCustomRoute(
 		description:     description,
 		developmentOnly: developmentOnly,
 		handler:         handler,
-		kind:            coreroute.KindCustom,
+		kind:            route.KindCustom,
 		method:          method,
 		middleware:      middleware,
 		path:            path.Join(basePath, routePath),
@@ -351,55 +351,55 @@ func controllerCurdTag(pkg *loadedPackage, function *ast.FuncDecl, literal *ast.
 	return name, values, valid
 }
 
-func defaultRouteValues(api string) (string, coreroute.BindSource, string, string) {
+func defaultRouteValues(api string) (string, route.BindSource, string, string) {
 	switch api {
 	case "add":
-		return http.MethodPost, coreroute.BindJSON, "新增", "Add"
+		return http.MethodPost, route.BindJSON, "新增", "Add"
 	case "delete":
-		return http.MethodPost, coreroute.BindJSON, "删除", "Delete"
+		return http.MethodPost, route.BindJSON, "删除", "Delete"
 	case "update":
-		return http.MethodPost, coreroute.BindJSON, "修改", "Update"
+		return http.MethodPost, route.BindJSON, "修改", "Update"
 	case "info":
-		return http.MethodGet, coreroute.BindQuery, "单个信息", "Info"
+		return http.MethodGet, route.BindQuery, "单个信息", "Info"
 	case "list":
-		return http.MethodPost, coreroute.BindJSON, "列表查询", "List"
+		return http.MethodPost, route.BindJSON, "列表查询", "List"
 	case "page":
-		return http.MethodPost, coreroute.BindJSON, "分页查询", "Page"
+		return http.MethodPost, route.BindJSON, "分页查询", "Page"
 	default:
 		return "", "", "", ""
 	}
 }
 
-func serviceHandlerReference(value types.Type, method string) (coreroute.CallableRef, bool) {
+func serviceHandlerReference(value types.Type, method string) (route.CallableRef, bool) {
 	if value == nil {
-		return coreroute.CallableRef{}, false
+		return route.CallableRef{}, false
 	}
 	selection := types.NewMethodSet(value).Lookup(nil, method)
 	if selection == nil {
-		return coreroute.CallableRef{}, false
+		return route.CallableRef{}, false
 	}
 	signature, matches := selection.Obj().Type().(*types.Signature)
 	if !matches || signature.Params().Len() != 2 || !isNamedType(signature.Params().At(0).Type(), contextPackagePath, "Context") ||
 		(signature.Results().Len() != 1 && signature.Results().Len() != 2) {
-		return coreroute.CallableRef{}, false
+		return route.CallableRef{}, false
 	}
 	errorType := types.Universe.Lookup("error").Type()
 	if !types.Identical(signature.Results().At(signature.Results().Len()-1).Type(), errorType) {
-		return coreroute.CallableRef{}, false
+		return route.CallableRef{}, false
 	}
 	pointer, matches := types.Unalias(value).(*types.Pointer)
 	if !matches {
-		return coreroute.CallableRef{}, false
+		return route.CallableRef{}, false
 	}
 	named, matches := types.Unalias(pointer.Elem()).(*types.Named)
 	if !matches || named.Obj() == nil || named.Obj().Pkg() == nil {
-		return coreroute.CallableRef{}, false
+		return route.CallableRef{}, false
 	}
 	if !matchesServiceActionSignature(named, method, signature) {
-		return coreroute.CallableRef{}, false
+		return route.CallableRef{}, false
 	}
 
-	reference := coreroute.CallableRef{
+	reference := route.CallableRef{
 		Method:       method,
 		PackagePath:  named.Obj().Pkg().Path(),
 		ReturnsValue: signature.Results().Len() == 2,
@@ -428,26 +428,26 @@ func controllerHandler(
 	factorySignature *types.Signature,
 	expression ast.Expr,
 	exists bool,
-) (coreroute.CallableRef, types.Type, bool) {
+) (route.CallableRef, types.Type, bool) {
 	if !exists {
-		return coreroute.CallableRef{}, nil, false
+		return route.CallableRef{}, nil, false
 	}
 	call, matches := unparenControllerExpr(localControllerValue(pkg, function, expression)).(*ast.CallExpr)
 	if !matches || len(call.Args) != 1 || !packageFunction(calledFunction(pkg.packageInfo.TypesInfo, call.Fun), controllerPackagePath, "Handle") {
-		return coreroute.CallableRef{}, nil, false
+		return route.CallableRef{}, nil, false
 	}
 	target := unparenControllerExpr(call.Args[0])
 	signature, matches := types.Unalias(pkg.packageInfo.TypesInfo.TypeOf(target)).(*types.Signature)
 	if !matches {
-		return coreroute.CallableRef{}, nil, false
+		return route.CallableRef{}, nil, false
 	}
 	dtoType, returnsValue, valid := validHandler(signature)
 	if !valid {
-		return coreroute.CallableRef{}, nil, false
+		return route.CallableRef{}, nil, false
 	}
 	reference, valid := handlerRef(pkg, factorySignature, target, signature)
 	if !valid {
-		return coreroute.CallableRef{}, nil, false
+		return route.CallableRef{}, nil, false
 	}
 	reference.HasRequest = dtoType != nil
 	reference.ReturnsValue = returnsValue
@@ -466,14 +466,14 @@ func handlerRef(
 	factorySignature *types.Signature,
 	expression ast.Expr,
 	signature *types.Signature,
-) (coreroute.CallableRef, bool) {
+) (route.CallableRef, bool) {
 	switch current := expression.(type) {
 	case *ast.Ident:
 		object, _ := pkg.packageInfo.TypesInfo.Uses[current].(*types.Func)
 		if object == nil || object.Pkg() == nil {
-			return coreroute.CallableRef{}, false
+			return route.CallableRef{}, false
 		}
-		return coreroute.CallableRef{
+		return route.CallableRef{
 			Method:      object.Name(),
 			PackagePath: object.Pkg().Path(),
 			Symbol:      object.Name(),
@@ -484,9 +484,9 @@ func handlerRef(
 		if selection == nil {
 			object, _ := pkg.packageInfo.TypesInfo.Uses[current.Sel].(*types.Func)
 			if object == nil || object.Pkg() == nil {
-				return coreroute.CallableRef{}, false
+				return route.CallableRef{}, false
 			}
-			return coreroute.CallableRef{
+			return route.CallableRef{
 				Method:      object.Name(),
 				PackagePath: object.Pkg().Path(),
 				Symbol:      object.Name(),
@@ -496,24 +496,24 @@ func handlerRef(
 		receiverName, direct := unparenControllerExpr(current.X).(*ast.Ident)
 		receiver, _ := pkg.packageInfo.TypesInfo.Uses[receiverName].(*types.Var)
 		if !direct || receiver == nil || !isControllerParameter(factorySignature, receiver) {
-			return coreroute.CallableRef{}, false
+			return route.CallableRef{}, false
 		}
 		pointer, matches := types.Unalias(receiver.Type()).(*types.Pointer)
 		if !matches {
-			return coreroute.CallableRef{}, false
+			return route.CallableRef{}, false
 		}
 		named, matches := types.Unalias(pointer.Elem()).(*types.Named)
 		if !matches || named.Obj() == nil || named.Obj().Pkg() == nil {
-			return coreroute.CallableRef{}, false
+			return route.CallableRef{}, false
 		}
-		return coreroute.CallableRef{
+		return route.CallableRef{
 			Method:      current.Sel.Name,
 			PackagePath: named.Obj().Pkg().Path(),
 			Symbol:      named.Obj().Name(),
 			Type:        types.TypeString(receiver.Type(), qualifier),
 		}, true
 	default:
-		return coreroute.CallableRef{}, false
+		return route.CallableRef{}, false
 	}
 }
 
@@ -551,13 +551,13 @@ func validHandler(signature *types.Signature) (types.Type, bool, bool) {
 	return dto, true, true
 }
 
-func inferBindSource(method string, dto types.Type) (coreroute.BindSource, bool) {
+func inferBindSource(method string, dto types.Type) (route.BindSource, bool) {
 	if dto == nil {
 		switch method {
 		case http.MethodGet, http.MethodDelete, http.MethodHead:
-			return coreroute.BindQuery, true
+			return route.BindQuery, true
 		default:
-			return coreroute.BindJSON, true
+			return route.BindJSON, true
 		}
 	}
 	pointer, matches := types.Unalias(dto).(*types.Pointer)
@@ -572,14 +572,14 @@ func inferBindSource(method string, dto types.Type) (coreroute.BindSource, bool)
 	if !matches {
 		return "", false
 	}
-	sources := make(map[coreroute.BindSource]bool)
+	sources := make(map[route.BindSource]bool)
 	for index := range structure.NumFields() {
 		value := reflect.StructTag(structure.Tag(index)).Get("in")
 		if value == "" {
 			continue
 		}
-		source := coreroute.BindSource(value)
-		if source != coreroute.BindQuery && source != coreroute.BindPath {
+		source := route.BindSource(value)
+		if source != route.BindQuery && source != route.BindPath {
 			return "", false
 		}
 		sources[source] = true
@@ -592,9 +592,9 @@ func inferBindSource(method string, dto types.Type) (coreroute.BindSource, bool)
 	}
 	switch method {
 	case http.MethodGet, http.MethodDelete, http.MethodHead:
-		return coreroute.BindQuery, true
+		return route.BindQuery, true
 	default:
-		return coreroute.BindJSON, true
+		return route.BindJSON, true
 	}
 }
 
@@ -716,18 +716,18 @@ func controllerRouteTags(pkg *loadedPackage, function *ast.FuncDecl, literal *as
 	return result, true
 }
 
-func controllerTransaction(pkg *loadedPackage, function *ast.FuncDecl, literal *ast.CompositeLit) (coreroute.TransactionPolicy, bool) {
+func controllerTransaction(pkg *loadedPackage, function *ast.FuncDecl, literal *ast.CompositeLit) (route.TransactionPolicy, bool) {
 	expression, exists := controllerLiteralField(literal, "Transaction")
 	if !exists {
-		return coreroute.TransactionPolicy{}, true
+		return route.TransactionPolicy{}, true
 	}
 	resolved := unparenControllerExpr(localControllerValue(pkg, function, expression))
 	call, matches := resolved.(*ast.CallExpr)
 	if !matches || len(call.Args) != 0 || !packageFunction(calledFunction(pkg.packageInfo.TypesInfo, call.Fun), controllerPackagePath, "NonTransactional") {
-		return coreroute.TransactionPolicy{}, false
+		return route.TransactionPolicy{}, false
 	}
 
-	return coreroute.NonTransactional(), true
+	return route.NonTransactional(), true
 }
 
 func controllerBoolPointer(pkg *loadedPackage, function *ast.FuncDecl, expression ast.Expr) (bool, bool) {
@@ -813,9 +813,9 @@ func validHTTPMethod(value string) bool {
 	}
 }
 
-func validBindSource(value coreroute.BindSource) bool {
+func validBindSource(value route.BindSource) bool {
 	switch value {
-	case coreroute.BindAuto, coreroute.BindJSON, coreroute.BindQuery, coreroute.BindForm, coreroute.BindPath, coreroute.BindFile:
+	case route.BindAuto, route.BindJSON, route.BindQuery, route.BindForm, route.BindPath, route.BindFile:
 		return true
 	default:
 		return false

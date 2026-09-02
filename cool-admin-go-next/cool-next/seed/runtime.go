@@ -5,21 +5,21 @@ import (
 	"encoding/json"
 	"sort"
 
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 )
 
 // 模块的嵌入种子与可写入实体
 type Definition struct {
 	Data        Data
-	Descriptors []coreentity.RuntimeDescriptor
+	Descriptors []gnentity.RuntimeDescriptor
 	Key         string
 }
 
 // 模块种子定义
-func NewDefinition(key string, data Data, descriptors ...coreentity.RuntimeDescriptor) Definition {
-	return Definition{Key: key, Data: data, Descriptors: append([]coreentity.RuntimeDescriptor(nil), descriptors...)}
+func NewDefinition(key string, data Data, descriptors ...gnentity.RuntimeDescriptor) Definition {
+	return Definition{Key: key, Data: data, Descriptors: append([]gnentity.RuntimeDescriptor(nil), descriptors...)}
 }
 
 // 框架启动阶段统一导入模块种子
@@ -146,7 +146,7 @@ func (runtime *Runtime) importMenu(ctx context.Context, definition Definition, d
 }
 
 // 种子写入显式主键后同步自增序列，非自增主键直接跳过。
-func (runtime *Runtime) syncSequence(ctx context.Context, descriptor coreentity.RuntimeDescriptor) error {
+func (runtime *Runtime) syncSequence(ctx context.Context, descriptor gnentity.RuntimeDescriptor) error {
 	primary := descriptor.Primary()
 	if primary == nil || !primary.AutoIncrement() {
 		return nil
@@ -155,8 +155,8 @@ func (runtime *Runtime) syncSequence(ctx context.Context, descriptor coreentity.
 	return runtime.runtime.SyncSequence(ctx, descriptor.Table(), primary.Column())
 }
 
-func descriptorMap(definition Definition) map[string]coreentity.RuntimeDescriptor {
-	result := make(map[string]coreentity.RuntimeDescriptor, len(definition.Descriptors))
+func descriptorMap(definition Definition) map[string]gnentity.RuntimeDescriptor {
+	result := make(map[string]gnentity.RuntimeDescriptor, len(definition.Descriptors))
 	for _, descriptor := range definition.Descriptors {
 		result[descriptor.Table()] = descriptor
 	}

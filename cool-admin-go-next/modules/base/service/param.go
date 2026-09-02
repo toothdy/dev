@@ -9,9 +9,9 @@ import (
 	"sync"
 
 	"github.com/gogf/gf/v2/os/gcache"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/modules/base"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
@@ -31,7 +31,7 @@ type paramCacheEntry struct {
 
 // 参数查询、HTML 输出和变更缓存协调
 type ParamService struct {
-	*coreservice.Base[entity.Param, uint64]
+	*gnservice.Base[entity.Param, uint64]
 	allowKeys map[string]struct{}
 	cache     *gcache.Cache
 	dirty     map[string]struct{}
@@ -39,7 +39,7 @@ type ParamService struct {
 }
 
 // 使用私有内存缓存的参数服务
-func NewParam(baseService *coreservice.Base[entity.Param, uint64], config base.Config) (*ParamService, error) {
+func NewParam(baseService *gnservice.Base[entity.Param, uint64], config base.Config) (*ParamService, error) {
 	if baseService == nil || baseService.Descriptor() == nil {
 		return nil, exception.Core("参数基础 Service 无效")
 	}
@@ -92,16 +92,16 @@ func (service *ParamService) AppDataByKey(ctx context.Context, key string) (any,
 }
 
 // 按键返回原始 HTML 响应
-func (service *ParamService) HTMLByKey(ctx context.Context, key string) (controller.HTMLResponse, error) {
+func (service *ParamService) HTMLByKey(ctx context.Context, key string) (gnctrl.HTMLResponse, error) {
 	record, err := service.paramByKey(ctx, key)
 	if err != nil {
 		return "", err
 	}
 	if record == nil {
-		return controller.HTMLResponse(strings.Replace(paramHTMLTemplate, "@content", "key notfound", 1)), nil
+		return gnctrl.HTMLResponse(strings.Replace(paramHTMLTemplate, "@content", "key notfound", 1)), nil
 	}
 
-	return controller.HTMLResponse(strings.NewReplacer(
+	return gnctrl.HTMLResponse(strings.NewReplacer(
 		"@title", record.Name,
 		"@content", record.Data,
 	).Replace(paramHTMLTemplate)), nil
@@ -110,21 +110,21 @@ func (service *ParamService) HTMLByKey(ctx context.Context, key string) (control
 // 新增参数并失效相关缓存
 func (service *ParamService) Add(
 	ctx context.Context,
-	input coreservice.AddInput[entity.Param],
-) (coreservice.AddResult[uint64], error) {
+	input gnservice.AddInput[entity.Param],
+) (gnservice.AddResult[uint64], error) {
 	service.mu.Lock()
 	defer service.mu.Unlock()
 
 	result, err := service.Base.Add(ctx, input)
 	if err != nil {
-		return coreservice.AddResult[uint64]{}, err
+		return gnservice.AddResult[uint64]{}, err
 	}
 	rows, err := service.paramsByIDs(ctx, addResultIDs(result))
 	if err != nil {
-		return coreservice.AddResult[uint64]{}, err
+		return gnservice.AddResult[uint64]{}, err
 	}
 	if err = service.markParamCacheDirty(ctx, rows); err != nil {
-		return coreservice.AddResult[uint64]{}, err
+		return gnservice.AddResult[uint64]{}, err
 	}
 
 	return result, nil
@@ -133,7 +133,7 @@ func (service *ParamService) Add(
 // 更新参数并失效旧键与新键
 func (service *ParamService) Update(
 	ctx context.Context,
-	input coreservice.UpdateInput[entity.Param, uint64],
+	input gnservice.UpdateInput[entity.Param, uint64],
 ) error {
 	service.mu.Lock()
 	defer service.mu.Unlock()
@@ -157,7 +157,7 @@ func (service *ParamService) Update(
 }
 
 // 删除参数并失效旧键缓存
-func (service *ParamService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+func (service *ParamService) Delete(ctx context.Context, input gnservice.DeleteInput[uint64]) error {
 	service.mu.Lock()
 	defer service.mu.Unlock()
 
@@ -271,7 +271,7 @@ func (service *ParamService) markParamCacheDirty(ctx context.Context, rows []par
 	return nil
 }
 
-func addResultIDs(result coreservice.AddResult[uint64]) []uint64 {
+func addResultIDs(result gnservice.AddResult[uint64]) []uint64 {
 	if result.IsMany() {
 		return result.Many()
 	}
@@ -279,7 +279,7 @@ func addResultIDs(result coreservice.AddResult[uint64]) []uint64 {
 	return []uint64{result.One()}
 }
 
-func updateInputIDs(input coreservice.UpdateInput[entity.Param, uint64]) []uint64 {
+func updateInputIDs(input gnservice.UpdateInput[entity.Param, uint64]) []uint64 {
 	if !input.IsMany() {
 		return []uint64{input.One().ID()}
 	}

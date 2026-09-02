@@ -4,20 +4,20 @@ import (
 	"context"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/modules/dict/entity"
 )
 
 // 字典类别及关联信息删除
 type TypeService struct {
-	*coreservice.Base[entity.Type, uint64]
-	infoBase *coreservice.Base[entity.Info, uint64]
+	*gnservice.Base[entity.Type, uint64]
+	infoBase *gnservice.Base[entity.Info, uint64]
 }
 
 // 字典类别业务服务
 func NewType(
-	typeBase *coreservice.Base[entity.Type, uint64],
-	infoBase *coreservice.Base[entity.Info, uint64],
+	typeBase *gnservice.Base[entity.Type, uint64],
+	infoBase *gnservice.Base[entity.Info, uint64],
 ) (*TypeService, error) {
 	if typeBase == nil || typeBase.Descriptor() == nil || infoBase == nil || infoBase.Descriptor() == nil {
 		return nil, exception.Core("字典类别服务依赖无效")
@@ -27,7 +27,7 @@ func NewType(
 }
 
 // 删除类别及其全部字典信息
-func (service *TypeService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+func (service *TypeService) Delete(ctx context.Context, input gnservice.DeleteInput[uint64]) error {
 	if err := service.Base.Delete(ctx, input); err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (service *TypeService) Delete(ctx context.Context, input coreservice.Delete
 	for index, row := range rows {
 		ids[index] = row.ID
 	}
-	deleteInput, err := coreservice.NewDeleteInput[entity.Info](service.infoBase.Descriptor(), ids)
+	deleteInput, err := gnservice.NewDeleteInput[entity.Info](service.infoBase.Descriptor(), ids)
 	if err != nil {
 		return err
 	}

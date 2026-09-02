@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
@@ -44,14 +44,14 @@ func (handler *DepartmentHandler) Order(ctx context.Context, request *Department
 }
 
 // 系统部门管理路由
-func AdminSysDepartmentController(department *service.DepartmentService, handler *DepartmentHandler) controller.Definition {
-	return controller.Admin().
-		Options(controller.RouterOptions{Description: "系统部门", TagName: "系统部门"}).
-		Curd(controller.CurdOption{
-			API:     controller.API(controller.Add, controller.Update),
+func AdminSysDepartmentController(department *service.DepartmentService, handler *DepartmentHandler) gnctrl.Definition {
+	return gnctrl.Admin().
+		Options(gnctrl.RouterOptions{Description: "系统部门", TagName: "系统部门"}).
+		Curd(gnctrl.CurdOption{
+			API:     gnctrl.API(gnctrl.Add, gnctrl.Update),
 			Entity:  entity.Department{},
 			Service: department,
-			InsertParam: controller.Insert(func(ctx context.Context, input *coreservice.Mutable[entity.Department]) error {
+			InsertParam: gnctrl.Insert(func(ctx context.Context, input *gnservice.Mutable[entity.Department]) error {
 				identity, err := auth.Admin(ctx)
 				if err != nil {
 					return err
@@ -59,30 +59,30 @@ func AdminSysDepartmentController(department *service.DepartmentService, handler
 
 				return input.Set("userId", identity.UserID)
 			}),
-			HiddenFields:   []controller.ColumnRef{controller.Field("seedKey")},
-			ReadonlyFields: []controller.ColumnRef{controller.Field("seedKey")},
+			HiddenFields:   []gnctrl.ColumnRef{gnctrl.Field("seedKey")},
+			ReadonlyFields: []gnctrl.ColumnRef{gnctrl.Field("seedKey")},
 		}).
 		Route(
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/list",
 				Summary:     "列表查询",
-				Handler:     controller.Handle(department.List),
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(department.List),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:  http.MethodPost,
 				Path:    "/delete",
 				Summary: "删除",
-				Handler: controller.Handle(handler.Delete),
-				Bind:    controller.BindJSON,
+				Handler: gnctrl.Handle(handler.Delete),
+				Bind:    gnctrl.BindJSON,
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:  http.MethodPost,
 				Path:    "/order",
 				Summary: "排序",
-				Handler: controller.Handle(handler.Order),
-				Bind:    controller.BindJSON,
+				Handler: gnctrl.Handle(handler.Order),
+				Bind:    gnctrl.BindJSON,
 			},
 		).
 		Build()

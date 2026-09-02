@@ -3,57 +3,57 @@ package admin
 import (
 	"net/http"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"github.com/toothdy/cool-admin-go-next/modules/task/entity"
 	"github.com/toothdy/cool-admin-go-next/modules/task/service"
 )
 
 // 任务管理路由
-func AdminTaskInfoController(info *service.InfoService) controller.Definition {
-	return controller.Admin().
-		Options(controller.RouterOptions{Description: "任务", TagName: "任务"}).
-		Curd(controller.CurdOption{
-			API:     controller.AllAPI(),
+func AdminTaskInfoController(info *service.InfoService) gnctrl.Definition {
+	return gnctrl.Admin().
+		Options(gnctrl.RouterOptions{Description: "任务", TagName: "任务"}).
+		Curd(gnctrl.CurdOption{
+			API:     gnctrl.AllAPI(),
 			Entity:  entity.Info{},
 			Service: info,
-			PageQueryOp: controller.StaticQuery(controller.QueryOp{
-				FieldEq: []controller.FieldEq{
-					controller.Eq(controller.Field("status")),
-					controller.Eq(controller.Field("type")),
+			PageQueryOp: gnctrl.StaticQuery(gnctrl.QueryOp{
+				FieldEq: []gnctrl.FieldEq{
+					gnctrl.Eq(gnctrl.Field("status")),
+					gnctrl.Eq(gnctrl.Field("type")),
 				},
 			}),
 		}).
 		Route(
-			controller.Route{
+			gnctrl.Route{
 				Method:  http.MethodPost,
 				Path:    "/once",
 				Summary: "执行一次",
-				Handler: controller.Handle(info.Once),
-				Bind:    controller.BindJSON,
+				Handler: gnctrl.Handle(info.Once),
+				Bind:    gnctrl.BindJSON,
 				// 执行器自行管理抢占与结算事务，外层再包一层会让行锁横跨整个任务调用
-				Transaction: controller.NonTransactional(),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:  http.MethodPost,
 				Path:    "/stop",
 				Summary: "停止",
-				Handler: controller.Handle(info.Stop),
-				Bind:    controller.BindJSON,
+				Handler: gnctrl.Handle(info.Stop),
+				Bind:    gnctrl.BindJSON,
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:  http.MethodPost,
 				Path:    "/start",
 				Summary: "开始",
-				Handler: controller.Handle(info.Start),
-				Bind:    controller.BindJSON,
+				Handler: gnctrl.Handle(info.Start),
+				Bind:    gnctrl.BindJSON,
 			},
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/log",
 				Summary:     "日志",
-				Handler:     controller.Handle(info.Log),
-				Bind:        controller.BindQuery,
-				Transaction: controller.NonTransactional(),
+				Handler:     gnctrl.Handle(info.Log),
+				Bind:        gnctrl.BindQuery,
+				Transaction: gnctrl.NonTransactional(),
 			},
 		).
 		Build()
