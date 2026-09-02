@@ -225,7 +225,7 @@ func (s *MenuService) List(ctx context.Context) ([]dto.MenuListItem, error) {
 		model = model.WhereIn("id", menuIDs)
 	}
 	var rows []menuRow
-	if err = model.OrderAsc("orderNum").OrderAsc("id").Scan(&rows); err != nil {
+	if err = model.OrderAsc("orderNum").Scan(&rows); err != nil {
 		return nil, exception.WrapCore(err, "查询菜单列表失败")
 	}
 	return menuItems(rows), nil
@@ -557,30 +557,22 @@ func (s *MenuService) parentName(ctx context.Context, parentID *uint64) (*string
 }
 
 func menuItems(rows []menuRow) []dto.MenuListItem {
-	items := make(map[uint64]dto.MenuListItem, len(rows))
-	children := make(map[uint64][]uint64)
-	roots := make([]uint64, 0)
+	names := make(map[uint64]string, len(rows))
 	for _, row := range rows {
-		items[row.ID] = menuItem(row)
-		if row.ParentID == nil || *row.ParentID == 0 {
-			roots = append(roots, row.ID)
-			continue
+		names[row.ID] = row.Name
+	}
+	items := make([]dto.MenuListItem, 0, len(rows))
+	for _, row := range rows {
+		item := menuItem(row)
+		if row.ParentID != nil {
+			if name, exists := names[*row.ParentID]; exists {
+				item.ParentName = &name
+			}
 		}
-		children[*row.ParentID] = append(children[*row.ParentID], row.ID)
+		items = append(items, item)
 	}
-	var build func(uint64) dto.MenuListItem
-	build = func(id uint64) dto.MenuListItem {
-		item := items[id]
-		for _, childID := range children[id] {
-			item.ChildMenus = append(item.ChildMenus, build(childID))
-		}
-		return item
-	}
-	result := make([]dto.MenuListItem, 0, len(roots))
-	for _, root := range roots {
-		result = append(result, build(root))
-	}
-	return result
+
+	return items
 }
 
 func menuItem(row menuRow) dto.MenuListItem {

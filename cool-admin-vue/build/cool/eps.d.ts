@@ -21,6 +21,11 @@ declare namespace Eps {
 		parentId?: number;
 
 		/**
+		 * 上级部门名称
+		 */
+		parentName?: string;
+
+		/**
 		 * 排序
 		 */
 		orderNum?: number;
@@ -93,6 +98,11 @@ declare namespace Eps {
 		 * 父菜单ID
 		 */
 		parentId?: number;
+
+		/**
+		 * 父菜单名称
+		 */
+		parentName?: string;
 
 		/**
 		 * 菜单名称
@@ -269,6 +279,11 @@ declare namespace Eps {
 		 * 部门ID
 		 */
 		departmentId?: number;
+
+		/**
+		 * 部门名称
+		 */
+		departmentName?: string;
 
 		/**
 		 * 创建者ID

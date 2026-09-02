@@ -30,7 +30,7 @@ type MenuListItem struct {
 	KeepAlive  bool           `json:"keepAlive"`
 	IsShow     bool           `json:"isShow"`
 	ParentName *string        `json:"parentName"`
-	ChildMenus []MenuListItem `json:"childMenus"`
+	ChildMenus []MenuListItem `json:"childMenus,omitempty"`
 }
 
 // 菜单导入导出的稳定字段白名单，不含维护字段
