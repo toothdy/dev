@@ -427,7 +427,7 @@ cool:
 
 恢复同样使用 Framework Database Group 的单个事务：锁定 `cool_recycle` 记录，按 `tableName` 解析当前生成图中的唯一 Descriptor，校验数据库组和快照形状，插入全部原记录，最后删除该回收记录。恢复使用普通 `INSERT` 语义，不使用 upsert，不覆盖现存数据；主键、唯一键、外键、字段不兼容或任一行写入失败时整体回滚并保留回收记录，禁止部分恢复。并发恢复只有取得锁的一方可以成功。
 
-`cool-next/db/recycle` 负责上述 Store、事务和内部表契约；具体 `recycle` 业务模块只负责列表、详情、恢复权限和管理界面，不重新实现归档事务。`softDelete=true` 时，Application Host 在 Ready 前验证 `cool_recycle` 的表、列、主键、索引、数据库组和事务能力；`schema.mode=off` 也不能跳过。验证失败必须阻止启动，不能降级成硬删除。`softDelete=false` 时不要求该表存在。
+`cool-next/db/gnrecycle` 负责上述 Store、事务和内部表契约；具体 `recycle` 业务模块只负责列表、详情、恢复权限和管理界面，不重新实现归档事务。`softDelete=true` 时，Application Host 在 Ready 前验证 `cool_recycle` 的表、列、主键、索引、数据库组和事务能力；`schema.mode=off` 也不能跳过。验证失败必须阻止启动，不能降级成硬删除。`softDelete=false` 时不要求该表存在。
 
 ## 5. 模块声明与静态装配
 
@@ -455,7 +455,7 @@ modules/<module>/
 
 目录可以任意深度嵌套。测试文件、`testdata`、隐藏目录和生成文件不参与发现。
 
-跨模块依赖只能面向目标模块的 `contract/**` 稳定接口，不能直接 import 其他模块的 `service`、`entity` 或 `controller`。模块不手写 `Dependencies`；生成器仍从构造器参数的接口类型和唯一 Provider 推导跨模块依赖边。
+跨模块依赖可以直接面向目标模块公开的具体 Provider；需要收窄能力或替换实现时，也可以面向目标模块 `contract/**` 中的接口。模块 Config 和 Seed 保持私有。模块不手写 `Dependencies`；生成器从构造器参数类型和唯一 Provider 推导跨模块依赖边。
 
 ### 5.2 模块配置
 

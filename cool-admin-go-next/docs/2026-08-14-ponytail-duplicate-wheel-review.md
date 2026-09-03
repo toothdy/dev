@@ -103,7 +103,7 @@
 - `cool-next/core/controller/controller.go:544`
 - `cool-next/core/service/input.go:573`
 - `cool-next/crud/plan.go:785`
-- `cool-next/db/recycle/descriptor.go:38`
+- `cool-next/db/gnrecycle/descriptor.go:38`
 - `cool-next/eps/eps.go:1302`
 
 GoFrame v2.10.2 的公开 `frame/g.IsNil` 已覆盖 nil、Chan、Map、Slice、Func、Interface、Pointer 和 UnsafePointer。
@@ -343,7 +343,7 @@ Go 1.26 标准库对 `crypto/rand.Read` 的契约是：始终填满切片且永�
 | `cool-next/db/tx/types.go` | 拆并后删除 | `runner.go`、`scope.go` | `Callback/Runner` 属于 runner，`scopeContextKey/Current` 属于 scope；当前文件反而混合两个职责 |
 | `cool-next/db/diagnostic.go` | 合并 | `runtime.go` | `Diagnostic` 只由 Runtime 创建、保存和返回，生产代码没有第二个所有者 |
 | `cool-next/db/validate.go` | 合并 | `runtime.go` | `validateConfig` 只有 `db.New` 一个调用点，是 Runtime 构造流程的一部分 |
-| `cool-next/db/recycle/descriptor.go` | 合并 | `types.go` | Record、内部 Descriptor 和 Registry 是同一组回收记录元数据；合并后约 74 行 |
+| `cool-next/db/gnrecycle/descriptor.go` | 合并 | `types.go` | Record、内部 Descriptor 和 Registry 是同一组回收记录元数据；合并后约 74 行 |
 | `cool-next/core/app/assembly.go` | 合并 | `definition.go` | `Assembly` 与 `Definition/AssembleFunc` 共同定义静态装配输入输出；合并后约 121 行 |
 | `cool-next/auth/session/adapter.go` | 删除 | 根端口直接使用 `session.Session` | 只做同构 Session 的逐字段转换和 sentinel 映射 |
 

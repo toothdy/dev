@@ -238,7 +238,7 @@
 - `12.5` 校验接口依赖只有一个 Provider。
 - `12.6` 拒绝缺失、重复或歧义 Provider。
 - `12.7` 检测直接和间接循环依赖。
-- `12.8` 校验跨模块依赖只面向 `contract/**`。
+- `12.8` 允许跨模块具体 Provider，校验接口只面向 `contract/**`，并禁止跨模块 Config/Seed。
 - `12.9` 构建模块级和组件级依赖图。
 - `12.10` 按依赖拓扑、Order、模块路径和符号稳定排序。
 - `12.11` 输出完整的依赖路径错误。
@@ -386,7 +386,7 @@
 
 ### 26 删除归档与恢复
 
-代码归属：`cool-next/db/recycle`、`cool-next/crud`。前置：07、08、24、25。
+代码归属：`cool-next/db/gnrecycle`、`cool-next/crud`。前置：07、08、24、25。
 
 - `26.1` 定义 `cool.crud.softDelete`，默认值为 true。
 - `26.2` 定义并管理 `cool_recycle` 内部 Schema。

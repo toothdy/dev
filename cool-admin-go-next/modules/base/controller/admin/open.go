@@ -95,7 +95,7 @@ func AdminOpenController(handler *OpenHandler) gnctrl.Definition {
 			gnctrl.Route{
 				Method:      http.MethodGet,
 				Path:        "/html",
-				Summary:     "获得网页内容的参数值",
+				Summary:     "参数值",
 				Handler:     gnctrl.Handle(handler.HTML),
 				Bind:        gnctrl.BindQuery,
 				Tags:        public,

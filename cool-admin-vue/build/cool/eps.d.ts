@@ -609,6 +609,11 @@ declare namespace Eps {
 		list: TaskInfoEntity[];
 	}
 
+	interface RecycleDataPageResponse {
+		pagination: PagePagination;
+		list: any[];
+	}
+
 	interface BaseCoding {
 		/**
 		 * 获取模块目录结构
@@ -635,17 +640,17 @@ declare namespace Eps {
 
 	interface BaseComm {
 		/**
-		 * 个人信息
+		 * 详情
 		 */
 		person(data?: any): Promise<any>;
 
 		/**
-		 * 修改个人信息
+		 * 修改
 		 */
 		personUpdate(data?: any): Promise<any>;
 
 		/**
-		 * 权限与菜单
+		 * 权限菜单
 		 */
 		permmenu(data?: any): Promise<any>;
 
@@ -705,7 +710,7 @@ declare namespace Eps {
 		eps(data?: any): Promise<any>;
 
 		/**
-		 * 获得网页内容的参数值
+		 * 参数值
 		 */
 		html(data?: any): Promise<any>;
 
@@ -761,7 +766,7 @@ declare namespace Eps {
 		update(data?: any): Promise<any>;
 
 		/**
-		 * 列表查询
+		 * 列表
 		 */
 		list(data?: any): Promise<BaseSysDepartmentEntity[]>;
 
@@ -1311,6 +1316,35 @@ declare namespace Eps {
 		request: Request;
 	}
 
+	interface RecycleData {
+		/**
+		 * 分页
+		 */
+		page(data?: any): Promise<RecycleDataPageResponse>;
+
+		/**
+		 * 详情
+		 */
+		info(data?: any): Promise<any>;
+
+		/**
+		 * 恢复
+		 */
+		restore(data?: any): Promise<any>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: { page: string; info: string; restore: string };
+
+		/**
+		 * 权限状态
+		 */
+		_permission: { page: boolean; info: boolean; restore: boolean };
+
+		request: Request;
+	}
+
 	interface RequestOptions {
 		url: string;
 		method?: "OPTIONS" | "GET" | "HEAD" | "POST" | "PUT" | "DELETE" | "TRACE" | "CONNECT";
@@ -1341,5 +1375,6 @@ declare namespace Eps {
 		};
 		dict: { info: DictInfo; type: DictType };
 		task: { info: TaskInfo };
+		recycle: { data: RecycleData };
 	};
 }

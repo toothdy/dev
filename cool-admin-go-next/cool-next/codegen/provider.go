@@ -16,7 +16,7 @@ func resolveDeps(nodes []graphComponent, providers []graphProvider, modules map[
 			if len(matches) == 0 {
 				if len(illegal) > 0 {
 					labels := providerLabels(illegal, providers)
-					message := fmt.Sprintf("跨模块依赖 %s.%s -> %s 仅允许目标模块 contract/** 声明的接口，Config 不能跨模块注入", consumer.component.module, consumer.component.name, strings.Join(labels, ", "))
+					message := fmt.Sprintf("跨模块依赖 %s.%s -> %s 仅允许目标模块的具体 Provider 或 contract/** 接口，Config 和 Seed 不能跨模块注入", consumer.component.module, consumer.component.name, strings.Join(labels, ", "))
 					return nil, graphError("CG035", message, position)
 				}
 				message := fmt.Sprintf("构造器 %s.%s 的参数 %s 缺少 Provider", consumer.component.module, consumer.component.name, types.TypeString(parameter, qualifier))
@@ -57,7 +57,7 @@ func matchProviders(consumer graphComponent, parameterIndex int, parameter types
 		}
 		isLocalDependency := targetModule == "" || targetModule == consumer.component.module
 		if isLocalDependency && provider.provider.module == consumer.component.module ||
-			!isLocalDependency && provider.provider.module == targetModule && crossModuleContract(consumer.constructor, parameterIndex, parameter, provider, modules) {
+			!isLocalDependency && provider.provider.module == targetModule && crossModuleDependencyAllowed(consumer.constructor, parameterIndex, parameter, provider, modules) {
 			matches = append(matches, index)
 		} else if provider.provider.module == frameworkModuleKey {
 			// 框架模块 .framework 的 Provider（如数据库 Runtime）允许跨模块注入
@@ -91,16 +91,12 @@ func providerLabels(indexes []int, providers []graphProvider) []string {
 	return labels
 }
 
-func crossModuleContract(constructor Constructor, parameterIndex int, parameter types.Type, provider graphProvider, modules map[string]Module) bool {
+func crossModuleDependencyAllowed(constructor Constructor, parameterIndex int, parameter types.Type, provider graphProvider, modules map[string]Module) bool {
 	if provider.provider.kind == ProviderKindConfig || provider.provider.kind == ProviderKindSeed {
 		return false
 	}
-	named, ok := types.Unalias(parameter).(*types.Named)
-	if !ok {
-		return false
-	}
-	if _, ok = named.Underlying().(*types.Interface); !ok {
-		return false
+	if _, ok := types.Unalias(parameter).Underlying().(*types.Interface); !ok {
+		return true
 	}
 	if parameterIndex >= len(constructor.parameterDeclarations) {
 		return false

@@ -111,7 +111,7 @@ func AdminUploadController(handler *UploadHandler) gnctrl.Definition {
 		Route(gnctrl.Route{
 			Method:      http.MethodGet,
 			Path:        "/{date}/{name}",
-			Summary:     "读取上传文件",
+			Summary:     "读取",
 			Handler:     gnctrl.Handle(handler.Read),
 			Bind:        gnctrl.BindPath,
 			Tags:        []gnctrl.URLTag{{Name: gnctrl.TagIgnoreToken}},

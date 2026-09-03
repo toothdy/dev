@@ -66,7 +66,7 @@ func AdminSysDepartmentController(department *service.DepartmentService, handler
 			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/list",
-				Summary:     "列表查询",
+				Summary:     "列表",
 				Handler:     gnctrl.Handle(department.List),
 				Transaction: gnctrl.NonTransactional(),
 			},

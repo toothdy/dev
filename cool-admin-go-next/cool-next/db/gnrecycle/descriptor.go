@@ -1,4 +1,4 @@
-package recycle
+package gnrecycle
 
 import (
 	"reflect"

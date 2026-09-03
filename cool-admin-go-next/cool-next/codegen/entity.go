@@ -13,7 +13,7 @@ const (
 	entityPackagePath   = "github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 	gdbPackagePath      = "github.com/gogf/gf/v2/database/gdb"
 	gPackagePath        = "github.com/gogf/gf/v2/frame/g"
-	recyclePackagePath  = "github.com/toothdy/cool-admin-go-next/cool-next/db/recycle"
+	recyclePackagePath  = "github.com/toothdy/cool-admin-go-next/cool-next/db/gnrecycle"
 	servicePackagePath  = "github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	seedPackagePath     = "github.com/toothdy/cool-admin-go-next/cool-next/seed"
 	frameworkModuleKey  = ".framework"

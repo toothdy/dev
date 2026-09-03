@@ -1,9 +1,12 @@
-package recycle
+package gnrecycle
 
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"reflect"
 	"strings"
@@ -15,8 +18,6 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/schema"
-
-	"fmt"
 )
 
 // 删除归档与恢复存储
@@ -114,6 +115,9 @@ func (store *Store) Delete(
 func (store *Store) Restore(ctx context.Context, id uint64) error {
 	if err := store.validate(); err != nil {
 		return err
+	}
+	if !store.Enabled() {
+		return exception.Core("回收站未启用")
 	}
 	if id == 0 {
 		return exception.Core("回收记录 ID 无效")
@@ -310,11 +314,13 @@ func (store *Store) lockRecord(ctx context.Context, transaction gdb.TX, id uint6
 		model = model.LockUpdate()
 	}
 	var record Record
-	if err := model.Scan(&record); err != nil {
+	if err := model.Scan(&record); errors.Is(err, sql.ErrNoRows) {
+		return Record{}, recordNotFoundError(id)
+	} else if err != nil {
 		return Record{}, exception.WrapCore(err, "锁定回收记录失败")
 	}
 	if record.ID == 0 {
-		return Record{}, exception.Core(fmt.Sprintf("回收记录不存在: %d", id))
+		return Record{}, recordNotFoundError(id)
 	}
 
 	return record, nil

@@ -12,7 +12,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
-	"github.com/toothdy/cool-admin-go-next/cool-next/db/recycle"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db/gnrecycle"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/tx"
 )
 
@@ -21,14 +21,14 @@ type Base[E any, ID comparable] struct {
 	database   gdb.DB
 	descriptor gnentity.Descriptor[E, ID]
 	group      string
-	recycler   recycle.Deleter
+	recycler   gnrecycle.Deleter
 }
 
 // 构造基础 Service
 func NewBase[E any, ID comparable](
 	descriptor gnentity.Descriptor[E, ID],
 	runtime *db.Runtime,
-	recycler recycle.Deleter,
+	recycler gnrecycle.Deleter,
 ) (*Base[E, ID], error) {
 	if err := validateDescriptor[E, ID](descriptor); err != nil {
 		return nil, err

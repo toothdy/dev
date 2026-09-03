@@ -110,7 +110,7 @@ func Render(model *Model, graph *Graph, descriptors *DescriptorSet) ([]byte, err
 	if len(fragments) > 0 || hasOutbox {
 		imports.add(entityPackagePath, "gnentity")
 		imports.add(databasePackagePath, "db")
-		imports.add(recyclePackagePath, "recycle")
+		imports.add(recyclePackagePath, "gnrecycle")
 	}
 	if len(fragments) > 0 || hasOutbox {
 		imports.add(schemaPackagePath, "schema")
@@ -547,7 +547,7 @@ func writeBaseProviders(source *strings.Builder, fragments []DescriptorFragment,
 		entityAlias := imports.alias(fragment.entityPackage)
 		fmt.Fprintf(
 			source,
-			"func %s(descriptor gnentity.Descriptor[%s.%s, uint64], runtime *db.Runtime, recycler *recycle.Store) (*gnservice.Base[%s.%s, uint64], error) {\n",
+			"func %s(descriptor gnentity.Descriptor[%s.%s, uint64], runtime *db.Runtime, recycler *gnrecycle.Store) (*gnservice.Base[%s.%s, uint64], error) {\n",
 			fragment.baseProvider.name,
 			entityAlias,
 			fragment.entity,
@@ -734,11 +734,11 @@ func writeInfra(source *strings.Builder, fragments []DescriptorFragment, hasOutb
 	if len(fragments) == 0 && !hasOutbox && !hasHTTP {
 		return
 	}
-	source.WriteString("func generatedDataRuntime(ctx context.Context, config infrastructureConfig, descriptors ...gnentity.RuntimeDescriptor) (*db.Runtime, *recycle.Store, error) {\n")
+	source.WriteString("func generatedDataRuntime(ctx context.Context, config infrastructureConfig, descriptors ...gnentity.RuntimeDescriptor) (*db.Runtime, *gnrecycle.Store, error) {\n")
 	source.WriteString("\tgroup := config.Cool.Outbox.DatabaseGroup\n")
 	source.WriteString("\ttables := make([]string, len(descriptors))\n")
 	source.WriteString("\tfor index, descriptor := range descriptors {\n\t\ttables[index] = descriptor.Table()\n\t}\n")
-	source.WriteString("\tif len(descriptors) > 0 && config.Cool.CRUD.SoftDelete {\n\t\ttables = append(tables, recycle.TableName)\n\t}\n")
+	source.WriteString("\tif len(descriptors) > 0 && config.Cool.CRUD.SoftDelete {\n\t\ttables = append(tables, gnrecycle.TableName)\n\t}\n")
 	if hasOutbox {
 		source.WriteString("\ttables = append(tables, schema.OutboxTableName, schema.InboxTableName)\n")
 	}
@@ -752,15 +752,15 @@ func writeInfra(source *strings.Builder, fragments []DescriptorFragment, hasOutb
 	source.WriteString("\t\tif _, err = manager.Apply(ctx, schema.Sync, metadata...); err != nil {\n\t\t\treturn nil, nil, exception.WrapCore(err, \"同步业务表结构失败\")\n\t\t}\n")
 	source.WriteString("\t}\n")
 	source.WriteString("\tif len(descriptors) > 0 && config.Cool.CRUD.SoftDelete {\n")
-	source.WriteString("\t\tbootstrapRecycler, err := recycle.New(bootstrap, config.Cool.CRUD, descriptors...)\n")
+	source.WriteString("\t\tbootstrapRecycler, err := gnrecycle.New(bootstrap, config.Cool.CRUD, descriptors...)\n")
 	source.WriteString("\t\tif err != nil {\n\t\t\treturn nil, nil, err\n\t\t}\n")
 	source.WriteString("\t\tif err = bootstrapRecycler.Prepare(ctx, schema.Sync); err != nil {\n\t\t\treturn nil, nil, err\n\t\t}\n")
 	source.WriteString("\t}\n")
 	source.WriteString("\truntime, err := db.New(ctx, db.Config{Group: group, Nodes: config.Database[group], TransactionTables: tables})\n")
 	source.WriteString("\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n")
-	source.WriteString("\tvar store *recycle.Store\n")
+	source.WriteString("\tvar store *gnrecycle.Store\n")
 	source.WriteString("\tif len(descriptors) > 0 {\n")
-	source.WriteString("\t\tstore, err = recycle.New(runtime, config.Cool.CRUD, descriptors...)\n")
+	source.WriteString("\t\tstore, err = gnrecycle.New(runtime, config.Cool.CRUD, descriptors...)\n")
 	source.WriteString("\t\tif err != nil {\n\t\t\treturn nil, nil, err\n\t\t}\n\t}\n")
 	source.WriteString("\treturn runtime, store, nil\n")
 	source.WriteString("}\n\n")
@@ -1094,6 +1094,9 @@ func writeGenerated(
 			fmt.Fprintf(source, "\tassembly.AddComponent(module.ComponentDefinition{Module: %q, PackagePath: %q, Name: %q}, app.Hooks{})\n", frameworkModuleKey, authBcryptPackagePath, "Verifier")
 		}
 		fmt.Fprintf(source, "\tassembly.AddComponent(module.ComponentDefinition{Module: %q, PackagePath: %q, Name: %q}, app.Hooks{})\n", frameworkModuleKey, databasePackagePath, "Runtime")
+		if hasFrameworkProvider(graph.Providers(), recyclePackagePath, "Store") {
+			fmt.Fprintf(source, "\tassembly.AddComponent(module.ComponentDefinition{Module: %q, PackagePath: %q, Name: %q}, app.Hooks{})\n", frameworkModuleKey, recyclePackagePath, "Store")
+		}
 	}
 	if hasSeedModules(modules) {
 		source.WriteString("\tseedRuntime, err := seed.NewRuntime(runtime,\n")
@@ -1488,6 +1491,9 @@ func providerExpression(provider Provider, modules []renderModule, fragments []D
 		// 框架非构造器 Provider（如数据库 Runtime）使用局部变量名
 		if provider.module == frameworkModuleKey && provider.packagePath == databasePackagePath && provider.name == "Runtime" {
 			return "runtime", true
+		}
+		if provider.module == frameworkModuleKey && provider.packagePath == recyclePackagePath && provider.name == "Store" {
+			return "recycler", true
 		}
 		if provider.module == frameworkModuleKey && provider.packagePath == authPackagePath {
 			switch provider.name {

@@ -17,7 +17,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
-	"github.com/toothdy/cool-admin-go-next/cool-next/db/recycle"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db/gnrecycle"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
 
@@ -166,7 +166,7 @@ func newUserTestFixture(t *testing.T) userTestFixture {
 	`); err != nil {
 		t.Fatal(err)
 	}
-	recycler, err := recycle.New(runtime, crud.Config{})
+	recycler, err := gnrecycle.New(runtime, crud.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +200,7 @@ func newUserTestFixture(t *testing.T) userTestFixture {
 func userTestBase[E any](
 	t *testing.T,
 	runtime *db.Runtime,
-	recycler *recycle.Store,
+	recycler *gnrecycle.Store,
 	schema gnentity.Schema,
 ) (*gnservice.Base[E, uint64], gnentity.Descriptor[E, uint64]) {
 	t.Helper()

@@ -30,6 +30,7 @@ var descriptor gnentity.Descriptor[User, uint64]
 | `core/entity` / `entity` | `core/gnentity` / `gnentity` |
 | `core/service` / `service` | `core/gnservice` / `gnservice` |
 | `core/http` / `apphttp` | `core/gnhttp` / `gnhttp` |
+| `db/recycle` / `recycle` | `db/gnrecycle` / `gnrecycle` |
 
 ## 实施阶段
 

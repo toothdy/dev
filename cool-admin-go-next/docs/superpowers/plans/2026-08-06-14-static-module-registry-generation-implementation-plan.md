@@ -34,7 +34,7 @@
 - [ ] 为 Config、Component 和 Descriptor 三类 Provider 填充稳定包路径。
 - [ ] 构造器查找、去重、拓扑排序和循环诊断统一使用完整组件身份。
 - [ ] 保留 `Dependency.ParameterIndex()`，依赖边按 Consumer 完整身份和参数序号稳定输出。
-- [ ] 不改变模块 12 已冻结的 Go 类型可赋值匹配、跨模块 `contract/**` 和歧义检查语义。
+- [ ] 不改变模块 12 已冻结的 Go 类型可赋值匹配、跨模块具体 Provider/`contract/**` 接口和歧义检查语义。
 - [ ] 运行 `go test ./cool-next/codegen -run 'TestBuildGraph.*(Package|Parameter|SameName|Cycle)' -count=1`。
 
 ### Task 3: Static Registry Emission

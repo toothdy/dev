@@ -14,7 +14,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
-	"github.com/toothdy/cool-admin-go-next/cool-next/db/recycle"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db/gnrecycle"
 	baseentity "github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
 
@@ -168,7 +168,7 @@ func newPermissionMenuTestService(t *testing.T) (*PermissionService, *db.Runtime
 	`); err != nil {
 		t.Fatal(err)
 	}
-	recycler, err := recycle.New(runtime, crud.Config{})
+	recycler, err := gnrecycle.New(runtime, crud.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -220,7 +220,7 @@ func newPermissionRoleTestService(t *testing.T) (*PermissionService, *db.Runtime
 	`); err != nil {
 		t.Fatal(err)
 	}
-	recycler, err := recycle.New(runtime, crud.Config{})
+	recycler, err := gnrecycle.New(runtime, crud.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -26,7 +26,7 @@
 
 - [ ] 写测试，覆盖同模块具体类型、同模块接口、Config、缺失、接口歧义及跨模块 contract 接口的唯一 Provider。
 - [ ] 使用 `types.AssignableTo` 匹配构造器参数，保持参数顺序与源位置。
-- [ ] 限制 Config Provider 只能匹配本模块参数；跨模块依赖检查目标声明文件是否位于 `contract/**` 且类型为接口。
+- [ ] 限制 Config Provider 只能匹配本模块参数；跨模块允许目标模块具体 Provider，接口依赖检查目标声明文件是否位于 `contract/**`。
 - [ ] 为缺失、歧义、跨模块具体类型及非 contract 接口输出 Consumer、参数和候选关联位置。
 - [ ] 运行 `go test ./cool-next/codegen -run 'TestBuildGraph(Resolves|RejectsMissing|RejectsAmbiguous|RejectsCrossModule)' -count=1`。
 

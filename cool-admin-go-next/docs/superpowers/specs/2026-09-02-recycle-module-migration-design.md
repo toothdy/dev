@@ -1,7 +1,7 @@
 # 回收站模块迁移设计
 
 > 日期：2026-09-02  
-> 状态：待实现  
+> 状态：已实现
 > 源模块：`cool-admin-midway/src/modules/recycle`  
 > 目标模块：`cool-admin-go-next/modules/recycle`
 
@@ -9,7 +9,7 @@
 
 在 `cool-admin-go-next` 中补齐回收站业务模块，使现有 `cool-admin-vue` 无需修改即可查询、查看和恢复 Go 后端归档的数据，并按保留期清理过期回收记录。
 
-本次实现遵循框架架构文档 §4.7 已确定的边界：`cool-next/db/recycle` 独占 `cool_recycle` 内部表、归档事务和恢复事务；业务模块只负责接口、权限、展示适配和清理调度。Node 版提供外部行为基准，但不照搬其 `recycle_data` 表和异步归档事件。
+本次实现遵循框架架构文档 §4.7 已确定的边界：`cool-next/db/gnrecycle` 独占 `cool_recycle` 内部表、归档事务和恢复事务；业务模块只负责接口、权限、展示适配和清理调度。Node 版提供外部行为基准，但不照搬其 `recycle_data` 表和异步归档事件。
 
 ## 2. 现状与根因
 
@@ -21,7 +21,7 @@
 4. 主键冲突、字段不兼容和并发恢复均整体回滚；
 5. `source/params/operatorType/operatorId` 的存储和基础敏感键过滤能力。
 
-缺口不是归档算法，而是 `modules/recycle` 尚未迁移：当前没有 `/admin/recycle/data/page`、`/info`、`/restore`，没有过期清理生命周期，HTTP 删除请求也没有把已验证身份和脱敏来源写入 `recycle.Audit`。因此前端菜单已经存在，但没有对应服务；真实归档记录的审计字段始终为空。
+缺口不是归档算法，而是 `modules/recycle` 尚未迁移：当前没有 `/admin/recycle/data/page`、`/info`、`/restore`，没有过期清理生命周期，HTTP 删除请求也没有把已验证身份和脱敏来源写入 `gnrecycle.Audit`。因此前端菜单已经存在，但没有对应服务；真实归档记录的审计字段始终为空。
 
 ## 3. 设计原则
 
@@ -31,7 +31,7 @@
 4. 对外路径、请求和前端所需字段与 Node 版保持兼容；内部字段仍使用 Go 框架契约。
 5. 不增加第三方依赖，查询、调度和时间处理复用 GoFrame 与标准库。
 6. `cool.crud.softDelete=false` 时不假定 `cool_recycle` 存在，业务接口不得触发数据库访问。
-7. `recycle.Store` 仍由生成装配统一构造，业务模块只通过构造器接收，不自行创建第二个实例。
+7. `gnrecycle.Store` 仍由生成装配统一构造，业务模块只通过构造器接收，不自行创建第二个实例。
 
 ## 4. 模块结构
 
@@ -57,11 +57,11 @@ modules/recycle/
 - 清理表达式默认 `@daily`；
 - 单次清理超时默认 `30m`。
 
-模块不包含 `entity/` 和 `db.json`。`cool_recycle` 的结构由 `cool-next/db/recycle` 内部 Descriptor 管理，`recycleKeep=31` 已存在于 `modules/base/db.json`。
+模块不包含 `entity/` 和 `db.json`。`cool_recycle` 的结构由 `cool-next/db/gnrecycle` 内部 Descriptor 管理，`recycleKeep=31` 已存在于 `modules/base/db.json`。
 
 ## 5. 核心 Store 扩展
 
-在 `cool-next/db/recycle` 增加业务模块所需的最小公开能力：
+在 `cool-next/db/gnrecycle` 增加业务模块所需的最小公开能力：
 
 1. 按 ID 查询单条回收记录；
 2. 按页查询回收记录，支持来源、操作人 ID 集合的过滤以及受控排序；
@@ -75,13 +75,13 @@ modules/recycle/
 
 ## 6. 静态装配接线
 
-当前生成器已经在 `generatedDataRuntime` 中构造唯一的 `*recycle.Store`，但依赖图只登记了 `*db.Runtime`，业务构造器不能声明 Store 依赖。本次在 `cool-next/codegen` 增加与 Runtime 相同的框架 Provider 识别和渲染规则：
+当前生成器已经在 `generatedDataRuntime` 中构造唯一的 `*gnrecycle.Store`，但依赖图只登记了 `*db.Runtime`，业务构造器不能声明 Store 依赖。本次在 `cool-next/codegen` 增加与 Runtime 相同的框架 Provider 识别和渲染规则：
 
-1. 仅识别框架包中的准确类型 `*recycle.Store`；
+1. 仅识别框架包中的准确类型 `*gnrecycle.Store`；
 2. Provider 指向 `generatedDataRuntime` 已返回的局部变量 `recycler`；
 3. 不新增容器、服务定位器或运行时反射；
 4. 多个业务构造器共享同一 Store；
-5. Store 不作为独立生命周期组件重复登记，其资源仍由数据库 Runtime 持有。
+5. 由于现有依赖图把框架 Provider 统一表示为组件，Assembly 为 Store 登记一条空 Hooks 元数据以保持 Graph/Assembly 数量一致；该登记不创建第二个 Store，也不接管资源生命周期，实例与资源仍由数据库 Runtime 持有。
 
 生成器补充最小的分析、依赖图和渲染测试，证明 `DataService` 能通过普通构造函数参数获得 Store。
 
@@ -139,13 +139,13 @@ modules/recycle/
 
 只返回 Node 前端已经使用的字段，不额外暴露内部数据库组、物理表名和原始操作者字段。`data` 以 `json.RawMessage` 返回，不先解码为 `map[string]any`，避免大整数精度损失，也不修改可恢复快照。
 
-关键字匹配 `source` 和后台用户名称。`DataService` 依赖 `*gnservice.Base[baseentity.User, uint64]`，先查询名称匹配的用户 ID，再把 ID 集合作为受控条件交给 Store；不在核心回收包引入 Base 业务表依赖。
+关键字匹配 `source` 和后台用户名称。`DataService` 直接依赖 Base 模块已有的 `UserService` 和 `ConfService`，通过它们内嵌的基础查询能力读取用户姓名及 `recycleKeep`，不为单一消费者增加额外合同和专用方法。查询得到的用户 ID 作为受控条件交给 Store。
 
 当 `softDelete=false` 时，分页固定返回空列表和合法分页信息，详情返回 `null`，清理直接返回零；恢复返回“回收站未启用”的业务错误。所有路径都不访问 `cool_recycle`，符合架构文档“关闭时不要求内部表存在”的约束。
 
 ## 8. HTTP 删除审计
 
-认证成功后、进入 Handler 前，HTTP Adapter 根据当前请求构造 `recycle.Audit` 并替换请求 Context：
+认证成功后、进入 Handler 前，HTTP Adapter 根据当前请求构造 `gnrecycle.Audit` 并替换请求 Context：
 
 1. `source` 取实际请求路径，查询串由 `NewAudit` 移除；
 2. `params` 从 GoFrame 已解析的请求参数构造有大小上限的 JSON 摘要，递归移除密码、Token、Cookie、Authorization、文件和其他敏感字段；超过上限只保留截断标记，不保存未经脱敏的原始请求体；
@@ -153,11 +153,11 @@ modules/recycle/
 4. 应用端身份写入 `operatorType=app` 和十进制 `operatorId`；
 5. 公开路由或无身份内部调用允许审计字段为空，不能因此跳过归档。
 
-审计接入放在 `cool-next/core/gnhttp` 的认证成功分支、Handler 调用之前，因为架构文档明确由 HTTP Adapter 提供协议来源；业务 Service 和核心 Store 均不依赖 `ghttp.Request`。`recycle.AuditInput` 接受结构化参数并在核心回收包完成递归脱敏和确定性 JSON 编码，HTTP 层只负责提取协议数据，避免不同传输层各写一套敏感字段规则。
+审计接入放在 `cool-next/core/gnhttp` 的认证成功分支、Handler 调用之前，因为架构文档明确由 HTTP Adapter 提供协议来源；业务 Service 和核心 Store 均不依赖 `ghttp.Request`。`gnrecycle.AuditInput` 接受结构化参数并在核心回收包完成递归脱敏和确定性 JSON 编码，HTTP 层只负责提取协议数据，避免不同传输层各写一套敏感字段规则。
 
 ## 9. 过期清理
 
-`DataService.ClearExpired` 从现有 `base.ConfService` 读取 `recycleKeep`：
+`DataService.ClearExpired` 通过 Base 的 `ConfService` 读取 `recycleKeep`：
 
 - 值必须是大于 0 的整数天数；
 - 配置不存在或非法时返回错误并保留全部数据，不采用 Node 版“缺配置即清空”的危险行为；
@@ -186,7 +186,7 @@ modules/recycle/
 5. 清理保留天数、当天零点边界、非法配置保护和生命周期幂等；
 6. `softDelete=false` 且数据库不存在 `cool_recycle` 时的分页、详情、恢复和清理行为；
 7. 路由方法、路径、权限、非事务策略与 EPS 契约；
-8. 生成器把唯一的 `*recycle.Store` 静态注入 `DataService`，不重复构造；
+8. 生成器把唯一的 `*gnrecycle.Store` 静态注入 `DataService`，不重复构造；
 9. `cool generate` 后静态装配包含 recycle Service、Controller 和 Schedule；
 10. `go test ./...`、`go vet ./...` 和修改文件 `gofmt` 检查通过。
 

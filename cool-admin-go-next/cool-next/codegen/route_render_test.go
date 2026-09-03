@@ -11,6 +11,19 @@ import (
 
 func TestRenderEmitsCompilableStaticRoutes(t *testing.T) {
 	files := controllerRouteWorkspace()
+	files["modules/demo/service/product.go"] = strings.Replace(
+		files["modules/demo/service/product.go"],
+		`"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"`,
+		`"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db/gnrecycle"`,
+		1,
+	)
+	files["modules/demo/service/product.go"] = strings.Replace(
+		files["modules/demo/service/product.go"],
+		"func NewProductService() *ProductService",
+		"func NewProductService(*gnrecycle.Store) *ProductService",
+		1,
+	)
 	files["modules/demo/service/product.go"] += `
 func (*ProductService) Page(context.Context, *dto.DeleteReq) (map[string]int, error) {
 	return map[string]int{"total": 1}, nil
@@ -72,6 +85,9 @@ func CodingController(handler *CodingHandler) gnctrl.Definition {
 		"component_demoexample_test_app_modules_demo_controller_admin_sysNewGoodsHandler.Delete(scopeCtx, input)",
 		"return instance.Base.Delete(ctx, input)",
 		"return adapterdemoexample_test_app_modules_demo_serviceProductServicePage(scopeCtx, component_demoexample_test_app_modules_demo_serviceNewProductService, input)",
+		"service.NewProductService(recycler)",
+		"{Kind: module.ProviderKindComponent, Module: \".framework\", PackagePath: \"github.com/toothdy/cool-admin-go-next/cool-next/db/gnrecycle\", Name: \"Store\"",
+		"assembly.AddComponent(module.ComponentDefinition{Module: \".framework\", PackagePath: \"github.com/toothdy/cool-admin-go-next/cool-next/db/gnrecycle\", Name: \"Store\"}, app.Hooks{})",
 	} {
 		if !strings.Contains(content, want) {
 			t.Fatalf("Render() output missing %q:\n%s", want, content)
@@ -85,6 +101,9 @@ func CodingController(handler *CodingHandler) gnctrl.Definition {
 	}
 	if !strings.Contains(content, "controller_demoexample_test_app_modules_demo_controller_adminCodingController :=") {
 		t.Fatalf("Render() output does not create pure custom controller definition for EPS:\n%s", content)
+	}
+	if strings.Count(content, "gnrecycle.New(") != 2 {
+		t.Fatalf("generated data runtime must remain the only recycle Store owner:\n%s", content)
 	}
 	writeTestFile(t, root, "modules/modules_gen.go", content)
 	writeTestFile(t, root, "modules/routes_gen_test.go", `package modules

@@ -63,8 +63,6 @@ type OperationScope struct {
 
 type operationContextKey struct{}
 
-type emptyOperationScope struct{}
-
 // 编译动作计划
 func CompilePlan(
 	ctx context.Context,
@@ -179,10 +177,6 @@ func CurrentOperation(ctx context.Context) (*OperationScope, bool) {
 	}
 
 	return scope, true
-}
-
-func withoutOperation(ctx context.Context) context.Context {
-	return context.WithValue(ctx, operationContextKey{}, emptyOperationScope{})
 }
 
 func (scope *OperationScope) Plan() *ActionPlan {

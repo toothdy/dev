@@ -15,7 +15,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
-	"github.com/toothdy/cool-admin-go-next/cool-next/db/recycle"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db/gnrecycle"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/tx"
 )
 
@@ -728,9 +728,9 @@ func newServiceRuntime(t *testing.T, suffix string) *db.Runtime {
 	return runtime
 }
 
-func newDisabledRecycleStore(t *testing.T, runtime *db.Runtime) *recycle.Store {
+func newDisabledRecycleStore(t *testing.T, runtime *db.Runtime) *gnrecycle.Store {
 	t.Helper()
-	store, err := recycle.New(runtime, crud.Config{})
+	store, err := gnrecycle.New(runtime, crud.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -117,7 +117,7 @@ go test ./cool-next/core/entity -run 'Transient|DO|Index' -count=1
 - 修改：`cool-next/crud/projection.go`
 - 修改：`cool-next/db/driver/ddl.go`
 - 修改：`cool-next/db/schema/expected.go`
-- 修改：`cool-next/db/recycle/store.go`
+- 修改：`cool-next/db/gnrecycle/store.go`
 - 修改：`cool-next/seed/record.go`
 - 修改：`cool-next/eps/eps.go`
 
@@ -131,7 +131,7 @@ go test ./cool-next/core/entity -run 'Transient|DO|Index' -count=1
 - 修改：`cool-next/crud/projection_test.go`
 - 修改：`cool-next/db/driver/ddl_test.go`
 - 修改：`cool-next/db/schema/schema_test.go`
-- 修改：`cool-next/db/recycle/store_test.go`
+- 修改：`cool-next/db/gnrecycle/store_test.go`
 - 创建：`cool-next/seed/record_test.go`
 - 修改：`cool-next/eps/eps_test.go`
 
@@ -151,7 +151,7 @@ go test ./cool-next/core/entity -run 'Transient|DO|Index' -count=1
 验证：
 
 ```bash
-go test ./cool-next/core/service ./cool-next/crud ./cool-next/db/driver ./cool-next/db/schema ./cool-next/db/recycle ./cool-next/seed ./cool-next/eps -count=1
+go test ./cool-next/core/service ./cool-next/crud ./cool-next/db/driver ./cool-next/db/schema ./cool-next/db/gnrecycle ./cool-next/seed ./cool-next/eps -count=1
 go test ./cool-next/core/service ./cool-next/crud ./cool-next/eps -run Transient -count=1
 ```
 

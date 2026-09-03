@@ -210,6 +210,20 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 			typ: runtimeType,
 		})
 	}
+	// 框架回收站 Store 由数据库 Runtime 同步创建并共享
+	if storeType := recycleStoreProviderType(model); storeType != nil {
+		providers = append(providers, graphProvider{
+			componentIndex: -1,
+			provider: Provider{
+				kind:        ProviderKindComponent,
+				name:        "Store",
+				module:      frameworkModuleKey,
+				packagePath: recyclePackagePath,
+				typ:         types.TypeString(storeType, qualifier),
+			},
+			typ: storeType,
+		})
+	}
 	providers = addAuthProviders(model, providers)
 	for _, current := range model.modules {
 		seen := make([]types.Type, 0, len(current.constructors))
@@ -337,16 +351,17 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 func addAuthProviders(model *Model, providers []graphProvider) []graphProvider {
 	seen := make(map[string]bool)
 	for _, current := range providers {
-		seen[current.provider.name] = true
+		seen[current.provider.packagePath+"."+current.provider.name] = true
 	}
 	for _, current := range model.modules {
 		for _, constructor := range current.constructors {
 			for _, parameter := range constructor.types {
 				name, packagePath := authProviderType(parameter)
-				if name == "" || seen[name] {
+				key := packagePath + "." + name
+				if name == "" || seen[key] {
 					continue
 				}
-				seen[name] = true
+				seen[key] = true
 				providers = append(providers, graphProvider{
 					componentIndex: -1,
 					provider:       Provider{kind: ProviderKindComponent, name: name, module: frameworkModuleKey, packagePath: packagePath, typ: types.TypeString(parameter, qualifier)},
@@ -411,7 +426,15 @@ func findSeedDataType(model *Model) types.Type {
 
 // 任意构造器参数中的 *db.Runtime 类型，返回其 types.Type 对象
 func runtimeProviderType(model *Model) types.Type {
-	runtimePackagePath := databasePackagePath
+	return frameworkPointerProviderType(model, databasePackagePath, "Runtime")
+}
+
+// 任意构造器参数中的 *gnrecycle.Store 类型，返回其 types.Type 对象
+func recycleStoreProviderType(model *Model) types.Type {
+	return frameworkPointerProviderType(model, recyclePackagePath, "Store")
+}
+
+func frameworkPointerProviderType(model *Model, packagePath, name string) types.Type {
 	for _, current := range model.modules {
 		for _, constructor := range current.constructors {
 			for _, parameter := range constructor.types {
@@ -422,7 +445,7 @@ func runtimeProviderType(model *Model) types.Type {
 				}
 				named, matches := types.Unalias(pointer.Elem()).(*types.Named)
 				if !matches || named.Obj() == nil || named.Obj().Pkg() == nil ||
-					named.Obj().Pkg().Path() != runtimePackagePath || named.Obj().Name() != "Runtime" {
+					named.Obj().Pkg().Path() != packagePath || named.Obj().Name() != name {
 					continue
 				}
 				return parameter

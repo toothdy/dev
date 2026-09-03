@@ -2,12 +2,14 @@ package gnhttp
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/net/gtrace"
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/app"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db/gnrecycle"
 )
 
 // HTTP 认证内核
@@ -60,9 +62,32 @@ func authenticateRequest(request *ghttp.Request, authenticator Authenticator, re
 	if err != nil {
 		return err
 	}
-	request.SetCtx(verified)
+	audit, err := gnrecycle.NewAudit(requestAuditInput(request, verified))
+	if err != nil {
+		return exception.WrapCore(err, "构造 HTTP 删除审计失败")
+	}
+	request.SetCtx(gnrecycle.WithAudit(verified, audit))
 
 	return nil
+}
+
+// 构造 HTTP 删除审计输入
+func requestAuditInput(request *ghttp.Request, ctx context.Context) gnrecycle.AuditInput {
+	input := gnrecycle.AuditInput{Params: request.GetMap()}
+	if request.URL != nil {
+		input.Source = request.URL.RequestURI()
+	}
+	if identity, err := auth.Admin(ctx); err == nil {
+		input.OperatorType = string(auth.AdminKind)
+		input.OperatorID = strconv.FormatUint(identity.UserID, 10)
+		return input
+	}
+	if identity, err := auth.App(ctx); err == nil {
+		input.OperatorType = string(auth.AppKind)
+		input.OperatorID = strconv.FormatUint(identity.ID, 10)
+	}
+
+	return input
 }
 
 // 复用或建立 HTTP Trace ID

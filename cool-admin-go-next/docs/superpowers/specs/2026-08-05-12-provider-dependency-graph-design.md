@@ -20,7 +20,7 @@ Descriptor、Base Service、Controller、生命周期、事件、任务、Outbox
 
 ## 3. 跨模块边界
 
-同模块组件可以依赖本模块 Config 或本模块任意组件类型。跨模块依赖只能是目标模块 `contract/**` 中声明的接口，且该接口必须通过唯一目标组件 Provider 满足。跨模块直接依赖 `service`、`entity`、`controller`、具体结构体或其他非 contract 类型一律报带依赖位置与目标声明位置的诊断。
+同模块组件可以依赖本模块 Config 或本模块任意组件类型。跨模块可以直接依赖目标模块公开的具体 Provider；接口依赖仍须声明在目标模块 `contract/**` 中，并由目标模块的唯一组件 Provider 满足。Config 和 Seed 是模块私有 Provider，不参与跨模块匹配。非法依赖报带参数位置和候选 Provider 的诊断。
 
 模块 12 从模块 11 保留的类型对象与源码位置判定声明文件归属；不按包名、字符串前缀或 import alias 猜测边界。
 
@@ -62,7 +62,7 @@ func (g *Graph) Order() []Component
 
 ## 7. 验收
 
-测试至少覆盖同模块具体类型与接口注入、同模块 Config 注入、跨模块唯一 contract 接口、缺失 Provider、重复 Provider、接口歧义、跨模块具体/非 contract 类型、直接和间接组件/模块循环、Order 只影响无依赖并列项、相同输入的顺序稳定与并发读取。
+测试至少覆盖同模块具体类型与接口注入、同模块 Config 注入、跨模块具体 Provider、跨模块唯一 contract 接口、跨模块 Config/Seed 和非 contract 接口拒绝、缺失 Provider、重复 Provider、接口歧义、直接和间接组件/模块循环、Order 只影响无依赖并列项、相同输入的顺序稳定与并发读取。
 
 门禁：
 

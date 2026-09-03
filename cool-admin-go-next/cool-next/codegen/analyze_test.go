@@ -440,6 +440,157 @@ func TestBuildGraphOrdersComponents(t *testing.T) {
 	}
 }
 
+func TestBuildGraphResolvesCrossModuleConcreteProvider(t *testing.T) {
+	root := writeWorkspace(t, map[string]string{
+		"modules/alpha/config.go":          "package alpha\nimport module \"github.com/toothdy/cool-admin-go-next/cool-next/core/module\"\ntype Config struct{}\nfunc ModuleConfig() module.Declaration[Config] { return module.Declaration[Config]{Name: \"Alpha\", Description: \"Alpha\"} }\n",
+		"modules/alpha/service/service.go": "package service\nimport beta \"example.test/app/modules/beta/service\"\ntype Consumer struct{}\nfunc NewConsumer(*beta.Provider) *Consumer { return &Consumer{} }\n",
+		"modules/beta/config.go":           "package beta\nimport module \"github.com/toothdy/cool-admin-go-next/cool-next/core/module\"\ntype Config struct{}\nfunc ModuleConfig() module.Declaration[Config] { return module.Declaration[Config]{Name: \"Beta\", Description: \"Beta\"} }\n",
+		"modules/beta/service/service.go":  "package service\ntype Provider struct{}\nfunc NewProvider() *Provider { return &Provider{} }\n",
+	})
+	model, err := Analyze(context.Background(), Options{Dir: root, ModulesRoot: "modules"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	graph, err := BuildGraph(model)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dependencies := graph.Dependencies()
+	if len(dependencies) != 1 || dependencies[0].Provider().Module() != "beta" || dependencies[0].Provider().Name() != "NewProvider" {
+		t.Fatalf("Dependencies() = %#v", dependencies)
+	}
+	moduleDependencies := graph.ModuleDependencies()
+	if len(moduleDependencies) != 1 || moduleDependencies[0].Consumer() != "alpha" || moduleDependencies[0].Provider() != "beta" {
+		t.Fatalf("ModuleDependencies() = %#v", moduleDependencies)
+	}
+}
+
+func TestBuildGraphKeepsCrossModulePrivateProviderRestrictions(t *testing.T) {
+	tests := []struct {
+		name  string
+		files map[string]string
+	}{
+		{
+			name: "config",
+			files: map[string]string{
+				"modules/alpha/config.go":          "package alpha\nimport module \"github.com/toothdy/cool-admin-go-next/cool-next/core/module\"\ntype Config struct{}\nfunc ModuleConfig() module.Declaration[Config] { return module.Declaration[Config]{Name: \"Alpha\", Description: \"Alpha\"} }\n",
+				"modules/alpha/service/service.go": "package service\nimport beta \"example.test/app/modules/beta\"\ntype Consumer struct{}\nfunc NewConsumer(beta.Config) *Consumer { return &Consumer{} }\n",
+				"modules/beta/config.go":           "package beta\nimport module \"github.com/toothdy/cool-admin-go-next/cool-next/core/module\"\ntype Config struct{}\nfunc ModuleConfig() module.Declaration[Config] { return module.Declaration[Config]{Name: \"Beta\", Description: \"Beta\"} }\n",
+			},
+		},
+		{
+			name: "interface outside contract",
+			files: map[string]string{
+				"modules/alpha/config.go":          "package alpha\nimport module \"github.com/toothdy/cool-admin-go-next/cool-next/core/module\"\ntype Config struct{}\nfunc ModuleConfig() module.Declaration[Config] { return module.Declaration[Config]{Name: \"Alpha\", Description: \"Alpha\"} }\n",
+				"modules/alpha/service/service.go": "package service\nimport beta \"example.test/app/modules/beta/service\"\ntype Consumer struct{}\nfunc NewConsumer(beta.Writer) *Consumer { return &Consumer{} }\n",
+				"modules/beta/config.go":           "package beta\nimport module \"github.com/toothdy/cool-admin-go-next/cool-next/core/module\"\ntype Config struct{}\nfunc ModuleConfig() module.Declaration[Config] { return module.Declaration[Config]{Name: \"Beta\", Description: \"Beta\"} }\n",
+				"modules/beta/service/service.go":  "package service\ntype Writer interface { Write() }\ntype writer struct{}\nfunc (*writer) Write() {}\nfunc NewWriter() *writer { return &writer{} }\n",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := writeWorkspace(t, test.files)
+			model, err := Analyze(context.Background(), Options{Dir: root, ModulesRoot: "modules"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = BuildGraph(model)
+			var diagnostics *DiagnosticError
+			if !errors.As(err, &diagnostics) {
+				t.Fatalf("BuildGraph() error = %v, want DiagnosticError", err)
+			}
+			values := diagnostics.Diagnostics()
+			if len(values) != 1 || values[0].Code != "CG035" {
+				t.Fatalf("Diagnostics() = %#v", values)
+			}
+		})
+	}
+}
+
+func TestBuildGraphDetectsModuleCycleWithConcreteDependency(t *testing.T) {
+	root := writeWorkspace(t, map[string]string{
+		"modules/alpha/config.go":          "package alpha\nimport module \"github.com/toothdy/cool-admin-go-next/cool-next/core/module\"\ntype Config struct{}\nfunc ModuleConfig() module.Declaration[Config] { return module.Declaration[Config]{Name: \"Alpha\", Description: \"Alpha\"} }\n",
+		"modules/alpha/contract/value.go":  "package contract\ntype Value interface { Alpha() }\n",
+		"modules/alpha/service/service.go": "package service\nimport beta \"example.test/app/modules/beta/service\"\ntype First struct{}\nfunc (*First) Alpha() {}\nfunc NewFirst(*beta.Second) *First { return &First{} }\n",
+		"modules/beta/config.go":           "package beta\nimport module \"github.com/toothdy/cool-admin-go-next/cool-next/core/module\"\ntype Config struct{}\nfunc ModuleConfig() module.Declaration[Config] { return module.Declaration[Config]{Name: \"Beta\", Description: \"Beta\"} }\n",
+		"modules/beta/service/service.go":  "package service\nimport alpha \"example.test/app/modules/alpha/contract\"\ntype Second struct{}\nfunc NewSecond(alpha.Value) *Second { return &Second{} }\n",
+	})
+	model, err := Analyze(context.Background(), Options{Dir: root, ModulesRoot: "modules"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = BuildGraph(model)
+	var diagnostics *DiagnosticError
+	if !errors.As(err, &diagnostics) {
+		t.Fatalf("BuildGraph() error = %v, want DiagnosticError", err)
+	}
+	values := diagnostics.Diagnostics()
+	if len(values) != 1 || values[0].Code != "CG036" || !strings.Contains(values[0].Message, "alpha -> beta -> alpha") {
+		t.Fatalf("Diagnostics() = %#v", values)
+	}
+}
+
+func TestBuildGraphRegistersSingleFrameworkRecycleStoreProvider(t *testing.T) {
+	root := writeWorkspace(t, map[string]string{
+		"modules/demo/config.go": "package demo\nimport module \"github.com/toothdy/cool-admin-go-next/cool-next/core/module\"\ntype Config struct{}\nfunc ModuleConfig() module.Declaration[Config] { return module.Declaration[Config]{Name: \"Demo\", Description: \"Demo\"} }\n",
+		"modules/demo/service/service.go": `package service
+import (
+	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db/gnrecycle"
+)
+type First struct{}
+type Second struct{}
+func NewFirst(*gnrecycle.Store) *First { return &First{} }
+func NewSecond(*gnrecycle.Store, auth.Store) *Second { return &Second{} }
+`,
+	})
+	model, err := Analyze(context.Background(), Options{Dir: root, ModulesRoot: "modules"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	graph, err := BuildGraph(model)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	storeProviders := 0
+	for _, provider := range graph.Providers() {
+		if provider.Module() == frameworkModuleKey && provider.PackagePath() == recyclePackagePath && provider.Name() == "Store" {
+			storeProviders++
+			if provider.Kind() != ProviderKindComponent || provider.Type() != "*"+recyclePackagePath+".Store" {
+				t.Fatalf("recycle Store provider = %#v", provider)
+			}
+		}
+	}
+	if storeProviders != 1 {
+		t.Fatalf("recycle Store provider count = %d; providers = %#v", storeProviders, graph.Providers())
+	}
+	authStoreProviders := 0
+	for _, provider := range graph.Providers() {
+		if provider.Module() == frameworkModuleKey && provider.PackagePath() == authPackagePath && provider.Name() == "Store" {
+			authStoreProviders++
+		}
+	}
+	if authStoreProviders != 1 {
+		t.Fatalf("auth Store provider count = %d; providers = %#v", authStoreProviders, graph.Providers())
+	}
+	dependencies := graph.Dependencies()
+	if len(dependencies) != 3 {
+		t.Fatalf("Dependencies() = %#v", dependencies)
+	}
+	recycleDependencies := 0
+	for _, dependency := range dependencies {
+		provider := dependency.Provider()
+		if provider.PackagePath() == recyclePackagePath && provider.Name() == "Store" {
+			recycleDependencies++
+		}
+	}
+	if recycleDependencies != 2 {
+		t.Fatalf("recycle Store dependency count = %d; dependencies = %#v", recycleDependencies, dependencies)
+	}
+}
+
 func writeWorkspace(t *testing.T, files map[string]string) string {
 	t.Helper()
 	root := t.TempDir()

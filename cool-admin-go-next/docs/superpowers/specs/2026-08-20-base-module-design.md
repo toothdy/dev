@@ -192,7 +192,7 @@ Node 把下面两项放在 **`@cool-midway/core`**，不是 base：
 **`cool-next/seed` 实际交付范围**（对照 §3.2 原方案）：
 
 - `record.go`：`Record`/`TreeNode`/`DecodeValue`/`NewDO`/`InsertMissing`/`SyncTree`/`FindID` —— 原 `initializer.go` 里与业务无关的解析、树同步、幂等插入逻辑原样迁出，重命名去除 `seed` 前缀（避免污染）。**行为不变，除一处修复**：`SyncTree` 补上了原实现缺失的“无法收敛的父子依赖”终止检查（原代码在这种情况下会死循环）。
-- `lock.go`：`Store`/`Guard`——参照 `cool-next/db/recycle` 已验证的模式（`entity.Compile` 手工编译内部表 Descriptor + `schema.Manager.Apply` 同步表结构），自建 `cool_seed_lock` 表，按 `Guard(ctx, key, fn)` 提供幂等执行，整体在调用方事务内。
+- `lock.go`：`Store`/`Guard`——参照 `cool-next/db/gnrecycle` 已验证的模式（`entity.Compile` 手工编译内部表 Descriptor + `schema.Manager.Apply` 同步表结构），自建 `cool_seed_lock` 表，按 `Guard(ctx, key, fn)` 提供幂等执行，整体在调用方事务内。
 
 **未交付、明确推迟的部分（原方案 §5.2 第 1 项）**：`ModuleDefinition` 增加种子字段、`cool generate` 发现并嵌入模块根 JSON。原因：
 
@@ -229,7 +229,7 @@ Node 把下面两项放在 **`@cool-midway/core`**，不是 base：
 
 | 事项 | 决定 | 日期 |
 |---|---|---|
-| 种子幂等守卫存放位置 | 框架自建 `cool_seed_lock`，不复用 `base_sys_conf`；已按 `cool-next/db/recycle` 的既有模式实现并验证（`cool check`/`go build` 通过） | 2026-08-20 |
+| 种子幂等守卫存放位置 | 框架自建 `cool_seed_lock`，不复用 `base_sys_conf`；已按 `cool-next/db/gnrecycle` 的既有模式实现并验证（`cool check`/`go build` 通过） | 2026-08-20 |
 | Node 的 `initJudge=file` lock 模式 | 不对齐，只做数据库守卫 | 2026-08-20 |
 | 设计文档是否入库 | 放开 `.gitignore` 的 `/docs/` 规则，文档随代码版本化 | 2026-08-20 |
 | 种子字段的 codegen 注入（原 §3.2 方案 1） | 推迟，不纳入本轮；`go:embed` 现状已协议合规，见 §5.2 | 2026-08-20 |

@@ -8,7 +8,7 @@
 
 ## Preconditions
 
-- 模块 12 完成跨模块 `contract/**`、参数位置、依赖/循环路径、模块图和稳定拓扑契约及测试。
+- 模块 12 完成跨模块具体 Provider/`contract/**` 接口、参数位置、依赖/循环路径、模块图和稳定拓扑契约及测试。
 - 模块 13 完成 Descriptor/DO 编译、元数据校验和确定性测试。
 - 模块 14 完成唯一注册表内存渲染、静态 Graph 和确定性测试。
 - 运行 `go test ./cool-next/codegen ./cool-next/core/module -count=1` 和对应 Race Test 均通过。

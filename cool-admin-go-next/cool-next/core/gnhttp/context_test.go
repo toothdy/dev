@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -83,6 +84,86 @@ func TestContextMiddlewarePreservesCancellation(t *testing.T) {
 	}
 }
 
+func TestAuthenticateRequestBuildsAuditInputFromVerifiedIdentity(t *testing.T) {
+	tests := []struct {
+		name         string
+		subject      auth.TokenSubject
+		operatorType string
+		operatorID   string
+	}{
+		{
+			name: "admin",
+			subject: auth.TokenSubject{
+				SessionID: "admin-session",
+				Subject:   auth.AdminKind,
+				UserID:    42,
+				Username:  "admin",
+				RoleIDs:   []uint64{1},
+				PasswordV: 1,
+			},
+			operatorType: "admin",
+			operatorID:   "42",
+		},
+		{
+			name: "app",
+			subject: auth.TokenSubject{
+				SessionID: "app-session",
+				Subject:   auth.AppKind,
+				UserID:    9007199254740993,
+			},
+			operatorType: "app",
+			operatorID:   "9007199254740993",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			claims := auth.Claims{TokenSubject: test.subject, JTI: "access"}
+			snapshot := auth.Snapshot{
+				TokenSubject: test.subject,
+				AccessJTI:    "access",
+				RefreshJTI:   "refresh",
+				ExpiresAt:    time.Now().Add(time.Hour),
+			}
+			authenticator, err := auth.NewService(
+				httpCodecStub{claims: claims},
+				httpSessionStoreStub{snapshot: snapshot},
+				httpAuthorizerStub{},
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			request, err := http.NewRequestWithContext(
+				t.Context(),
+				http.MethodPost,
+				"http://example.com/admin/base/user/update?visible=1&token=query-secret",
+				strings.NewReader(`{"id":9007199254740993,"nested":{"password":"body-secret"}}`),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			request.Header.Set("Authorization", "Bearer token")
+			request.Header.Set("Content-Type", "application/json")
+			gfRequest := &ghttp.Request{Request: request}
+			if err = authenticateRequest(
+				gfRequest,
+				authenticator,
+				"/admin/base/user/update",
+				auth.Rule{Permission: "base:user:update"},
+			); err != nil {
+				t.Fatal(err)
+			}
+			input := requestAuditInput(gfRequest, gfRequest.Context())
+			if input.Source != "/admin/base/user/update?visible=1&token=query-secret" ||
+				input.OperatorType != test.operatorType || input.OperatorID != test.operatorID {
+				t.Fatalf("audit input = %#v", input)
+			}
+			if input.Params["visible"] != "1" || input.Params["token"] != "query-secret" || input.Params["id"] == nil {
+				t.Fatalf("audit params = %#v", input.Params)
+			}
+		})
+	}
+}
+
 func TestContextMiddlewareRendersAuthenticationErrorBeforeHandler(t *testing.T) {
 	wasHandled := false
 	authenticator := httpAuthenticatorStub{authenticate: func(ctx context.Context, _, _, _, _ string, _ bool) (context.Context, error) {
@@ -121,6 +202,48 @@ func TestContextMiddlewareRendersAuthenticationErrorBeforeHandler(t *testing.T) 
 
 type httpAuthenticatorStub struct {
 	authenticate func(context.Context, string, string, string, string, bool) (context.Context, error)
+}
+
+type httpCodecStub struct {
+	claims auth.Claims
+}
+
+func (stub httpCodecStub) IssuePair(auth.TokenSubject) (auth.Pair, error) {
+	return auth.Pair{}, nil
+}
+
+func (stub httpCodecStub) Parse(string, bool) (auth.Claims, error) {
+	return stub.claims, nil
+}
+
+type httpSessionStoreStub struct {
+	snapshot auth.Snapshot
+}
+
+func (stub httpSessionStoreStub) Get(context.Context, string) (auth.Snapshot, bool, error) {
+	return stub.snapshot, true, nil
+}
+
+func (httpSessionStoreStub) Save(context.Context, auth.Snapshot) error {
+	return nil
+}
+
+func (httpSessionStoreStub) RotateRefresh(context.Context, string, string, auth.Snapshot) error {
+	return nil
+}
+
+func (httpSessionStoreStub) Revoke(context.Context, string) error {
+	return nil
+}
+
+func (httpSessionStoreStub) RevokeUsers(context.Context, auth.Kind, []uint64) error {
+	return nil
+}
+
+type httpAuthorizerStub struct{}
+
+func (httpAuthorizerStub) Authorize(context.Context, auth.Authorization) (bool, error) {
+	return true, nil
 }
 
 // 调用测试认证函数

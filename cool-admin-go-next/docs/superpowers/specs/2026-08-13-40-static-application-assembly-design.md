@@ -181,7 +181,7 @@ func assemble(
       return assembly, err
    }
 
-   recycler, err := corerecycle.New(
+   recycler, err := gnrecycle.New(
       runtime,
       generatedRecycleConfig(input),
       goodsDescriptor(),
