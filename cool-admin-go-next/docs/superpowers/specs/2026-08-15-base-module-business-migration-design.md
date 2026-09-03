@@ -343,11 +343,11 @@ CRUD 和已有菜单按钮使用对应的 `base:sys:<resource>:<action>` 权限�
 2. 首版只实现 Midway Base 运行所需的本地模式，`uploadMode` 的业务数据固定为 `{ "mode": "local", "type": "local" }`；
 3. 上传成功的业务数据是 URL 字符串，保持 Midway 的 `<配置公开基础 URL>/upload/<YYYYMMDD>/<文件名>` 结构；公开基础 URL 去除末尾斜杠，响应不返回本地绝对路径；
 4. Base Controller 使用现有 `IgnoreGlobalPrefix` 静态元数据声明公开的 `GET /upload/{date}/{name}`，由生成的 HTTP Installer 按普通业务路由安装；Base 上传 Service 持有上传根目录并负责日期目录、basename、根目录边界、目录访问和符号链接校验，不建立通用静态目录映射；
-5. 默认单文件上限 10 MB；
+5. 默认单文件上限为 100 MiB；multipart 总请求体上限为 101 MiB，用于容纳文件及表单边界等开销；普通 JSON、Form CRUD 请求仍保持 8 MiB 上限；
 6. 公开文件读取使用 `cool-next/core/controller` 提供的通用文件原始响应。只允许已通过内容探测的 JPEG、PNG、GIF、WebP、MP3、WAV、MP4 和 WebM 使用对应 `Content-Type` 内联响应，其余文件统一使用 `application/octet-stream` 和 `Content-Disposition: attachment`；所有文件响应增加 `X-Content-Type-Options: nosniff`；客户端声明 MIME 只作为提示，不作为授权依据。对允许内联的媒体类型，扩展名必须与内容探测结果匹配；其他文件保持 Midway 可上传任意业务附件的能力，不要求扩展名、声明 MIME 和内容探测结果机械相等；
 7. 保留前端固定提交的可选 `key` 参数。本地模式只接受不含目录的 basename，拒绝绝对路径、路径分隔符、`..`、NUL 和已有目标；未提供 `key` 时由服务端生成安全随机文件名。即使 `key` 相同也不得覆盖已有文件；
 8. 保存文件采用临时文件加同目录原子重命名，失败时不留下可访问的半文件；
-9. 操作日志不保存文件字节、表单文件内容或本地绝对路径。
+9. 操作日志不保存文件字节、表单文件内容或本地绝对路径；审计中间件遇到 multipart 请求时只读取 URL 查询参数，不解析 multipart 请求体。
 
 ### 8.3 i18n
 
