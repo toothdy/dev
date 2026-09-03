@@ -90,6 +90,8 @@ modules:
 
 字符串字段沿用当前 Go 模块的默认兼容长度。`fileId` 索引名称固定，确保 MySQL、PostgreSQL 和 SQLite 的期望 Schema 一致。
 
+为兼容现有 `cool-admin-vue` 上传组件在新增文件元数据时回传的完整上传项，实体同时声明 `uid`、`progress`、`preload`、`error` 四个瞬态字段。这些字段仅参与请求绑定，不生成数据库列、不写入 `space_info`，也不改变全局 CRUD 对未知字段的严格校验。
+
 ### 4.2 文件分类
 
 表名固定为 `space_type`：
