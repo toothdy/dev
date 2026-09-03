@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	defaultUploadMaxBytes = int64(10 << 20)
+	defaultUploadMaxBytes = int64(100 << 20)
 	uploadRandomBytes     = 16
 	uploadTemporaryPrefix = ".upload-"
 	uploadDateLayout      = "20060102"
@@ -43,9 +43,17 @@ var trustedUploadMedia = map[string]map[string]bool{
 type UploadService struct {
 	root          string
 	publicBaseURL string
+	publicURL     *url.URL
 	maxBytes      int64
 	now           func() time.Time
 	random        io.Reader
+}
+
+// ManagedUploadLocation 本地受管上传文件位置
+type ManagedUploadLocation struct {
+	Root         string
+	RelativePath string
+	Key          string
 }
 
 // 按 Base 配置创建本地上传服务
@@ -76,10 +84,44 @@ func NewUpload(config base.Config) (*UploadService, error) {
 	return &UploadService{
 		root:          root,
 		publicBaseURL: publicBaseURL,
+		publicURL:     parsedURL,
 		maxBytes:      maxBytes,
 		now:           time.Now,
 		random:        cryptorand.Reader,
 	}, nil
+}
+
+// ResolveManagedURL 解析属于当前本地上传配置的公开 URL
+func (service *UploadService) ResolveManagedURL(rawURL string) (ManagedUploadLocation, bool) {
+	if service == nil || service.publicURL == nil || strings.Contains(rawURL, "#") {
+		return ManagedUploadLocation{}, false
+	}
+	candidate, err := url.Parse(rawURL)
+	if err != nil || candidate.Opaque != "" || candidate.User != nil || candidate.RawQuery != "" || candidate.ForceQuery ||
+		!strings.EqualFold(candidate.Scheme, service.publicURL.Scheme) ||
+		!strings.EqualFold(candidate.Host, service.publicURL.Host) {
+		return ManagedUploadLocation{}, false
+	}
+	prefix := strings.TrimRight(service.publicURL.EscapedPath(), "/") + "/upload/"
+	remainder, isManaged := strings.CutPrefix(candidate.EscapedPath(), prefix)
+	if !isManaged {
+		return ManagedUploadLocation{}, false
+	}
+	escapedDate, escapedName, exists := strings.Cut(remainder, "/")
+	if !exists || strings.Contains(escapedName, "/") {
+		return ManagedUploadLocation{}, false
+	}
+	date, dateErr := url.PathUnescape(escapedDate)
+	name, nameErr := url.PathUnescape(escapedName)
+	if dateErr != nil || nameErr != nil || !validUploadDate(date) || !validUploadBasename(name) {
+		return ManagedUploadLocation{}, false
+	}
+
+	return ManagedUploadLocation{
+		Root:         service.root,
+		RelativePath: filepath.Join(date, name),
+		Key:          "/upload/" + date + "/" + url.PathEscape(name),
+	}, true
 }
 
 // 保存 multipart 文件并返回公开 URL

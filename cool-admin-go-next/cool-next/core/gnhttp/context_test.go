@@ -164,6 +164,34 @@ func TestAuthenticateRequestBuildsAuditInputFromVerifiedIdentity(t *testing.T) {
 	}
 }
 
+func TestRequestAuditInputDoesNotParseMultipartBody(t *testing.T) {
+	const body = "multipart body must remain unread"
+	request, err := http.NewRequestWithContext(
+		t.Context(),
+		http.MethodPost,
+		"http://example.com/admin/base/comm/upload?visible=1",
+		strings.NewReader(body),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.Header.Set("Content-Type", "multipart/form-data; boundary=test")
+	input := requestAuditInput(&ghttp.Request{Request: request}, request.Context())
+	if len(input.Params) != 1 || input.Params["visible"] != "1" {
+		t.Fatalf("audit params = %#v", input.Params)
+	}
+	if request.MultipartForm != nil {
+		t.Fatal("audit parsed multipart body")
+	}
+	content, err := io.ReadAll(request.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != body {
+		t.Fatalf("remaining body = %q", content)
+	}
+}
+
 func TestContextMiddlewareRendersAuthenticationErrorBeforeHandler(t *testing.T) {
 	wasHandled := false
 	authenticator := httpAuthenticatorStub{authenticate: func(ctx context.Context, _, _, _, _ string, _ bool) (context.Context, error) {

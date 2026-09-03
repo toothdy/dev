@@ -70,16 +70,62 @@ startTimeout: 250ms
 	if err != nil {
 		t.Fatal(err)
 	}
-	if config.Enabled || config.Address != "127.0.0.1" || config.Port != 9000 || config.StartTimeout != 250*time.Millisecond {
+	if config.Enabled || config.Address != "127.0.0.1" || config.Port != 9000 ||
+		config.StartTimeout != 250*time.Millisecond || config.ClientMaxBodySize != DefaultClientMaxBodySize {
 		t.Fatalf("LoadConfig() = %#v", config)
 	}
 	for _, invalid := range []Config{
-		{Enabled: true, Address: "", Port: 8001, StartTimeout: time.Second},
-		{Enabled: true, Address: "127.0.0.1", Port: 65536, StartTimeout: time.Second},
-		{Enabled: true, Address: "127.0.0.1", Port: 8001},
+		{Enabled: true, Address: "", Port: 8001, StartTimeout: time.Second, ClientMaxBodySize: DefaultClientMaxBodySize},
+		{Enabled: true, Address: "127.0.0.1", Port: 65536, StartTimeout: time.Second, ClientMaxBodySize: DefaultClientMaxBodySize},
+		{Enabled: true, Address: "127.0.0.1", Port: 8001, ClientMaxBodySize: DefaultClientMaxBodySize},
+		{Enabled: true, Address: "127.0.0.1", Port: 8001, StartTimeout: time.Second},
+		{Enabled: true, Address: "127.0.0.1", Port: 8001, StartTimeout: time.Second, ClientMaxBodySize: DefaultClientMaxBodySize + 1},
 	} {
 		if err = invalid.Validate(); err == nil {
 			t.Fatalf("Validate() error = nil for %#v", invalid)
+		}
+	}
+}
+
+func TestTransportAppliesClientMaxBodySize(t *testing.T) {
+	config := DefaultConfig()
+	config.ClientMaxBodySize = 1024
+	transport, err := New(config, func(server *ghttp.Server) error {
+		server.BindHandler("POST:/body", func(request *ghttp.Request) {
+			content, readErr := io.ReadAll(request.Body)
+			if readErr != nil {
+				request.Response.WriteStatus(stdhttp.StatusRequestEntityTooLarge)
+				return
+			}
+			request.Response.Write(len(content))
+		})
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server, listener := startServer(t, func(server *ghttp.Server) {
+		if installErr := transport.install(server); installErr != nil {
+			t.Fatal(installErr)
+		}
+	})
+	t.Cleanup(func() { shutdownServer(t, server, listener) })
+
+	for size, wantStatus := range map[int]int{
+		1024: stdhttp.StatusOK,
+		1025: stdhttp.StatusRequestEntityTooLarge,
+	} {
+		response, requestErr := stdhttp.Post(
+			"http://"+listener.Addr().String()+"/body",
+			"application/octet-stream",
+			strings.NewReader(strings.Repeat("x", size)),
+		)
+		if requestErr != nil {
+			t.Fatal(requestErr)
+		}
+		response.Body.Close()
+		if response.StatusCode != wantStatus {
+			t.Fatalf("body size %d status = %d, want %d", size, response.StatusCode, wantStatus)
 		}
 	}
 }

@@ -68,8 +68,13 @@ func New(config Config, install Installer) (*Transport, error) {
 	if install == nil {
 		return nil, exception.Core("HTTP Installer 不能为空")
 	}
+	configuredInstall := func(server *ghttp.Server) error {
+		server.SetClientMaxBodySize(config.ClientMaxBodySize)
 
-	return newTransport(config, install, newGoFrameRuntime), nil
+		return install(server)
+	}
+
+	return newTransport(config, configuredInstall, newGoFrameRuntime), nil
 }
 
 // 返回固定 Transport 名称

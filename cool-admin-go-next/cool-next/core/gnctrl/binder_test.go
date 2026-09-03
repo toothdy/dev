@@ -1,12 +1,20 @@
 package gnctrl
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
 )
 
 type transientBinderEntity struct {
@@ -15,6 +23,11 @@ type transientBinderEntity struct {
 	Name       string    `json:"name" orm:"name" description:"名称"`
 	Enabled    bool      `json:"enabled" orm:"enabled" description:"是否启用"`
 	RoleIDList *[]uint64 `json:"roleIdList" description:"角色 ID 列表" cool:"transient"`
+}
+
+type multipartBinderDTO struct {
+	File *ghttp.UploadFile `file:"file" v:"required"`
+	Key  string            `form:"key"`
 }
 
 func TestDecodeMutableAcceptsBooleanNumbers(t *testing.T) {
@@ -93,5 +106,73 @@ func TestDecodeMutablePreservesTransientFieldStates(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestBindFilesUsesIndependentMultipartBodyLimit(t *testing.T) {
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile("file", "video.mp4")
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := bytes.Repeat([]byte("v"), 512)
+	if _, err = part.Write(content); err != nil {
+		t.Fatal(err)
+	}
+	if err = writer.WriteField("key", "video.mp4"); err != nil {
+		t.Fatal(err)
+	}
+	if err = writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	config := crud.DefaultConfig()
+	config.BodyLimit = 128
+	config.MultipartBodyLimit = int64(body.Len() + 1)
+	binder, err := NewBinder(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodPost, "/upload", &body)
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	var target multipartBinderDTO
+	if err = binder.BindDTO(&ghttp.Request{Request: request}, BindFile, &target); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if request.MultipartForm != nil {
+			_ = request.MultipartForm.RemoveAll()
+		}
+	})
+	if target.File == nil || target.Key != "video.mp4" {
+		t.Fatalf("bound target = %#v", target)
+	}
+	file, err := target.File.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	got, err := io.ReadAll(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, content) {
+		t.Fatalf("file content length = %d", len(got))
+	}
+}
+
+func TestBindFilesRejectsMultipartBodyOverLimit(t *testing.T) {
+	config := crud.DefaultConfig()
+	config.MultipartBodyLimit = 64
+	binder, err := NewBinder(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodPost, "/upload", strings.NewReader(strings.Repeat("x", 65)))
+	request.Header.Set("Content-Type", "multipart/form-data; boundary=test")
+	if err = binder.BindDTO(&ghttp.Request{Request: request}, BindFile, &multipartBinderDTO{}); err == nil ||
+		!strings.Contains(err.Error(), "文件上传请求超过 64 字节上限") {
+		t.Fatalf("BindDTO() error = %v", err)
 	}
 }

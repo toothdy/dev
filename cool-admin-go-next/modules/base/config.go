@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	defaultUploadBytes  = 10 << 20
+	defaultUploadBytes  = 100 << 20
 	defaultCleanupLimit = 30 * time.Minute
 )
 

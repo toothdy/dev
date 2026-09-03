@@ -11,26 +11,29 @@ import (
 )
 
 const (
-	DefaultAddress      = "0.0.0.0"       // 默认监听地址
-	DefaultPort         = 8001            // 默认 HTTP 端口
-	DefaultStartTimeout = 5 * time.Second // 默认启动等待期限
+	DefaultAddress           = "0.0.0.0"                // 默认监听地址
+	DefaultPort              = 8001                     // 默认 HTTP 端口
+	DefaultStartTimeout      = 5 * time.Second          // 默认启动等待期限
+	DefaultClientMaxBodySize = int64(101 * 1024 * 1024) // 默认客户端请求体上限
 )
 
 // HTTP Transport 配置
 type Config struct {
-	Enabled      bool          `json:"enabled"`      // 是否启用 HTTP
-	Address      string        `json:"address"`      // 监听地址
-	Port         int           `json:"port"`         // 监听端口
-	StartTimeout time.Duration `json:"startTimeout"` // 启动等待期限
+	Enabled           bool          `json:"enabled"`           // 是否启用 HTTP
+	Address           string        `json:"address"`           // 监听地址
+	Port              int           `json:"port"`              // 监听端口
+	StartTimeout      time.Duration `json:"startTimeout"`      // 启动等待期限
+	ClientMaxBodySize int64         `json:"clientMaxBodySize"` // 客户端请求体上限
 }
 
 // 返回 HTTP 默认配置
 func DefaultConfig() Config {
 	return Config{
-		Enabled:      true,
-		Address:      DefaultAddress,
-		Port:         DefaultPort,
-		StartTimeout: DefaultStartTimeout,
+		Enabled:           true,
+		Address:           DefaultAddress,
+		Port:              DefaultPort,
+		StartTimeout:      DefaultStartTimeout,
+		ClientMaxBodySize: DefaultClientMaxBodySize,
 	}
 }
 
@@ -58,6 +61,9 @@ func (config Config) Validate() error {
 	}
 	if config.StartTimeout <= 0 {
 		return exception.Core("HTTP StartTimeout 必须大于 0")
+	}
+	if config.ClientMaxBodySize <= 0 || config.ClientMaxBodySize > DefaultClientMaxBodySize {
+		return exception.Core(fmt.Sprintf("HTTP ClientMaxBodySize 必须在 1 到 %d 之间", DefaultClientMaxBodySize))
 	}
 
 	return nil

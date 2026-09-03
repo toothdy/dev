@@ -4,8 +4,6 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/module"
 )
 
-const defaultLogKeepDays = 20
-
 // Task 模块运行配置
 type Config struct {
 	Log LogConfig `json:"log"`
@@ -23,7 +21,7 @@ func ModuleConfig() module.Declaration[Config] {
 		Description: "任务调度模块，支持分布式任务，由redis整个集群的任务",
 		Order:       0,
 		Defaults: Config{
-			Log: LogConfig{KeepDays: defaultLogKeepDays},
+			Log: LogConfig{KeepDays: 20},
 		},
 	}
 }

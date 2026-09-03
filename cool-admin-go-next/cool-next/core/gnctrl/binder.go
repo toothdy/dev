@@ -317,10 +317,10 @@ func (binder *Binder) bindForm(request *ghttp.Request, target any, targetType re
 }
 
 func (binder *Binder) bindFiles(request *ghttp.Request, target any, targetType reflect.Type) error {
-	if _, err := binder.readBody(request); err != nil {
-		return err
+	if request.ContentLength > binder.config.MultipartBodyLimit {
+		return exception.Validate(fmt.Sprintf("文件上传请求超过 %d 字节上限", binder.config.MultipartBodyLimit))
 	}
-	request.Body = http.MaxBytesReader(nil, request.Body, binder.config.BodyLimit)
+	request.Body = http.MaxBytesReader(nil, request.Body, binder.config.MultipartBodyLimit)
 	if err := request.Request.ParseMultipartForm(binder.config.BodyLimit); err != nil {
 		return exception.WrapValidate(err, "文件上传请求无效")
 	}

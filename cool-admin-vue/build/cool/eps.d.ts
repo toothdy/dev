@@ -445,6 +445,120 @@ declare namespace Eps {
 		[key: string]: any;
 	}
 
+	interface SpaceInfoEntity {
+		/**
+		 * ID
+		 */
+		id?: number;
+
+		/**
+		 * 地址
+		 */
+		url?: string;
+
+		/**
+		 * 类型
+		 */
+		type?: string;
+
+		/**
+		 * 分类ID
+		 */
+		classifyId?: number;
+
+		/**
+		 * 文件ID
+		 */
+		fileId?: string;
+
+		/**
+		 * 文件名
+		 */
+		name?: string;
+
+		/**
+		 * 文件大小
+		 */
+		size?: number;
+
+		/**
+		 * 文档版本
+		 */
+		version?: number;
+
+		/**
+		 * 文件位置
+		 */
+		key?: string;
+
+		/**
+		 * 上传临时ID
+		 */
+		uid?: number;
+
+		/**
+		 * 上传进度
+		 */
+		progress?: number;
+
+		/**
+		 * 预览地址
+		 */
+		preload?: string;
+
+		/**
+		 * 上传错误
+		 */
+		error?: string;
+
+		/**
+		 * 创建时间
+		 */
+		createTime?: string;
+
+		/**
+		 * 更新时间
+		 */
+		updateTime?: string;
+
+		/**
+		 * 任意键值
+		 */
+		[key: string]: any;
+	}
+
+	interface SpaceTypeEntity {
+		/**
+		 * ID
+		 */
+		id?: number;
+
+		/**
+		 * 类别名称
+		 */
+		name?: string;
+
+		/**
+		 * 父分类ID
+		 */
+		parentId?: number;
+
+		/**
+		 * 创建时间
+		 */
+		createTime?: string;
+
+		/**
+		 * 更新时间
+		 */
+		updateTime?: string;
+
+		/**
+		 * 任意键值
+		 */
+		[key: string]: any;
+	}
+
 	interface TaskInfoEntity {
 		/**
 		 * ID
@@ -612,6 +726,16 @@ declare namespace Eps {
 	interface RecycleDataPageResponse {
 		pagination: PagePagination;
 		list: any[];
+	}
+
+	interface SpaceInfoPageResponse {
+		pagination: PagePagination;
+		list: SpaceInfoEntity[];
+	}
+
+	interface SpaceTypePageResponse {
+		pagination: PagePagination;
+		list: SpaceTypeEntity[];
 	}
 
 	interface BaseCoding {
@@ -1345,6 +1469,122 @@ declare namespace Eps {
 		request: Request;
 	}
 
+	interface SpaceInfo {
+		/**
+		 * 新增
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 删除
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 修改
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 单个信息
+		 */
+		info(data?: any): Promise<SpaceInfoEntity>;
+
+		/**
+		 * 列表查询
+		 */
+		list(data?: any): Promise<SpaceInfoEntity[]>;
+
+		/**
+		 * 分页查询
+		 */
+		page(data?: any): Promise<SpaceInfoPageResponse>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			add: string;
+			delete: string;
+			update: string;
+			info: string;
+			list: string;
+			page: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			add: boolean;
+			delete: boolean;
+			update: boolean;
+			info: boolean;
+			list: boolean;
+			page: boolean;
+		};
+
+		request: Request;
+	}
+
+	interface SpaceType {
+		/**
+		 * 新增
+		 */
+		add(data?: any): Promise<any>;
+
+		/**
+		 * 删除
+		 */
+		delete(data?: any): Promise<any>;
+
+		/**
+		 * 修改
+		 */
+		update(data?: any): Promise<any>;
+
+		/**
+		 * 单个信息
+		 */
+		info(data?: any): Promise<SpaceTypeEntity>;
+
+		/**
+		 * 列表查询
+		 */
+		list(data?: any): Promise<SpaceTypeEntity[]>;
+
+		/**
+		 * 分页查询
+		 */
+		page(data?: any): Promise<SpaceTypePageResponse>;
+
+		/**
+		 * 权限标识
+		 */
+		permission: {
+			add: string;
+			delete: string;
+			update: string;
+			info: string;
+			list: string;
+			page: string;
+		};
+
+		/**
+		 * 权限状态
+		 */
+		_permission: {
+			add: boolean;
+			delete: boolean;
+			update: boolean;
+			info: boolean;
+			list: boolean;
+			page: boolean;
+		};
+
+		request: Request;
+	}
+
 	interface RequestOptions {
 		url: string;
 		method?: "OPTIONS" | "GET" | "HEAD" | "POST" | "PUT" | "DELETE" | "TRACE" | "CONNECT";
@@ -1376,5 +1616,6 @@ declare namespace Eps {
 		dict: { info: DictInfo; type: DictType };
 		task: { info: TaskInfo };
 		recycle: { data: RecycleData };
+		space: { info: SpaceInfo; type: SpaceType };
 	};
 }

@@ -2,6 +2,7 @@ package gnhttp
 
 import (
 	"context"
+	"mime"
 	"strconv"
 
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -73,7 +74,12 @@ func authenticateRequest(request *ghttp.Request, authenticator Authenticator, re
 
 // 构造 HTTP 删除审计输入
 func requestAuditInput(request *ghttp.Request, ctx context.Context) gnrecycle.AuditInput {
-	input := gnrecycle.AuditInput{Params: request.GetMap()}
+	mediaType, _, err := mime.ParseMediaType(request.Header.Get("Content-Type"))
+	params := request.GetQueryMap()
+	if err != nil || mediaType != "multipart/form-data" {
+		params = request.GetMap()
+	}
+	input := gnrecycle.AuditInput{Params: params}
 	if request.URL != nil {
 		input.Source = request.URL.RequestURI()
 	}
