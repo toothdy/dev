@@ -1,7 +1,7 @@
 # 文件空间模块迁移设计
 
 > 日期：2026-09-03  
-> 状态：已自审，待复核
+> 状态：已批准
 > 源模块：`cool-admin-midway/src/modules/space`  
 > 目标模块：`cool-admin-go-next/modules/space`
 
@@ -151,10 +151,10 @@ Base 上传服务新增只读定位方法，输入完整 URL，输出上传根�
 
 文件信息删除流程：
 
-1. 在当前 CRUD 事务中按请求 ID 查询待删记录的 `url`；
-2. 调用基础 Service 删除数据库记录并进入现有删除归档流程；
-3. `shouldDeletePhysicalFile=false` 时结束，不访问文件系统；
-4. `shouldDeletePhysicalFile=true` 时，仅使用 Base 从持久化 `url` 解析出的受管文件位置，不读取客户端可独立控制的 `key` 作为删除目标；
+1. `shouldDeletePhysicalFile=false` 时直接调用基础 Service 删除数据库记录并进入现有删除归档流程，不查询文件 URL，也不访问文件系统；
+2. `shouldDeletePhysicalFile=true` 时，在当前 CRUD 事务中按请求 ID 查询待删记录的 `url`；
+3. 调用基础 Service 删除数据库记录并进入现有删除归档流程；
+4. 仅使用 Base 从持久化 `url` 解析出的受管文件位置，不读取客户端可独立控制的 `key` 作为删除目标；
 5. 使用受根目录约束的文件 API 删除普通文件，不跟随符号链接，不接受绝对路径、目录穿越、非法日期或嵌套文件名；
 6. 对规范化后的相对路径去重，避免多条元数据重复操作同一个文件；
 7. 外部文件和非受管路径跳过物理删除；
