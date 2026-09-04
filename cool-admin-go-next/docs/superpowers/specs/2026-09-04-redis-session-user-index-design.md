@@ -2,7 +2,7 @@
 
 ## 目标
 
-将 Redis 用户 Session 撤销从扫描全部 Session Key 改为按目标用户定向删除，使撤销成本由 O(全部 Session) 降为 O(目标用户数)，同时保持现有鉴权 Store 接口和 Token 协议不变。
+将 Redis 用户 Session 撤销从扫描全部 Session Key 改为按目标用户定向异步删除，使前台撤销成本由 O(全部 Session) 降为 O(目标用户数)，同时保持现有鉴权 Store 接口和 Token 协议不变。
 
 ## 数据结构
 
@@ -25,7 +25,7 @@
 ## 撤销
 
 - 单 Session 撤销：通过定位 Key 找到用户 Hash，再由 Lua 脚本原子删除定位 Key 和对应 Hash 字段。若 Session 已不存在，按幂等成功处理。
-- 用户 Session 撤销：直接删除目标用户 Hash。残留定位 Key 最多保留到原 Session 到期，读取时发现 Hash 字段不存在即删除定位 Key，并按 Session 不存在处理。
+- 用户 Session 撤销：使用 Redis `UNLINK` 让目标用户 Hash 立即不可见，并在后台释放 Hash 内存。残留定位 Key 最多保留到原 Session 到期，读取时发现 Hash 字段不存在即删除定位 Key，并按 Session 不存在处理。
 - 用户撤销不再调用 `SCAN`，也不再读取或累计其他用户的 Session Key。
 
 Lua 脚本访问的 Key 全部通过 `KEYS` 显式传入，不根据 Redis 数据动态生成 Key，符合 Redis `EVAL` 的 Key 声明约束。当前 Redis Store 使用单 Redis 命名空间，本次不扩展 Redis Cluster 分片策略。
@@ -42,7 +42,7 @@ Lua 脚本访问的 Key 全部通过 `KEYS` 显式传入，不根据 Redis 数�
 - 校验多个 Session 会共享用户 Hash，且 Hash 有效期不会被较早到期的 Session 缩短。
 - 校验 Token 轮换同时维护定位 Key 和用户 Hash，并保留原有重放检测语义。
 - 校验单 Session 撤销会移除定位 Key 和对应 Hash 字段，并能撤销刚完成刷新的同一 Session。
-- 校验按用户撤销只删除目标用户 Hash，不执行 `SCAN`，其他用户和身份类型的 Session 不受影响。
+- 校验按用户撤销只 `UNLINK` 目标用户 Hash，不执行 `SCAN`，其他用户和身份类型的 Session 不受影响。
 - 校验升级前旧命名空间中的 Session 不可读取，并由原 TTL 自然清理。
 
 ## 范围
