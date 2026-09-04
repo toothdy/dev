@@ -267,6 +267,9 @@ func Run(ctx context.Context, definition Definition) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if err := configureLogger(); err != nil {
+		return err
+	}
 	ctx, stopSignals := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stopSignals()
 	input, err := loadInput(ctx)

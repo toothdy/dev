@@ -22,7 +22,7 @@ const (
 
 var (
 	// 无效凭证
-	ErrInvalidCredential = errors.New("无效凭证")
+	ErrInvalidCredential = errors.New("登录失效~")
 	// Session 不存在
 	ErrSessionNotFound = errors.New("session 不存在")
 	// Refresh Token 重放
@@ -473,5 +473,5 @@ func randomID() (string, error) {
 
 // 无效凭证异常
 func credentialErr() error {
-	return exception.Comm("凭证无效", http.StatusUnauthorized)
+	return exception.Comm("登录失效~", http.StatusUnauthorized)
 }

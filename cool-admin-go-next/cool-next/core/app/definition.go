@@ -5,7 +5,10 @@ import (
 	"context"
 	"io"
 	"os"
+	"strings"
 
+	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gcfg"
 	"gopkg.in/yaml.v3"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/config"
@@ -78,13 +81,35 @@ func cloneSource(source config.Source) config.Source {
 	return config.Source{Main: append([]byte(nil), source.Main...), LookupEnv: source.LookupEnv}
 }
 
-// 加载应用根配置
-func loadInput(ctx context.Context) (AssembleInput, error) {
+// 返回应用实际使用的配置文件路径
+func configFilePath() string {
 	path := os.Getenv(configPathEnv)
 	if path == "" {
-		path = defaultConfigPath
+		return defaultConfigPath
 	}
-	content, err := os.ReadFile(path)
+
+	return path
+}
+
+// 让 GoFrame 组件读取应用使用的同一份配置文件
+func configureLogger() error {
+	adapter, err := gcfg.NewAdapterFile(configFilePath())
+	if err != nil {
+		return exception.WrapCore(err, "创建 GoFrame 配置适配器失败")
+	}
+	frameworkConfig := g.Cfg()
+	if frameworkConfig == nil {
+		return exception.Core("GoFrame 配置管理器初始化失败")
+	}
+	frameworkConfig.SetAdapter(adapter)
+	g.Log()
+
+	return nil
+}
+
+// 加载应用根配置
+func loadInput(ctx context.Context) (AssembleInput, error) {
+	content, err := os.ReadFile(configFilePath())
 	if err != nil {
 		return AssembleInput{}, exception.WrapCore(err, "读取应用配置失败")
 	}
@@ -106,6 +131,7 @@ func parseInput(ctx context.Context, content []byte) (AssembleInput, error) {
 	if hasModuleConfig(document.Content[0]) {
 		return AssembleInput{}, exception.Core("应用配置不支持 modules 节点")
 	}
+	removeLoggerConfig(document.Content[0])
 	rootSource, err := encodeConfig(document.Content[0])
 	if err != nil {
 		return AssembleInput{}, err
@@ -147,6 +173,21 @@ func hasModuleConfig(root *yaml.Node) bool {
 		}
 	}
 	return false
+}
+
+// 移除由 GoFrame 管理的日志配置
+func removeLoggerConfig(root *yaml.Node) {
+	if root == nil || root.Kind != yaml.MappingNode {
+		return
+	}
+	content := root.Content[:0]
+	for index := 0; index+1 < len(root.Content); index += 2 {
+		if strings.EqualFold(root.Content[index].Value, "logger") {
+			continue
+		}
+		content = append(content, root.Content[index], root.Content[index+1])
+	}
+	root.Content = content
 }
 
 func emptyConfig() *yaml.Node {

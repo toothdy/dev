@@ -23,3 +23,9 @@ cool: # Cool 应用配置
       port: 8001 # HTTP 监听端口
     grpc: # gRPC 服务配置
       enabled: false # 是否启用 gRPC Transport
+
+logger: # GoFrame 系统运行日志配置
+  path: logs # 日志文件目录
+  file: "{Y-m-d}.log" # 按日期生成日志文件
+  level: all # 日志级别
+  stdout: true # 是否同时输出到终端

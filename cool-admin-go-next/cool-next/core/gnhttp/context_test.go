@@ -195,7 +195,7 @@ func TestRequestAuditInputDoesNotParseMultipartBody(t *testing.T) {
 func TestContextMiddlewareRendersAuthenticationErrorBeforeHandler(t *testing.T) {
 	wasHandled := false
 	authenticator := httpAuthenticatorStub{authenticate: func(ctx context.Context, _, _, _, _ string, _ bool) (context.Context, error) {
-		return ctx, exception.Comm("凭证无效", http.StatusUnauthorized)
+		return ctx, exception.Comm("登录失效~", http.StatusUnauthorized)
 	}}
 	middleware, err := NewContextMiddleware(authenticator, "/admin/protected", false)
 	if err != nil {
@@ -220,7 +220,7 @@ func TestContextMiddlewareRendersAuthenticationErrorBeforeHandler(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if response.StatusCode != http.StatusUnauthorized || string(body) != `{"code":1001,"message":"凭证无效"}` {
+	if response.StatusCode != http.StatusUnauthorized || string(body) != `{"code":1001,"message":"登录失效~"}` {
 		t.Fatalf("authentication response = %d %s", response.StatusCode, body)
 	}
 	if wasHandled {
