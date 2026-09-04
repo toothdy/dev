@@ -13,6 +13,7 @@ require (
 	github.com/gogf/gf/contrib/rpc/grpcx/v2 v2.10.2
 	github.com/gogf/gf/v2 v2.10.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
+	github.com/tetratelabs/wazero v1.12.0
 	golang.org/x/crypto v0.54.0
 	golang.org/x/tools v0.48.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237
