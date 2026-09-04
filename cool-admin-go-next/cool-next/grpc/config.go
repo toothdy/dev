@@ -6,7 +6,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/configuration"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/config"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 )
 
@@ -25,7 +25,7 @@ type Config struct {
 	Registry bool   `json:"registry"` // 是否注册服务发现
 }
 
-// 返回 gRPC 默认配置
+// gRPC 默认配置
 func DefaultConfig() Config {
 	return Config{
 		Address: DefaultAddress,
@@ -35,8 +35,8 @@ func DefaultConfig() Config {
 }
 
 // 合并并校验 gRPC 配置
-func LoadConfig(ctx context.Context, source configuration.Source) (Config, error) {
-	result, err := configuration.Load(ctx, DefaultConfig(), source)
+func LoadConfig(ctx context.Context, source config.Source) (Config, error) {
+	result, err := config.Load(ctx, DefaultConfig(), source)
 	if err != nil {
 		return Config{}, exception.WrapCore(err, "gRPC Transport 配置无效")
 	}
@@ -48,7 +48,7 @@ func LoadConfig(ctx context.Context, source configuration.Source) (Config, error
 	return config, nil
 }
 
-// 校验 gRPC 监听与服务发现配置
+// gRPC 监听与服务发现配置
 func (config Config) Validate() error {
 	if strings.TrimSpace(config.Address) == "" || strings.TrimSpace(config.Address) != config.Address {
 		return exception.Core("gRPC Address 无效")

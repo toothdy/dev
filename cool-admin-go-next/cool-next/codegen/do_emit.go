@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func validatePhysicalNames(entities []compiledEntity) []Diagnostic {
+func checkPhysicalNames(entities []compiledEntity) []Diagnostic {
 	seenTables := make(map[string]compiledEntity, len(entities))
 	seenIndexes := make(map[string]compiledEntity)
 	var diagnostics []Diagnostic
@@ -37,9 +37,9 @@ func validatePhysicalNames(entities []compiledEntity) []Diagnostic {
 	return diagnostics
 }
 
-func emitDescriptorFragment(current compiledEntity, providerTypeObject types.Type) DescriptorFragment {
+func emitFragment(current compiledEntity, providerTypeObject types.Type) DescriptorFragment {
 	declaration := current.declaration
-	name := generatedIdentifier(current.module, declaration.packagePath, declaration.name)
+	name := identifier(current.module, declaration.packagePath, declaration.name)
 	doName := "do" + name
 	providerName := "descriptor" + name
 	baseProviderName := "base" + name
@@ -59,7 +59,7 @@ func emitDescriptorFragment(current compiledEntity, providerTypeObject types.Typ
 			qualifier,
 			declaration.name,
 		),
-		doDeclaration:   emitDODeclaration(doName, current.metadata.table, fields),
+		doDeclaration:   emitDO(doName, current.metadata.table, fields),
 		doName:          doName,
 		entity:          declaration.name,
 		entityPackage:   declaration.packagePath,
@@ -87,7 +87,7 @@ func descriptorFields(metadata entityMetadata) []generatedField {
 	return append(fields, metadata.fields...)
 }
 
-func emitDODeclaration(name, table string, fields []generatedField) string {
+func emitDO(name, table string, fields []generatedField) string {
 	var source strings.Builder
 	fmt.Fprintf(&source, "type %s struct {\n", name)
 	fmt.Fprintf(&source, "\tg.Meta `orm:\"table:%s,do:true\"`\n", table)
@@ -103,7 +103,7 @@ func emitDODeclaration(name, table string, fields []generatedField) string {
 	return string(declaration)
 }
 
-func generatedIdentifier(values ...string) string {
+func identifier(values ...string) string {
 	var result strings.Builder
 	for _, value := range values {
 		for _, character := range value {

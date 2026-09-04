@@ -11,7 +11,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
 )
 
-func validateConfig(config Config) (gdb.ConfigGroup, []string, error) {
+func checkConfig(config Config) (gdb.ConfigGroup, []string, error) {
 	if strings.TrimSpace(config.Group) == "" {
 		return nil, nil, exception.Core("框架数据库组不能为空")
 	}

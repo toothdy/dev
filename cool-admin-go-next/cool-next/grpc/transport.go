@@ -54,7 +54,7 @@ const (
 	stateStopped
 )
 
-// 创建 gRPC Transport
+// 构造 Transport
 func New(
 	config Config,
 	registrar GRPCRegistrar,
@@ -73,10 +73,10 @@ func New(
 	}), nil
 }
 
-// 返回固定 Transport 名称
+// 固定 Transport 名称
 func (transport *Transport) Name() string { return "grpc" }
 
-// 返回 gRPC 是否启用
+// gRPC 是否启用
 func (transport *Transport) Enabled() bool {
 	return transport != nil && transport.config.Enabled
 }
@@ -117,7 +117,7 @@ func (transport *Transport) Prepare(ctx context.Context) error {
 	return nil
 }
 
-// 启动服务循环并返回可观察终止 Channel
+// 服务循环并返回可观察终止 Channel
 func (transport *Transport) Start(ctx context.Context) (<-chan error, error) {
 	if transport == nil {
 		return nil, exception.Core("gRPC Transport 未初始化")
@@ -196,8 +196,8 @@ func newTransport(
 }
 
 func (transport *Transport) newServer(readiness app.ReadyState) *grpcx.GrpcServer {
-	unary := append([]grpcstd.UnaryServerInterceptor{readyUnaryInterceptor(readiness), errorUnaryInterceptor}, transport.unary...)
-	stream := append([]grpcstd.StreamServerInterceptor{readyStreamInterceptor(readiness), errorStreamInterceptor}, transport.stream...)
+	unary := append([]grpcstd.UnaryServerInterceptor{unaryReady(readiness), unaryError}, transport.unary...)
+	stream := append([]grpcstd.StreamServerInterceptor{streamReady(readiness), streamError}, transport.stream...)
 	config := &grpcx.GrpcServerConfig{
 		Name:    transport.config.Name,
 		Address: transport.listenAddress(),
@@ -245,7 +245,7 @@ func (transport *Transport) stop(ctx context.Context) error {
 
 	var deregisterErr error
 	if registry != nil && service != nil {
-		deregisterErr = deregisterService(ctx, registry, service)
+		deregisterErr = deregister(ctx, registry, service)
 		if deregisterErr != nil {
 			deregisterErr = exception.WrapCore(deregisterErr, "注销 gRPC 服务发现记录失败")
 		}
@@ -277,7 +277,7 @@ func (transport *Transport) stop(ctx context.Context) error {
 	return errors.Join(deregisterErr, shutdownErr, closeErr)
 }
 
-func deregisterService(ctx context.Context, registry gsvc.Registrar, service gsvc.Service) error {
+func deregister(ctx context.Context, registry gsvc.Registrar, service gsvc.Service) error {
 	result := make(chan error, 1)
 	go func() { result <- registry.Deregister(ctx, service) }()
 	select {
@@ -327,7 +327,7 @@ func newService(name, address string) gsvc.Service {
 	}
 }
 
-func readyUnaryInterceptor(readiness app.ReadyState) grpcstd.UnaryServerInterceptor {
+func unaryReady(readiness app.ReadyState) grpcstd.UnaryServerInterceptor {
 	return func(ctx context.Context, request any, info *grpcstd.UnaryServerInfo, handler grpcstd.UnaryHandler) (any, error) {
 		if readiness == nil || !readiness.Ready() {
 			return nil, status.Error(codes.Unavailable, "service unavailable")
@@ -336,7 +336,7 @@ func readyUnaryInterceptor(readiness app.ReadyState) grpcstd.UnaryServerIntercep
 	}
 }
 
-func readyStreamInterceptor(readiness app.ReadyState) grpcstd.StreamServerInterceptor {
+func streamReady(readiness app.ReadyState) grpcstd.StreamServerInterceptor {
 	return func(service any, stream grpcstd.ServerStream, info *grpcstd.StreamServerInfo, handler grpcstd.StreamHandler) error {
 		if readiness == nil || !readiness.Ready() {
 			return status.Error(codes.Unavailable, "service unavailable")
@@ -345,7 +345,7 @@ func readyStreamInterceptor(readiness app.ReadyState) grpcstd.StreamServerInterc
 	}
 }
 
-func errorUnaryInterceptor(
+func unaryError(
 	ctx context.Context,
 	request any,
 	info *grpcstd.UnaryServerInfo,
@@ -355,6 +355,6 @@ func errorUnaryInterceptor(
 	return response, Error(err)
 }
 
-func errorStreamInterceptor(service any, stream grpcstd.ServerStream, info *grpcstd.StreamServerInfo, handler grpcstd.StreamHandler) error {
+func streamError(service any, stream grpcstd.ServerStream, info *grpcstd.StreamServerInfo, handler grpcstd.StreamHandler) error {
 	return Error(handler(service, stream))
 }

@@ -6,20 +6,20 @@ import (
 	"reflect"
 
 	"github.com/gogf/gf/v2/database/gdb"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 // CRUD 动作
 type Action string
 
 const (
-	ActionAdd    Action = "add"
-	ActionDelete Action = "delete"
-	ActionUpdate Action = "update"
-	ActionInfo   Action = "info"
-	ActionList   Action = "list"
-	ActionPage   Action = "page"
+	ActionAdd    Action = "add"    // 新增
+	ActionDelete Action = "delete" // 删除
+	ActionUpdate Action = "update" // 更新
+	ActionInfo   Action = "info"   // 详情
+	ActionList   Action = "list"   // 列表
+	ActionPage   Action = "page"   // 分页
 )
 
 // 动作计划
@@ -63,8 +63,6 @@ type OperationScope struct {
 
 type operationContextKey struct{}
 
-type emptyOperationScope struct{}
-
 // 编译动作计划
 func CompilePlan(
 	ctx context.Context,
@@ -75,7 +73,9 @@ func CompilePlan(
 	if !isAction(input.Action) {
 		return nil, exception.Core("CRUD 动作无效")
 	}
-	fields, err := compileFieldPolicy(resolver, input.Entity, input.Fields)
+	autoSortFields := (input.Action == ActionList || input.Action == ActionPage) &&
+		len(input.Fields.SortFields) == 0
+	fields, err := compileFieldPolicy(resolver, input.Entity, input.Fields, autoSortFields)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func CompilePlan(
 	return plan, nil
 }
 
-// 返回字段策略
+// 字段策略
 func (plan *ActionPlan) Fields() *FieldPolicy {
 	if plan == nil {
 		return nil
@@ -104,7 +104,7 @@ func (plan *ActionPlan) Fields() *FieldPolicy {
 	return &plan.fields
 }
 
-// 判断字段是否隐藏
+// 字段是否隐藏
 func (policy *FieldPolicy) IsHidden(field string) bool {
 	if policy == nil {
 		return false
@@ -114,7 +114,7 @@ func (policy *FieldPolicy) IsHidden(field string) bool {
 	return exists
 }
 
-// 判断字段是否只读
+// 字段是否只读
 func (policy *FieldPolicy) IsReadonly(field string) bool {
 	if policy == nil {
 		return false
@@ -124,7 +124,7 @@ func (policy *FieldPolicy) IsReadonly(field string) bool {
 	return exists
 }
 
-// 判断详情字段是否忽略
+// 详情是否忽略字段
 func (policy *FieldPolicy) IsInfoIgnored(field string) bool {
 	if policy == nil {
 		return false
@@ -134,7 +134,7 @@ func (policy *FieldPolicy) IsInfoIgnored(field string) bool {
 	return exists
 }
 
-// 返回 CRUD 动作
+// CRUD 动作
 func (plan *ActionPlan) Action() Action {
 	if plan == nil {
 		return ""
@@ -143,7 +143,7 @@ func (plan *ActionPlan) Action() Action {
 	return plan.action
 }
 
-// 返回查询计划
+// 查询计划
 func (plan *ActionPlan) Query() *QueryPlan {
 	if plan == nil {
 		return nil
@@ -173,7 +173,7 @@ func WithOperation(ctx context.Context, plan *ActionPlan) context.Context {
 	return context.WithValue(ctx, operationContextKey{}, &OperationScope{plan: plan})
 }
 
-// 查询当前 CRUD 操作
+// 返回当前操作上下文
 func CurrentOperation(ctx context.Context) (*OperationScope, bool) {
 	if ctx == nil {
 		return nil, false
@@ -186,11 +186,7 @@ func CurrentOperation(ctx context.Context) (*OperationScope, bool) {
 	return scope, true
 }
 
-func withoutOperation(ctx context.Context) context.Context {
-	return context.WithValue(ctx, operationContextKey{}, emptyOperationScope{})
-}
-
-// 返回动作计划
+// 当前动作计划
 func (scope *OperationScope) Plan() *ActionPlan {
 	if scope == nil {
 		return nil
@@ -221,8 +217,9 @@ func compileFieldPolicy(
 	resolver DescriptorResolver,
 	entityValue any,
 	input FieldPolicyInput,
+	autoSortFields bool,
 ) (FieldPolicy, error) {
-	if isEmptyFieldPolicyInput(input) {
+	if emptyPolicy(input) && !autoSortFields {
 		return FieldPolicy{}, nil
 	}
 	if isNilPlanValue(resolver) {
@@ -254,7 +251,7 @@ func compileFieldPolicy(
 	if err := compileFieldSet(metadata, entityType, input.InfoIgnoreProperty, policy.infoIgnored, "详情忽略"); err != nil {
 		return FieldPolicy{}, err
 	}
-	if err := compileSortFields(metadata, entityType, input, &policy); err != nil {
+	if err := compileSortFields(metadata, entityType, input, &policy, autoSortFields); err != nil {
 		return FieldPolicy{}, err
 	}
 
@@ -262,7 +259,7 @@ func compileFieldPolicy(
 }
 
 func compileFieldSet(
-	metadata coreentity.Metadata,
+	metadata gnentity.Metadata,
 	entityType reflect.Type,
 	fields []ColumnRef,
 	target map[string]struct{},
@@ -283,10 +280,11 @@ func compileFieldSet(
 }
 
 func compileSortFields(
-	metadata coreentity.Metadata,
+	metadata gnentity.Metadata,
 	entityType reflect.Type,
 	input FieldPolicyInput,
 	policy *FieldPolicy,
+	autoSortFields bool,
 ) error {
 	root := resolvedPlanEntity{
 		planEntity: planEntity{
@@ -306,11 +304,25 @@ func compileSortFields(
 		}
 		policy.sortable[field.JSONName()] = makePlanColumn(root, field)
 	}
+	if autoSortFields {
+		for _, field := range metadata.PersistentFields() {
+			if policy.IsHidden(field.Name()) {
+				continue
+			}
+			policy.sortable[field.JSONName()] = makePlanColumn(root, field)
+		}
+	}
 
 	hasDefaultSort := hasColumnRef(input.DefaultSort)
 	if !hasDefaultSort {
 		if input.DefaultOrder != "" {
 			return exception.Core("默认排序方向必须与默认排序字段同时配置")
+		}
+		if autoSortFields {
+			policy.defaultSort = &planOrder{
+				column:    makePlanColumn(root, metadata.Primary()),
+				direction: Descending,
+			}
 		}
 
 		return nil
@@ -332,11 +344,11 @@ func compileSortFields(
 }
 
 func resolvePolicyField(
-	metadata coreentity.Metadata,
+	metadata gnentity.Metadata,
 	entityType reflect.Type,
 	reference ColumnRef,
 	label string,
-) (coreentity.Field, error) {
+) (gnentity.Field, error) {
 	if !hasColumnRef(reference) || (reference.alias != "" && reference.alias != rootQueryAlias) {
 		return nil, exception.Core(fmt.Sprintf("%s字段引用无效", label))
 	}
@@ -346,6 +358,9 @@ func resolvePolicyField(
 	field, exists := metadata.Field(reference.name)
 	if !exists || isNilPlanValue(field) {
 		return nil, exception.Core(fmt.Sprintf("%s字段 %s 不存在", label, reference.name))
+	}
+	if !field.Persistent() {
+		return nil, exception.Core(fmt.Sprintf("%s字段 %s 不是持久化字段", label, reference.name))
 	}
 
 	return field, nil
@@ -376,15 +391,15 @@ func applyFieldPolicy(
 		return nil
 	}
 
-	return applyRequestOrder(query, policy, request)
+	return applyOrder(query, policy, request)
 }
 
-func applyRequestOrder(query *QueryPlan, policy *FieldPolicy, request *QueryRequest) error {
-	orderFields, hasOrder, err := queryRequestStrings(request, "order")
+func applyOrder(query *QueryPlan, policy *FieldPolicy, request *QueryRequest) error {
+	orderFields, hasOrder, err := requestStrings(request, "order")
 	if err != nil {
 		return err
 	}
-	directions, hasSort, err := queryRequestStrings(request, "sort")
+	directions, hasSort, err := requestStrings(request, "sort")
 	if err != nil {
 		return err
 	}
@@ -416,7 +431,7 @@ func applyRequestOrder(query *QueryPlan, policy *FieldPolicy, request *QueryRequ
 	return nil
 }
 
-func queryRequestStrings(request *QueryRequest, name string) ([]string, bool, error) {
+func requestStrings(request *QueryRequest, name string) ([]string, bool, error) {
 	if request == nil {
 		return nil, false, nil
 	}
@@ -432,7 +447,7 @@ func queryRequestStrings(request *QueryRequest, name string) ([]string, bool, er
 	return values, true, nil
 }
 
-func isEmptyFieldPolicyInput(input FieldPolicyInput) bool {
+func emptyPolicy(input FieldPolicyInput) bool {
 	return len(input.HiddenFields) == 0 &&
 		len(input.ReadonlyFields) == 0 &&
 		len(input.InfoIgnoreProperty) == 0 &&

@@ -11,7 +11,7 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 )
 
 // 消费事务配置
@@ -29,7 +29,7 @@ type InboxStore interface {
 
 // Inbox 消费事务执行器，仅保护同事务内的本地业务效果
 type Deliverer struct {
-	runtime       *coredb.Runtime
+	runtime       *db.Runtime
 	store         InboxStore
 	config        ConsumerConfig
 	definitions   map[string]ConsumerDefinition
@@ -38,9 +38,9 @@ type Deliverer struct {
 
 type consumerInvocation func(context.Context) error
 
-// 创建 Inbox 消费事务执行器
+// Inbox 消费事务执行器
 func NewDeliverer(
-	runtime *coredb.Runtime,
+	runtime *db.Runtime,
 	store InboxStore,
 	config ConsumerConfig,
 	definitions ...ConsumerDefinition,
@@ -51,7 +51,7 @@ func NewDeliverer(
 	if store == nil {
 		return nil, gerror.New("outbox consumer: Inbox Store 不能为空")
 	}
-	if err := validateConsumerConfig(config); err != nil {
+	if err := checkConsumer(config); err != nil {
 		return nil, err
 	}
 	if len(definitions) == 0 {
@@ -81,7 +81,7 @@ func NewDeliverer(
 	}, nil
 }
 
-// 返回不可变订阅列表副本
+// 不可变订阅列表副本
 func (deliverer *Deliverer) Subscriptions() []Subscription {
 	if deliverer == nil {
 		return nil
@@ -90,7 +90,7 @@ func (deliverer *Deliverer) Subscriptions() []Subscription {
 	return append([]Subscription(nil), deliverer.subscriptions...)
 }
 
-// 执行一次持久化 Attempt 对应的消费
+// 一次持久化 Attempt 对应的消费
 func (deliverer *Deliverer) Deliver(
 	ctx context.Context,
 	subscription Subscription,
@@ -116,7 +116,7 @@ func (deliverer *Deliverer) Deliver(
 	if err != nil {
 		return DeadLetter(err)
 	}
-	validated, err := validateDeliveredEnvelope(subscription, message)
+	validated, err := checkEnvelope(subscription, message)
 	if err != nil {
 		return DeadLetter(err)
 	}
@@ -157,7 +157,7 @@ func (deliverer *Deliverer) Deliver(
 	if isPermanent(err) || attempt >= deliverer.config.ConsumerMaxAttempts {
 		return DeadLetter(err)
 	}
-	delay, delayErr := consumerRetryDelay(deliverer.config, attempt)
+	delay, delayErr := consumerDelay(deliverer.config, attempt)
 	if delayErr != nil {
 		return Retry(0, gerror.Wrap(delayErr, "outbox consumer: 生成重试延迟"))
 	}
@@ -191,7 +191,7 @@ func (definition consumerDefinition[T]) decode(message Envelope) (consumerInvoca
 	}, nil
 }
 
-func validateDeliveredEnvelope(subscription Subscription, message Envelope) (Envelope, error) {
+func checkEnvelope(subscription Subscription, message Envelope) (Envelope, error) {
 	var key *string
 	if value, exists := message.Key(); exists {
 		key = &value
@@ -221,7 +221,7 @@ func validateDeliveredEnvelope(subscription Subscription, message Envelope) (Env
 	return validated, nil
 }
 
-func validateConsumerConfig(config ConsumerConfig) error {
+func checkConsumer(config ConsumerConfig) error {
 	if config.ConsumerTimeout <= 0 || config.ConsumerMaxAttempts == 0 ||
 		config.ConsumerRetryBase <= 0 || config.ConsumerRetryMax <= 0 {
 		return gerror.New("outbox consumer: 配置值必须为正数")
@@ -233,7 +233,7 @@ func validateConsumerConfig(config ConsumerConfig) error {
 	return nil
 }
 
-func consumerRetryDelay(config ConsumerConfig, attempt uint32) (time.Duration, error) {
+func consumerDelay(config ConsumerConfig, attempt uint32) (time.Duration, error) {
 	delay := config.ConsumerRetryBase
 	for current := uint32(1); current < attempt && delay < config.ConsumerRetryMax; current++ {
 		if delay > config.ConsumerRetryMax/2 {

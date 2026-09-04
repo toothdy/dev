@@ -1,26 +1,26 @@
 package schema
 
-import "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+import "github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 
 const (
-	OutboxTableName = "cool_outbox"
-	InboxTableName  = "cool_inbox"
+	OutboxTableName = "cool_outbox" // 发件箱表名
+	InboxTableName  = "cool_inbox"  // 收件箱表名
 
-	OutboxAvailableIndex = "idx_cool_outbox_available"
-	OutboxLeaseIndex     = "idx_cool_outbox_lease"
-	OutboxSentIndex      = "idx_cool_outbox_sent"
+	OutboxAvailableIndex = "idx_cool_outbox_available" // 可投递消息索引
+	OutboxLeaseIndex     = "idx_cool_outbox_lease"     // 投递租约索引
+	OutboxSentIndex      = "idx_cool_outbox_sent"      // 已投递消息索引
 )
 
 // 内部表字段定义
 type DefinitionColumn struct {
-	Name          string             // 列名
-	Type          entity.LogicalType // 跨数据库逻辑类型
-	Size          uint64             // 固定最大长度
-	Nullable      bool               // 是否允许空值
-	CaseSensitive bool               // 是否区分大小写
-	CharacterSet  string             // 逻辑字符集
-	Default       string             // 默认值或数据库表达式
-	AllowedValues []string           // 有限字符串取值
+	Name          string               // 列名
+	Type          gnentity.LogicalType // 跨数据库逻辑类型
+	Size          uint64               // 固定最大长度
+	Nullable      bool                 // 是否允许空值
+	CaseSensitive bool                 // 是否区分大小写
+	CharacterSet  string               // 逻辑字符集
+	Default       string               // 默认值或数据库表达式
+	AllowedValues []string             // 有限字符串取值
 }
 
 // 内部表逻辑结构
@@ -46,23 +46,23 @@ var outboxDefinition = Definition{
 	Name:        OutboxTableName,
 	Description: "可靠消息发布记录",
 	Columns: []DefinitionColumn{
-		{Name: "messageId", Type: entity.LogicalString, Size: 36, CaseSensitive: true, CharacterSet: "ascii"},
-		{Name: "topic", Type: entity.LogicalString},
-		{Name: "messageType", Type: entity.LogicalString},
-		{Name: "messageVersion", Type: entity.LogicalUint},
-		{Name: "messageKey", Type: entity.LogicalString, Nullable: true},
-		{Name: "payload", Type: entity.LogicalBytes},
-		{Name: "headers", Type: entity.LogicalBytes},
-		{Name: "status", Type: entity.LogicalString, Default: "pending", AllowedValues: []string{"pending", "retry", "leased", "sent", "dead"}},
-		{Name: "attempts", Type: entity.LogicalUint, Default: "0"},
-		{Name: "availableAt", Type: entity.LogicalTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "leaseOwner", Type: entity.LogicalString, Nullable: true},
-		{Name: "claimToken", Type: entity.LogicalString, Nullable: true},
-		{Name: "leaseExpiresAt", Type: entity.LogicalTime, Nullable: true},
-		{Name: "lastError", Type: entity.LogicalString, Nullable: true},
-		{Name: "createTime", Type: entity.LogicalTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "updateTime", Type: entity.LogicalTime, Default: "CURRENT_TIMESTAMP"},
-		{Name: "sentAt", Type: entity.LogicalTime, Nullable: true},
+		{Name: "messageId", Type: gnentity.LogicalString, Size: 36, CaseSensitive: true, CharacterSet: "ascii"},
+		{Name: "topic", Type: gnentity.LogicalString},
+		{Name: "messageType", Type: gnentity.LogicalString},
+		{Name: "messageVersion", Type: gnentity.LogicalUint},
+		{Name: "messageKey", Type: gnentity.LogicalString, Nullable: true},
+		{Name: "payload", Type: gnentity.LogicalBytes},
+		{Name: "headers", Type: gnentity.LogicalBytes},
+		{Name: "status", Type: gnentity.LogicalString, Default: "pending", AllowedValues: []string{"pending", "retry", "leased", "sent", "dead"}},
+		{Name: "attempts", Type: gnentity.LogicalUint, Default: "0"},
+		{Name: "availableAt", Type: gnentity.LogicalTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "leaseOwner", Type: gnentity.LogicalString, Nullable: true},
+		{Name: "claimToken", Type: gnentity.LogicalString, Nullable: true},
+		{Name: "leaseExpiresAt", Type: gnentity.LogicalTime, Nullable: true},
+		{Name: "lastError", Type: gnentity.LogicalString, Nullable: true},
+		{Name: "createTime", Type: gnentity.LogicalTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "updateTime", Type: gnentity.LogicalTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "sentAt", Type: gnentity.LogicalTime, Nullable: true},
 	},
 	PrimaryKey: []string{"messageId"},
 	Indexes: []Index{
@@ -76,9 +76,9 @@ var inboxDefinition = Definition{
 	Name:        InboxTableName,
 	Description: "可靠消息消费幂等标记",
 	Columns: []DefinitionColumn{
-		{Name: "consumer", Type: entity.LogicalString, CaseSensitive: true},
-		{Name: "messageId", Type: entity.LogicalString, Size: 36, CaseSensitive: true, CharacterSet: "ascii"},
-		{Name: "processedAt", Type: entity.LogicalTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "consumer", Type: gnentity.LogicalString, CaseSensitive: true},
+		{Name: "messageId", Type: gnentity.LogicalString, Size: 36, CaseSensitive: true, CharacterSet: "ascii"},
+		{Name: "processedAt", Type: gnentity.LogicalTime, Default: "CURRENT_TIMESTAMP"},
 	},
 	PrimaryKey: []string{"consumer", "messageId"},
 }

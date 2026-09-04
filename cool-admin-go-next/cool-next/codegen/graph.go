@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Provider 节点
+// 依赖图 Provider 节点
 type Provider struct {
 	kind        ProviderKind
 	name        string
@@ -21,6 +21,7 @@ type ProviderKind string
 
 const (
 	ProviderKindConfig             ProviderKind = "config"          // 模块配置
+	ProviderKindSeed               ProviderKind = "seed"            // 模块种子数据
 	ProviderKindComponent          ProviderKind = "component"       // 普通构造器
 	ProviderKindDescriptor         ProviderKind = "descriptor"      // 实体 Descriptor
 	ProviderKindBase               ProviderKind = "base"            // 实体 Base Service
@@ -167,7 +168,7 @@ func BuildGraphWithDescriptors(model *Model, descriptors *DescriptorSet) (*Graph
 	if descriptors == nil {
 		return nil, graphError("CG038", "Descriptor 集合不能为空", Position{})
 	}
-	if err := validateDescriptorProviders(model, descriptors); err != nil {
+	if err := checkDescriptors(model, descriptors); err != nil {
 		return nil, err
 	}
 	return buildGraph(model, descriptors)
@@ -190,8 +191,13 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 			typ:            current.config.typ,
 		})
 	}
+	if seedType := findSeedDataType(model); seedType != nil {
+		for _, current := range model.modules {
+			providers = append(providers, graphProvider{componentIndex: -1, provider: Provider{kind: ProviderKindSeed, name: "Data", module: current.identity.Key(), packagePath: seedPackagePath, typ: types.TypeString(seedType, qualifier)}, typ: seedType})
+		}
+	}
 	// 框架数据库 Runtime 作为共享 Provider，由生成的装配局部变量 runtime 提供
-	if runtimeProviderType := findRuntimeProviderType(model); runtimeProviderType != nil {
+	if runtimeType := runtimeProviderType(model); runtimeType != nil {
 		providers = append(providers, graphProvider{
 			componentIndex: -1,
 			provider: Provider{
@@ -199,12 +205,26 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 				name:        "Runtime",
 				module:      frameworkModuleKey,
 				packagePath: databasePackagePath,
-				typ:         types.TypeString(runtimeProviderType, qualifier),
+				typ:         types.TypeString(runtimeType, qualifier),
 			},
-			typ: runtimeProviderType,
+			typ: runtimeType,
 		})
 	}
-	providers = appendAuthProviders(model, providers)
+	// 框架回收站 Store 由数据库 Runtime 同步创建并共享
+	if storeType := recycleStoreProviderType(model); storeType != nil {
+		providers = append(providers, graphProvider{
+			componentIndex: -1,
+			provider: Provider{
+				kind:        ProviderKindComponent,
+				name:        "Store",
+				module:      frameworkModuleKey,
+				packagePath: recyclePackagePath,
+				typ:         types.TypeString(storeType, qualifier),
+			},
+			typ: storeType,
+		})
+	}
+	providers = addAuthProviders(model, providers)
 	for _, current := range model.modules {
 		seen := make([]types.Type, 0, len(current.constructors))
 		for _, constructor := range current.constructors {
@@ -261,7 +281,7 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 				packagePath: outboxPackagePath,
 				typ:         outboxPackagePath + ".Enqueuer",
 			},
-			typ: producerEnqueuerType(nodes),
+			typ: enqueuerType(nodes),
 		})
 	}
 	if len(graph.consumers) > 0 && graph.consumerAdapter == nil {
@@ -282,17 +302,17 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 			providers = append(providers, graphProvider{
 				componentIndex: -1,
 				provider:       Provider{kind: ProviderKindBase, name: baseCandidate.name, module: baseCandidate.module, packagePath: fragment.entityPackage, typ: baseCandidate.typ},
-				typ:            findBaseProviderType(model, fragment.entityType),
+				typ:            baseProviderType(model, fragment.entityType),
 			})
 		}
 	}
 
-	dependencies, err := resolveDependencies(nodes, providers, modules)
+	dependencies, err := resolveDeps(nodes, providers, modules)
 	if err != nil {
 		return nil, err
 	}
-	graph.dependencies = publicDependencies(dependencies, nodes, providers)
-	graph.moduleDependencies = projectModuleDependencies(dependencies, nodes, providers)
+	graph.dependencies = exportDeps(dependencies, nodes, providers)
+	graph.moduleDependencies = moduleDeps(dependencies, nodes, providers)
 	if cycle, position := findModuleCycle(graph.modules, graph.moduleDependencies); len(cycle) > 0 {
 		return nil, graphError("CG036", "模块依赖循环: "+strings.Join(cycle, " -> "), position)
 	}
@@ -327,20 +347,21 @@ func buildGraph(model *Model, descriptors *DescriptorSet) (*Graph, error) {
 	return graph, nil
 }
 
-// appendAuthProviders 注册由生成装配负责创建的认证端口。
-func appendAuthProviders(model *Model, providers []graphProvider) []graphProvider {
+// 由生成装配负责创建的认证端口
+func addAuthProviders(model *Model, providers []graphProvider) []graphProvider {
 	seen := make(map[string]bool)
 	for _, current := range providers {
-		seen[current.provider.name] = true
+		seen[current.provider.packagePath+"."+current.provider.name] = true
 	}
 	for _, current := range model.modules {
 		for _, constructor := range current.constructors {
 			for _, parameter := range constructor.types {
 				name, packagePath := authProviderType(parameter)
-				if name == "" || seen[name] {
+				key := packagePath + "." + name
+				if name == "" || seen[key] {
 					continue
 				}
-				seen[name] = true
+				seen[key] = true
 				providers = append(providers, graphProvider{
 					componentIndex: -1,
 					provider:       Provider{kind: ProviderKindComponent, name: name, module: frameworkModuleKey, packagePath: packagePath, typ: types.TypeString(parameter, qualifier)},
@@ -364,7 +385,7 @@ func authProviderType(value types.Type) (string, string) {
 	path := named.Obj().Pkg().Path()
 	if path == authPackagePath {
 		switch named.Obj().Name() {
-		case "Service", "TokenCodec", "SessionStore":
+		case "Service", "Codec", "Store":
 			return named.Obj().Name(), path
 		}
 	}
@@ -374,11 +395,11 @@ func authProviderType(value types.Type) (string, string) {
 	return "", ""
 }
 
-func findBaseProviderType(model *Model, entityType types.Type) types.Type {
+func baseProviderType(model *Model, entityType types.Type) types.Type {
 	for _, current := range model.modules {
 		for _, constructor := range current.constructors {
 			for _, parameter := range constructor.types {
-				if isBaseProviderType(parameter, entityType) {
+				if isBaseProvider(parameter, entityType) {
 					return parameter
 				}
 			}
@@ -388,9 +409,32 @@ func findBaseProviderType(model *Model, entityType types.Type) types.Type {
 	return nil
 }
 
-// findRuntimeProviderType 搜索任意构造器参数中的 *coredb.Runtime 类型，返回其 types.Type 对象。
-func findRuntimeProviderType(model *Model) types.Type {
-	runtimePackagePath := databasePackagePath
+func findSeedDataType(model *Model) types.Type {
+	for _, current := range model.modules {
+		for _, constructor := range current.constructors {
+			for _, parameter := range constructor.types {
+				named, ok := types.Unalias(parameter).(*types.Named)
+				if ok && named.Obj().Pkg() != nil && named.Obj().Pkg().Path() == seedPackagePath && named.Obj().Name() == "Data" {
+					return parameter
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// 任意构造器参数中的 *db.Runtime 类型，返回其 types.Type 对象
+func runtimeProviderType(model *Model) types.Type {
+	return frameworkPointerProviderType(model, databasePackagePath, "Runtime")
+}
+
+// 任意构造器参数中的 *gnrecycle.Store 类型，返回其 types.Type 对象
+func recycleStoreProviderType(model *Model) types.Type {
+	return frameworkPointerProviderType(model, recyclePackagePath, "Store")
+}
+
+func frameworkPointerProviderType(model *Model, packagePath, name string) types.Type {
 	for _, current := range model.modules {
 		for _, constructor := range current.constructors {
 			for _, parameter := range constructor.types {
@@ -401,7 +445,7 @@ func findRuntimeProviderType(model *Model) types.Type {
 				}
 				named, matches := types.Unalias(pointer.Elem()).(*types.Named)
 				if !matches || named.Obj() == nil || named.Obj().Pkg() == nil ||
-					named.Obj().Pkg().Path() != runtimePackagePath || named.Obj().Name() != "Runtime" {
+					named.Obj().Pkg().Path() != packagePath || named.Obj().Name() != name {
 					continue
 				}
 				return parameter
@@ -411,7 +455,7 @@ func findRuntimeProviderType(model *Model) types.Type {
 	return nil
 }
 
-func isBaseProviderType(value, entityType types.Type) bool {
+func isBaseProvider(value, entityType types.Type) bool {
 	pointer, matches := types.Unalias(value).(*types.Pointer)
 	if !matches {
 		return false
@@ -426,16 +470,16 @@ func isBaseProviderType(value, entityType types.Type) bool {
 		types.Identical(arguments.At(1), types.Typ[types.Uint64])
 }
 
-func validateDescriptorProviders(model *Model, descriptors *DescriptorSet) error {
+func checkDescriptors(model *Model, descriptors *DescriptorSet) error {
 	expected := make(map[string]Position)
 	for _, current := range model.modules {
 		for _, entity := range current.entities {
-			expected[graphDescriptorKey(current.identity.Key(), entity.packagePath, entity.name)] = entity.position
+			expected[graphDescKey(current.identity.Key(), entity.packagePath, entity.name)] = entity.position
 		}
 	}
 	seen := make(map[string]bool, len(descriptors.fragments))
 	for _, fragment := range descriptors.fragments {
-		key := graphDescriptorKey(fragment.module, fragment.entityPackage, fragment.entity)
+		key := graphDescKey(fragment.module, fragment.entityPackage, fragment.entity)
 		position, exists := expected[key]
 		if !exists {
 			return graphError("CG039", "Descriptor Provider 不属于已发现实体", fragment.provider.position)
@@ -458,7 +502,7 @@ func validateDescriptorProviders(model *Model, descriptors *DescriptorSet) error
 	return nil
 }
 
-func graphDescriptorKey(module, packagePath, entity string) string {
+func graphDescKey(module, packagePath, entity string) string {
 	return module + ":" + packagePath + ":" + entity
 }
 
@@ -542,7 +586,7 @@ func (g *Graph) ConsumerAdapter() (Component, bool) {
 	return *g.consumerAdapter, true
 }
 
-func producerEnqueuerType(nodes []graphComponent) types.Type {
+func enqueuerType(nodes []graphComponent) types.Type {
 	for _, node := range nodes {
 		if !node.constructor.isProducer {
 			continue

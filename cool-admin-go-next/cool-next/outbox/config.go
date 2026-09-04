@@ -30,7 +30,7 @@ type Config struct {
 	MaxHeaderBytes      int           `json:"maxHeaderBytes"`      // 消息 Header 上限
 }
 
-// 返回设计约定的默认配置
+// 设计约定的默认配置
 func DefaultConfig() Config {
 	return Config{
 		Enabled:             true,
@@ -52,7 +52,7 @@ func DefaultConfig() Config {
 	}
 }
 
-// 校验可靠消息基础设施配置
+// 可靠消息基础设施配置
 func (config Config) Validate() error {
 	if strings.TrimSpace(config.DatabaseGroup) == "" || strings.TrimSpace(config.DatabaseGroup) != config.DatabaseGroup {
 		return gerror.New("outbox config: Database Group 无效")
@@ -80,12 +80,12 @@ func (config Config) Validate() error {
 	return nil
 }
 
-// 返回完整 Envelope 上限
+// 完整 Envelope 上限
 func (config Config) MaxEnvelopeBytes() int {
 	return config.MaxPayloadBytes + config.MaxHeaderBytes + envelopeMetadataAllowance
 }
 
-// 返回发布循环配置
+// 发布循环配置
 func (config Config) WorkerConfig() WorkerConfig {
 	return WorkerConfig{
 		PollInterval:       config.PollInterval,
@@ -99,7 +99,7 @@ func (config Config) WorkerConfig() WorkerConfig {
 	}
 }
 
-// 返回消费事务配置
+// 消费事务配置
 func (config Config) ConsumerConfig() ConsumerConfig {
 	return ConsumerConfig{
 		ConsumerTimeout:     config.ConsumerTimeout,
@@ -109,7 +109,7 @@ func (config Config) ConsumerConfig() ConsumerConfig {
 	}
 }
 
-// 返回入队大小限制
+// 入队大小限制
 func (config Config) EnqueueLimits() EnqueueLimits {
 	return EnqueueLimits{
 		MaxPayloadBytes:  config.MaxPayloadBytes,
@@ -118,7 +118,7 @@ func (config Config) EnqueueLimits() EnqueueLimits {
 	}
 }
 
-// 返回 Broker Consumer Adapter 配置
+// Broker Consumer Adapter 配置
 func (config Config) BrokerConsumerConfig() BrokerConsumerConfig {
 	return BrokerConsumerConfig{
 		ConsumerTimeout:  config.ConsumerTimeout,

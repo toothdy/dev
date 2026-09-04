@@ -11,42 +11,42 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 )
 
-// BindSource 请求绑定来源
+// 请求绑定来源
 type BindSource string
 
 const (
-	BindAuto  BindSource = "auto"
-	BindJSON  BindSource = "json"
-	BindQuery BindSource = "query"
-	BindForm  BindSource = "form"
-	BindPath  BindSource = "path"
-	BindFile  BindSource = "file"
+	BindAuto  BindSource = "auto"  // 自动绑定
+	BindJSON  BindSource = "json"  // JSON 请求体
+	BindQuery BindSource = "query" // 查询参数
+	BindForm  BindSource = "form"  // 表单参数
+	BindPath  BindSource = "path"  // 路径参数
+	BindFile  BindSource = "file"  // 上传文件
 )
 
-// Kind 路由种类
+// 路由种类
 type Kind string
 
 const (
-	KindCRUD   Kind = "crud"
-	KindCustom Kind = "custom"
+	KindCRUD   Kind = "crud"   // CRUD 路由
+	KindCustom Kind = "custom" // 自定义路由
 )
 
-// TransactionPolicy 路由事务策略
+// 路由事务策略
 type TransactionPolicy struct {
 	nonTransactional bool
 }
 
-// NonTransactional 创建非事务策略
+// 非事务策略
 func NonTransactional() TransactionPolicy {
 	return TransactionPolicy{nonTransactional: true}
 }
 
-// IsNonTransactional 判断是否显式关闭事务
+// 是否显式关闭事务
 func (policy TransactionPolicy) IsNonTransactional() bool {
 	return policy.nonTransactional
 }
 
-// CallableRef 生成期解析的可调用符号
+// 生成期解析的可调用符号
 type CallableRef struct {
 	HasRequest         bool
 	Method             string
@@ -58,7 +58,7 @@ type CallableRef struct {
 	Type               string
 }
 
-// ControllerDefinition 静态 Controller 输入
+// 静态 Controller 输入
 type ControllerDefinition struct {
 	Alias              []string
 	Description        string
@@ -84,13 +84,12 @@ type Definition struct {
 	Method          string
 	Middleware      []string
 	Path            string
-	Permission      string
 	Summary         string
 	Tags            []string
 	Transaction     TransactionPolicy
 }
 
-// TableInput 静态路由表输入
+// 静态路由表输入
 type TableInput struct {
 	Controllers []ControllerDefinition
 	Routes      []Definition
@@ -117,7 +116,7 @@ type Controller struct {
 	tagName            string
 }
 
-// Route 已校验的静态路由
+// 已校验的静态路由
 type Route struct {
 	bind            BindSource
 	controller      string
@@ -128,13 +127,12 @@ type Route struct {
 	method          string
 	middleware      []string
 	path            string
-	permission      string
 	summary         string
 	tags            []string
 	transaction     TransactionPolicy
 }
 
-// BuildTable 构建不可变静态路由表
+// 不可变静态路由表
 func BuildTable(input TableInput) (Table, error) {
 	controllers, controllerKeys, err := compileControllers(input.Controllers)
 	if err != nil {
@@ -148,17 +146,7 @@ func BuildTable(input TableInput) (Table, error) {
 	return Table{controllers: controllers, routes: routes}, nil
 }
 
-// MustBuildTable 构建静态路由表
-func MustBuildTable(input TableInput) Table {
-	table, err := BuildTable(input)
-	if err != nil {
-		panic(err)
-	}
-
-	return table
-}
-
-// Controllers Controller 副本
+// Controller 副本
 func (table Table) Controllers() []Controller {
 	result := append([]Controller(nil), table.controllers...)
 	for index := range result {
@@ -189,7 +177,7 @@ func (controller Controller) Module() string { return controller.module }
 // Controller 完整路径
 func (controller Controller) Path() string { return controller.path }
 
-// Alias Controller 别名副本
+// Controller 别名副本
 func (controller Controller) Alias() []string { return append([]string(nil), controller.alias...) }
 
 // Controller 中间件副本
@@ -197,61 +185,58 @@ func (controller Controller) Middleware() []string {
 	return append([]string(nil), controller.middleware...)
 }
 
-// Description Controller 描述
+// Controller 描述
 func (controller Controller) Description() string { return controller.description }
 
-// DevelopmentOnly 是否仅在开发环境注册
+// 是否仅在开发环境注册
 func (controller Controller) DevelopmentOnly() bool { return controller.developmentOnly }
 
-// TagName Controller 标签名
+// Controller 标签名
 func (controller Controller) TagName() string { return controller.tagName }
 
-// Sensitive 路径是否大小写敏感
+// 路径是否大小写敏感
 func (controller Controller) Sensitive() bool { return controller.sensitive }
 
 // 是否忽略全局前缀
 func (controller Controller) IgnoreGlobalPrefix() bool { return controller.ignoreGlobalPrefix }
 
-// Factory Controller 工厂引用
+// Controller 工厂引用
 func (controller Controller) Factory() CallableRef { return controller.factory }
 
 // 所属 Controller 唯一键
 func (route Route) Controller() string { return route.controller }
 
-// Kind 路由种类
+// 路由种类
 func (route Route) Kind() Kind { return route.kind }
 
-// Method 规范化 HTTP Method
+// 规范化 HTTP Method
 func (route Route) Method() string { return route.method }
 
 // 规范化完整路径
 func (route Route) Path() string { return route.path }
 
-// Summary 路由摘要
+// 路由摘要
 func (route Route) Summary() string { return route.summary }
 
-// Description 路由描述
+// 路由描述
 func (route Route) Description() string { return route.description }
 
-// DevelopmentOnly 是否仅在开发环境注册
+// 是否仅在开发环境注册
 func (route Route) DevelopmentOnly() bool { return route.developmentOnly }
 
-// Handler Handler 引用
+// 处理器引用
 func (route Route) Handler() CallableRef { return route.handler }
 
-// Bind 已解析绑定来源
+// 已解析绑定来源
 func (route Route) Bind() BindSource { return route.bind }
 
 // 路由中间件副本
 func (route Route) Middleware() []string { return append([]string(nil), route.middleware...) }
 
-// Tags 路由标签副本
+// 路由标签副本
 func (route Route) Tags() []string { return append([]string(nil), route.tags...) }
 
-// Permission 权限字符串
-func (route Route) Permission() string { return route.permission }
-
-// Transaction 事务策略
+// 事务策略
 func (route Route) Transaction() TransactionPolicy { return route.transaction }
 
 func compileControllers(definitions []ControllerDefinition) ([]Controller, map[string]bool, error) {
@@ -374,12 +359,6 @@ func compileRoute(definition Definition, controllerKeys map[string]bool) (Route,
 	if err != nil {
 		return Route{}, exception.WrapCore(err, fmt.Sprintf("路由 %s %s 无效", method, fullPath))
 	}
-	if contains(tags, "ignoreToken") && strings.TrimSpace(definition.Permission) != "" {
-		return Route{}, exception.Core(fmt.Sprintf("路由 %s %s 的 ignoreToken 与权限冲突", method, fullPath))
-	}
-	if err = validatePermission(definition.Permission); err != nil {
-		return Route{}, exception.WrapCore(err, fmt.Sprintf("路由 %s %s 权限无效", method, fullPath))
-	}
 	if err = validateText("摘要", definition.Summary, true); err != nil {
 		return Route{}, exception.WrapCore(err, fmt.Sprintf("路由 %s %s 无效", method, fullPath))
 	}
@@ -397,7 +376,6 @@ func compileRoute(definition Definition, controllerKeys map[string]bool) (Route,
 		method:          method,
 		middleware:      middleware,
 		path:            fullPath,
-		permission:      definition.Permission,
 		summary:         definition.Summary,
 		tags:            tags,
 		transaction:     definition.Transaction,
@@ -516,22 +494,6 @@ func validTag(value string) bool {
 	return strings.TrimSpace(value) == value && token.IsIdentifier(value)
 }
 
-func validatePermission(value string) error {
-	if value == "" {
-		return nil
-	}
-	if strings.TrimSpace(value) != value {
-		return exception.Core("不能包含首尾空白")
-	}
-	for _, segment := range strings.Split(value, ":") {
-		if !token.IsIdentifier(segment) {
-			return exception.Core("必须是冒号分隔的标识符")
-		}
-	}
-
-	return nil
-}
-
 func validateText(label, value string, optional bool) error {
 	if value == "" && optional {
 		return nil
@@ -556,4 +518,22 @@ func contains(values []string, target string) bool {
 	}
 
 	return false
+}
+
+// 校验 Controller 前缀等相对路径
+func ValidRelativePath(value string) bool {
+	if value == "" {
+		return true
+	}
+	if strings.TrimSpace(value) != value || strings.HasPrefix(value, "/") ||
+		strings.HasSuffix(value, "/") || strings.ContainsAny(value, "?#") {
+		return false
+	}
+	for _, segment := range strings.Split(value, "/") {
+		if segment == "" || segment == "." || segment == ".." {
+			return false
+		}
+	}
+
+	return true
 }

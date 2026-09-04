@@ -2,45 +2,52 @@ package crud
 
 import (
 	"fmt"
+
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 )
 
 const (
-	maxBodyLimit   int64 = 8 * 1024 * 1024
-	maxBatchLimit        = 1000
-	maxPageLimit         = 100
-	maxListLimit         = 1000
-	maxExportLimit       = 10000
+	maxBodyLimit          int64 = 8 * 1024 * 1024
+	maxMultipartBodyLimit int64 = 101 * 1024 * 1024
+	maxBatchLimit               = 1000
+	maxPageLimit                = 100
+	maxListLimit                = 1000
+	maxExportLimit              = 10000
 )
 
 // CRUD 配置
 type Config struct {
-	SoftDelete  bool  `json:"softDelete"`
-	BodyLimit   int64 `json:"bodyLimit"`
-	BatchLimit  int   `json:"batchLimit"`
-	PageSize    int   `json:"pageSize"`
-	PageLimit   int   `json:"pageLimit"`
-	ListLimit   int   `json:"listLimit"`
-	ExportLimit int   `json:"exportLimit"`
+	SoftDelete         bool  `json:"softDelete"`
+	BodyLimit          int64 `json:"bodyLimit"`
+	MultipartBodyLimit int64 `json:"multipartBodyLimit"`
+	BatchLimit         int   `json:"batchLimit"`
+	PageSize           int   `json:"pageSize"`
+	PageLimit          int   `json:"pageLimit"`
+	ListLimit          int   `json:"listLimit"`
+	ExportLimit        int   `json:"exportLimit"`
 }
 
-// 返回 CRUD 默认配置
+// CRUD 默认配置
 func DefaultConfig() Config {
 	return Config{
-		SoftDelete:  true,
-		BodyLimit:   maxBodyLimit,
-		BatchLimit:  maxBatchLimit,
-		PageSize:    15,
-		PageLimit:   maxPageLimit,
-		ListLimit:   maxListLimit,
-		ExportLimit: maxExportLimit,
+		SoftDelete:         true,
+		BodyLimit:          maxBodyLimit,
+		MultipartBodyLimit: maxMultipartBodyLimit,
+		BatchLimit:         maxBatchLimit,
+		PageSize:           15,
+		PageLimit:          maxPageLimit,
+		ListLimit:          maxListLimit,
+		ExportLimit:        maxExportLimit,
 	}
 }
 
-// 校验 CRUD 限制只能在框架硬上限内收紧
+// CRUD 限制只能在框架硬上限内收紧
 func (config Config) Validate() error {
 	if config.BodyLimit <= 0 || config.BodyLimit > maxBodyLimit {
 		return exception.Core(fmt.Sprintf("CRUD BodyLimit 必须在 1 到 %d 之间", maxBodyLimit))
+	}
+	if config.MultipartBodyLimit <= 0 || config.MultipartBodyLimit > maxMultipartBodyLimit {
+		return exception.Core(fmt.Sprintf("CRUD MultipartBodyLimit 必须在 1 到 %d 之间", maxMultipartBodyLimit))
 	}
 	if config.BatchLimit <= 0 || config.BatchLimit > maxBatchLimit {
 		return exception.Core(fmt.Sprintf("CRUD BatchLimit 必须在 1 到 %d 之间", maxBatchLimit))

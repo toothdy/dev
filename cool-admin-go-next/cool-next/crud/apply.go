@@ -32,7 +32,7 @@ func applyQueryPlan(ctx context.Context, model *gdb.Model, plan *QueryPlan) (*gd
 	if plan == nil {
 		return nil, exception.Core("查询计划不能为空")
 	}
-	if err := validatePlan(plan); err != nil {
+	if err := checkPlan(plan); err != nil {
 		return nil, err
 	}
 
@@ -82,8 +82,8 @@ func applyQueryPlan(ctx context.Context, model *gdb.Model, plan *QueryPlan) (*gd
 	return applied, nil
 }
 
-// 校验查询计划的执行节点
-func validatePlan(plan *QueryPlan) error {
+// 查询计划的执行节点
+func checkPlan(plan *QueryPlan) error {
 	if !planTableNamePattern.MatchString(plan.root.table) || plan.root.alias != rootQueryAlias {
 		return exception.Core("查询计划根实体无效")
 	}
@@ -107,7 +107,7 @@ func validatePlan(plan *QueryPlan) error {
 		}
 	}
 	for _, condition := range plan.where {
-		if err := validateCondition(condition); err != nil {
+		if err := checkCondition(condition); err != nil {
 			return err
 		}
 	}
@@ -117,7 +117,7 @@ func validatePlan(plan *QueryPlan) error {
 		}
 	}
 	for _, condition := range plan.having {
-		if err := validateCondition(condition); err != nil {
+		if err := checkCondition(condition); err != nil {
 			return err
 		}
 	}
@@ -130,8 +130,8 @@ func validatePlan(plan *QueryPlan) error {
 	return nil
 }
 
-// 校验查询计划条件
-func validateCondition(condition planCondition) error {
+// 查询计划条件
+func checkCondition(condition planCondition) error {
 	switch condition.operator {
 	case operatorEQ, operatorNE:
 		if !isValidColumn(condition.column) {
@@ -178,7 +178,7 @@ func validateCondition(condition planCondition) error {
 	return nil
 }
 
-// 生成参数化查询条件
+// 参数化查询条件
 func formatCondition(model *gdb.Model, condition planCondition) (string, []any) {
 	column := quoteColumn(model, condition.column)
 	switch condition.operator {
@@ -203,9 +203,9 @@ func formatCondition(model *gdb.Model, condition planCondition) (string, []any) 
 		for index, keywordColumn := range condition.columns {
 			parts[index] = quoteColumn(model, keywordColumn) + " LIKE ?"
 		}
-		return "(" + strings.Join(parts, " OR ") + ")", clonePlanArguments(condition.arguments)
+		return "(" + strings.Join(parts, " OR ") + ")", cloneArgs(condition.arguments)
 	case operatorRaw:
-		return condition.expression, clonePlanArguments(condition.arguments)
+		return condition.expression, cloneArgs(condition.arguments)
 	default:
 		return "", nil
 	}
@@ -216,7 +216,7 @@ func quoteColumn(model *gdb.Model, column planColumn) string {
 	return model.QuoteWord(column.alias) + "." + model.QuoteWord(column.column)
 }
 
-// 校验查询计划字段
+// 查询计划字段
 func isValidColumn(column planColumn) bool {
 	return planTableNamePattern.MatchString(column.table) &&
 		queryNamePattern.MatchString(column.alias) &&

@@ -2,13 +2,13 @@ package entity
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
-// Role 是后台用户角色。
+// 后台用户角色
 type Role struct {
 	g.Meta `orm:"table:base_sys_role" description:"系统角色"`
-	coreentity.Base
+	gnentity.Base
 	UserID           string   `json:"userId" orm:"userId" description:"创建者ID" cool:"size=255"`
 	Name             string   `json:"name" orm:"name" description:"名称" cool:"size=255"`
 	Label            *string  `json:"label" orm:"label" description:"角色标签" cool:"size=50"`
@@ -18,10 +18,10 @@ type Role struct {
 	DepartmentIDList []uint64 `json:"departmentIdList" orm:"departmentIdList" description:"部门权限" cool:"json=true"`
 }
 
-// RoleSchema 返回角色表补充索引。
-func RoleSchema() coreentity.Schema {
-	return coreentity.Schema{Indexes: []coreentity.Index{
-		coreentity.UniqueIndexOf("uk_base_sys_role_name", "name"),
-		coreentity.UniqueIndexOf("uk_base_sys_role_label", "label"),
+// 角色表补充索引
+func RoleSchema() gnentity.Schema {
+	return gnentity.Schema{Indexes: []gnentity.Index{
+		gnentity.UniqueIndexOf("uk_base_sys_role_name", "name"),
+		gnentity.UniqueIndexOf("uk_base_sys_role_label", "label"),
 	}}
 }

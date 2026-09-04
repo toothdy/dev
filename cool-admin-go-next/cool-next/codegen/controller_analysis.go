@@ -6,13 +6,15 @@ import (
 	"go/types"
 	"path"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/module"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 )
 
-const controllerPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+const controllerPackagePath = "github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 
 func (a *analysis) analyzeControllers(
 	root string,
@@ -112,10 +114,14 @@ func (a *analysis) analyzeControllerFactory(
 		a.add("CG024", "Controller 声明区域与源码目录不一致", a.position(pkg, chain.factory.Pos()))
 		return ControllerDeclaration{}, false
 	}
-	explicitPath, exists := constantControllerString(pkg, chain.path)
-	if !exists || !validControllerRelativePath(explicitPath) {
-		a.add("CG024", "Controller 路径必须是合法常量相对路径", a.position(pkg, chain.path.Pos()))
-		return ControllerDeclaration{}, false
+	explicitPath := ""
+	if chain.path != nil {
+		var exists bool
+		explicitPath, exists = constantControllerString(pkg, chain.path)
+		if !exists || !route.ValidRelativePath(explicitPath) {
+			a.add("CG024", "Controller 路径必须是合法常量相对路径", a.position(pkg, chain.path.Pos()))
+			return ControllerDeclaration{}, false
+		}
 	}
 	controllerPath := explicitControllerPath(sourceArea, explicitPath)
 	if explicitPath == "" {
@@ -126,7 +132,7 @@ func (a *analysis) analyzeControllerFactory(
 		name:           function.Name.Name,
 		packageName:    pkg.packageInfo.Name,
 		packagePath:    pkg.packageInfo.PkgPath,
-		parameterTypes: controllerParameterTypes(signature),
+		parameterTypes: parameterTypes(signature),
 		path:           controllerPath,
 		position:       a.position(pkg, function.Pos()),
 		prefix:         controllerPath,
@@ -143,7 +149,7 @@ func (a *analysis) analyzeControllerFactory(
 			return ControllerDeclaration{}, false
 		}
 		prefix, prefixValid := controllerPrefix(pkg, literal)
-		if !prefixValid || !validControllerRelativePath(prefix) {
+		if !prefixValid || !route.ValidRelativePath(prefix) {
 			position := literal.Pos()
 			if value, exists := controllerLiteralField(literal, "Prefix"); exists {
 				position = value.Pos()
@@ -156,7 +162,9 @@ func (a *analysis) analyzeControllerFactory(
 		}
 		entityExpression, exists := controllerLiteralField(literal, "Entity")
 		entityType, entityValid := controllerEntityType(pkg, function, entityExpression, exists)
-		if !entityValid || !containsControllerEntity(entities, entityType) {
+		if !entityValid || !slices.ContainsFunc(entities, func(entity EntityDeclaration) bool {
+			return types.Identical(types.Unalias(entity.typ), types.Unalias(entityType))
+		}) {
 			position := literal.Pos()
 			if exists {
 				position = entityExpression.Pos()
@@ -209,13 +217,13 @@ type controllerChain struct {
 	factory      *ast.CallExpr
 	options      *ast.CallExpr
 	optionsCount int
-	path         ast.Expr
+	path         ast.Expr // nil 表示 Admin()/App() 零参数调用，等价于显式传空字符串
 	routes       []*ast.CallExpr
 }
 
 func parseControllerChain(pkg *loadedPackage, expression ast.Expr) (controllerChain, bool) {
 	build, matches := unparenControllerExpr(expression).(*ast.CallExpr)
-	if !matches || len(build.Args) != 0 || !isPackageFunction(queryCalledFunction(pkg.packageInfo.TypesInfo, build.Fun), controllerPackagePath, "Build") {
+	if !matches || len(build.Args) != 0 || !packageFunction(calledFunction(pkg.packageInfo.TypesInfo, build.Fun), controllerPackagePath, "Build") {
 		return controllerChain{}, false
 	}
 	selector, matches := unparenControllerExpr(build.Fun).(*ast.SelectorExpr)
@@ -229,8 +237,8 @@ func parseControllerChain(pkg *loadedPackage, expression ast.Expr) (controllerCh
 		if !isCall {
 			return controllerChain{}, false
 		}
-		function := queryCalledFunction(pkg.packageInfo.TypesInfo, call.Fun)
-		if isPackageFunction(function, controllerPackagePath, "Curd") {
+		function := calledFunction(pkg.packageInfo.TypesInfo, call.Fun)
+		if packageFunction(function, controllerPackagePath, "Curd") {
 			if len(call.Args) != 1 {
 				return controllerChain{}, false
 			}
@@ -243,7 +251,7 @@ func parseControllerChain(pkg *loadedPackage, expression ast.Expr) (controllerCh
 			current = unparenControllerExpr(method.X)
 			continue
 		}
-		if isPackageFunction(function, controllerPackagePath, "Options") {
+		if packageFunction(function, controllerPackagePath, "Options") {
 			if len(call.Args) != 1 {
 				return controllerChain{}, false
 			}
@@ -256,7 +264,7 @@ func parseControllerChain(pkg *loadedPackage, expression ast.Expr) (controllerCh
 			current = unparenControllerExpr(method.X)
 			continue
 		}
-		if isPackageFunction(function, controllerPackagePath, "Route") {
+		if packageFunction(function, controllerPackagePath, "Route") {
 			if len(call.Args) == 0 {
 				return controllerChain{}, false
 			}
@@ -268,11 +276,13 @@ func parseControllerChain(pkg *loadedPackage, expression ast.Expr) (controllerCh
 			current = unparenControllerExpr(method.X)
 			continue
 		}
-		if !isPackageFunction(function, controllerPackagePath, "Admin") && !isPackageFunction(function, controllerPackagePath, "App") || len(call.Args) != 1 {
+		if !packageFunction(function, controllerPackagePath, "Admin") && !packageFunction(function, controllerPackagePath, "App") || len(call.Args) > 1 {
 			return controllerChain{}, false
 		}
 		chain.factory = call
-		chain.path = call.Args[0]
+		if len(call.Args) == 1 {
+			chain.path = call.Args[0]
+		}
 		if function.Name() == "Admin" {
 			chain.area = ControllerAdmin
 		} else {
@@ -349,22 +359,6 @@ func inferredControllerPath(area ControllerArea, moduleKey, relative string) str
 
 func explicitControllerPath(area ControllerArea, relative string) string {
 	return path.Join("/", string(area), relative)
-}
-
-func validControllerRelativePath(value string) bool {
-	if value == "" {
-		return true
-	}
-	if strings.TrimSpace(value) != value || strings.HasPrefix(value, "/") || strings.HasSuffix(value, "/") || strings.ContainsAny(value, "?#") {
-		return false
-	}
-	for _, segment := range strings.Split(value, "/") {
-		if segment == "" || segment == "." || segment == ".." {
-			return false
-		}
-	}
-
-	return true
 }
 
 func constantControllerString(pkg *loadedPackage, expression ast.Expr) (string, bool) {
@@ -510,16 +504,6 @@ func controllerEntityType(pkg *loadedPackage, function *ast.FuncDecl, expression
 	return named, true
 }
 
-func containsControllerEntity(entities []EntityDeclaration, target types.Type) bool {
-	for _, entity := range entities {
-		if types.Identical(types.Unalias(entity.typ), types.Unalias(target)) {
-			return true
-		}
-	}
-
-	return false
-}
-
 func controllerService(
 	pkg *loadedPackage,
 	signature *types.Signature,
@@ -596,7 +580,7 @@ func controllerInsertType(pkg *loadedPackage, function *ast.FuncDecl, literal *a
 		return nil, true
 	}
 	call, matches := localControllerValue(pkg, function, expression).(*ast.CallExpr)
-	if !matches || len(call.Args) != 1 || !isPackageFunction(queryCalledFunction(pkg.packageInfo.TypesInfo, call.Fun), controllerPackagePath, "Insert") {
+	if !matches || len(call.Args) != 1 || !packageFunction(calledFunction(pkg.packageInfo.TypesInfo, call.Fun), controllerPackagePath, "Insert") {
 		return nil, false
 	}
 	signature, matches := types.Unalias(pkg.packageInfo.TypesInfo.TypeOf(call.Args[0])).(*types.Signature)

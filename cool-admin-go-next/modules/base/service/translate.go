@@ -2,12 +2,12 @@ package service
 
 import "strings"
 
-// TranslateService 提供 Base 菜单和消息翻译。
+// 翻译服务
 type TranslateService struct {
 	translations map[string]map[string]string
 }
 
-// NewTranslate 创建 Base 翻译服务。
+// 翻译服务
 func NewTranslate() *TranslateService {
 	return &TranslateService{translations: map[string]map[string]string{
 		"en": {
@@ -31,7 +31,7 @@ func NewTranslate() *TranslateService {
 	}}
 }
 
-// Translate 翻译 Base 文本，未知语言或词条返回原文。
+// 翻译 Base 文本，未知语言或词条返回原文
 func (service *TranslateService) Translate(language, text string) string {
 	if service == nil || text == "" {
 		return text

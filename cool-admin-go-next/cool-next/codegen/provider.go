@@ -7,16 +7,16 @@ import (
 	"strings"
 )
 
-func resolveDependencies(nodes []graphComponent, providers []graphProvider, modules map[string]Module) ([]graphDependency, error) {
+func resolveDeps(nodes []graphComponent, providers []graphProvider, modules map[string]Module) ([]graphDependency, error) {
 	var dependencies []graphDependency
 	for _, consumer := range nodes {
 		for parameterIndex, parameter := range consumer.constructor.types {
-			position := constructorParameterPosition(consumer.constructor, parameterIndex)
-			matches, illegal := matchingProviders(consumer, parameterIndex, parameter, providers, modules)
+			position := parameterPosition(consumer.constructor, parameterIndex)
+			matches, illegal := matchProviders(consumer, parameterIndex, parameter, providers, modules)
 			if len(matches) == 0 {
 				if len(illegal) > 0 {
 					labels := providerLabels(illegal, providers)
-					message := fmt.Sprintf("跨模块依赖 %s.%s -> %s 仅允许目标模块 contract/** 声明的接口，Config 不能跨模块注入", consumer.component.module, consumer.component.name, strings.Join(labels, ", "))
+					message := fmt.Sprintf("跨模块依赖 %s.%s -> %s 仅允许目标模块的具体 Provider 或 contract/** 接口，Config 和 Seed 不能跨模块注入", consumer.component.module, consumer.component.name, strings.Join(labels, ", "))
 					return nil, graphError("CG035", message, position)
 				}
 				message := fmt.Sprintf("构造器 %s.%s 的参数 %s 缺少 Provider", consumer.component.module, consumer.component.name, types.TypeString(parameter, qualifier))
@@ -41,9 +41,9 @@ func resolveDependencies(nodes []graphComponent, providers []graphProvider, modu
 	return dependencies, nil
 }
 
-func matchingProviders(consumer graphComponent, parameterIndex int, parameter types.Type, providers []graphProvider, modules map[string]Module) ([]int, []int) {
+func matchProviders(consumer graphComponent, parameterIndex int, parameter types.Type, providers []graphProvider, modules map[string]Module) ([]int, []int) {
 	var matches, illegal []int
-	targetModule := parameterDeclarationModule(consumer.constructor, parameterIndex, modules)
+	targetModule := parameterModule(consumer.constructor, parameterIndex, modules)
 	for index, provider := range providers {
 		if provider.typ == nil || !types.AssignableTo(provider.typ, parameter) {
 			continue
@@ -57,7 +57,7 @@ func matchingProviders(consumer graphComponent, parameterIndex int, parameter ty
 		}
 		isLocalDependency := targetModule == "" || targetModule == consumer.component.module
 		if isLocalDependency && provider.provider.module == consumer.component.module ||
-			!isLocalDependency && provider.provider.module == targetModule && isCrossModuleContract(consumer.constructor, parameterIndex, parameter, provider, modules) {
+			!isLocalDependency && provider.provider.module == targetModule && crossModuleDependencyAllowed(consumer.constructor, parameterIndex, parameter, provider, modules) {
 			matches = append(matches, index)
 		} else if provider.provider.module == frameworkModuleKey {
 			// 框架模块 .framework 的 Provider（如数据库 Runtime）允许跨模块注入
@@ -69,7 +69,7 @@ func matchingProviders(consumer graphComponent, parameterIndex int, parameter ty
 	return matches, illegal
 }
 
-func parameterDeclarationModule(constructor Constructor, parameterIndex int, modules map[string]Module) string {
+func parameterModule(constructor Constructor, parameterIndex int, modules map[string]Module) string {
 	if parameterIndex >= len(constructor.parameterDeclarations) {
 		return ""
 	}
@@ -91,16 +91,12 @@ func providerLabels(indexes []int, providers []graphProvider) []string {
 	return labels
 }
 
-func isCrossModuleContract(constructor Constructor, parameterIndex int, parameter types.Type, provider graphProvider, modules map[string]Module) bool {
-	if provider.provider.kind == ProviderKindConfig {
+func crossModuleDependencyAllowed(constructor Constructor, parameterIndex int, parameter types.Type, provider graphProvider, modules map[string]Module) bool {
+	if provider.provider.kind == ProviderKindConfig || provider.provider.kind == ProviderKindSeed {
 		return false
 	}
-	named, ok := types.Unalias(parameter).(*types.Named)
-	if !ok {
-		return false
-	}
-	if _, ok = named.Underlying().(*types.Interface); !ok {
-		return false
+	if _, ok := types.Unalias(parameter).Underlying().(*types.Interface); !ok {
+		return true
 	}
 	if parameterIndex >= len(constructor.parameterDeclarations) {
 		return false
@@ -113,14 +109,14 @@ func isCrossModuleContract(constructor Constructor, parameterIndex int, paramete
 	return strings.HasPrefix(declaration.File, module.root+"/contract/")
 }
 
-func constructorParameterPosition(constructor Constructor, index int) Position {
+func parameterPosition(constructor Constructor, index int) Position {
 	if index < len(constructor.parameterPositions) && constructor.parameterPositions[index].File != "" {
 		return constructor.parameterPositions[index]
 	}
 	return constructor.position
 }
 
-func publicDependencies(dependencies []graphDependency, nodes []graphComponent, providers []graphProvider) []Dependency {
+func exportDeps(dependencies []graphDependency, nodes []graphComponent, providers []graphProvider) []Dependency {
 	result := make([]Dependency, len(dependencies))
 	for index, dependency := range dependencies {
 		result[index] = Dependency{
@@ -133,7 +129,7 @@ func publicDependencies(dependencies []graphDependency, nodes []graphComponent, 
 	return result
 }
 
-func projectModuleDependencies(dependencies []graphDependency, nodes []graphComponent, providers []graphProvider) []ModuleDependency {
+func moduleDeps(dependencies []graphDependency, nodes []graphComponent, providers []graphProvider) []ModuleDependency {
 	seen := make(map[string]bool)
 	var result []ModuleDependency
 	for _, dependency := range dependencies {

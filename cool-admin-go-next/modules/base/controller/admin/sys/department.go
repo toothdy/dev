@@ -6,52 +6,52 @@ import (
 	"net/http"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/auth"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 	"github.com/toothdy/cool-admin-go-next/modules/base/service"
 )
 
-// DepartmentHandler 适配部门删除和排序接口。
+// 适配部门删除和排序接口
 type DepartmentHandler struct {
 	department *service.DepartmentService
 }
 
-// DepartmentOrderBody 保持前端顶层数组请求契约。
+// 前端顶层数组请求契约
 type DepartmentOrderBody struct {
 	Items dto.DepartmentOrderReq `json:"-"`
 }
 
-// UnmarshalJSON 解码顶层部门排序数组。
+// 解码顶层部门排序数组
 func (request *DepartmentOrderBody) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &request.Items)
 }
 
-// NewDepartmentHandler 创建部门管理接口适配器。
+// 部门管理接口适配器
 func NewDepartmentHandler(department *service.DepartmentService) *DepartmentHandler {
 	return &DepartmentHandler{department: department}
 }
 
-// Delete 按用户处理策略删除部门树。
+// 按用户处理策略删除部门树
 func (handler *DepartmentHandler) Delete(ctx context.Context, request *dto.DepartmentDeleteReq) error {
 	return handler.department.Delete(ctx, *request)
 }
 
-// Order 更新部门树顺序。
+// 更新部门树顺序
 func (handler *DepartmentHandler) Order(ctx context.Context, request *DepartmentOrderBody) error {
 	return handler.department.Order(ctx, request.Items)
 }
 
-// DepartmentController 声明系统部门管理路由。
-func DepartmentController(department *service.DepartmentService, handler *DepartmentHandler) controller.Definition {
-	return controller.Admin("").
-		Options(controller.RouterOptions{Description: "系统部门", TagName: "系统部门"}).
-		Curd(controller.CurdOption{
-			API:     controller.APIs(controller.APIAdd, controller.APIUpdate),
+// 系统部门管理路由
+func AdminSysDepartmentController(department *service.DepartmentService, handler *DepartmentHandler) gnctrl.Definition {
+	return gnctrl.Admin().
+		Options(gnctrl.RouterOptions{Description: "系统部门", TagName: "系统部门"}).
+		Curd(gnctrl.CurdOption{
+			API:     gnctrl.API(gnctrl.Add, gnctrl.Update),
 			Entity:  entity.Department{},
 			Service: department,
-			InsertParam: controller.Insert[entity.Department](func(ctx context.Context, input *coreservice.Mutable[entity.Department]) error {
+			InsertParam: gnctrl.Insert(func(ctx context.Context, input *gnservice.Mutable[entity.Department]) error {
 				identity, err := auth.Admin(ctx)
 				if err != nil {
 					return err
@@ -59,33 +59,30 @@ func DepartmentController(department *service.DepartmentService, handler *Depart
 
 				return input.Set("userId", identity.UserID)
 			}),
-			HiddenFields:   []controller.ColumnRef{controller.Field("seedKey")},
-			ReadonlyFields: []controller.ColumnRef{controller.Field("seedKey")},
+			HiddenFields:   []gnctrl.ColumnRef{gnctrl.Field("seedKey")},
+			ReadonlyFields: []gnctrl.ColumnRef{gnctrl.Field("seedKey")},
 		}).
 		Route(
-			controller.Route{
+			gnctrl.Route{
 				Method:      http.MethodPost,
 				Path:        "/list",
-				Summary:     "列表查询",
-				Handler:     controller.Handle(department.List),
-				Permission:  "base:sys:department:list",
-				Transaction: controller.NonTransactional(),
+				Summary:     "列表",
+				Handler:     gnctrl.Handle(department.List),
+				Transaction: gnctrl.NonTransactional(),
 			},
-			controller.Route{
-				Method:     http.MethodPost,
-				Path:       "/delete",
-				Summary:    "删除",
-				Handler:    controller.Handle(handler.Delete),
-				Bind:       controller.BindJSON,
-				Permission: "base:sys:department:delete",
+			gnctrl.Route{
+				Method:  http.MethodPost,
+				Path:    "/delete",
+				Summary: "删除",
+				Handler: gnctrl.Handle(handler.Delete),
+				Bind:    gnctrl.BindJSON,
 			},
-			controller.Route{
-				Method:     http.MethodPost,
-				Path:       "/order",
-				Summary:    "排序",
-				Handler:    controller.Handle(handler.Order),
-				Bind:       controller.BindJSON,
-				Permission: "base:sys:department:order",
+			gnctrl.Route{
+				Method:  http.MethodPost,
+				Path:    "/order",
+				Summary: "排序",
+				Handler: gnctrl.Handle(handler.Order),
+				Bind:    gnctrl.BindJSON,
 			},
 		).
 		Build()

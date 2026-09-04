@@ -16,13 +16,13 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/net/ghttp"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	base "github.com/toothdy/cool-admin-go-next/modules/base"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+	"github.com/toothdy/cool-admin-go-next/modules/base"
 )
 
 const (
-	defaultUploadMaxBytes = int64(10 << 20)
+	defaultUploadMaxBytes = int64(100 << 20)
 	uploadRandomBytes     = 16
 	uploadTemporaryPrefix = ".upload-"
 	uploadDateLayout      = "20060102"
@@ -39,16 +39,24 @@ var trustedUploadMedia = map[string]map[string]bool{
 	"video/webm": {".webm": true},
 }
 
-// UploadService 提供 Base 模块的本地上传和受控读取。
+// Base 模块的本地上传和受控读取
 type UploadService struct {
 	root          string
 	publicBaseURL string
+	publicURL     *url.URL
 	maxBytes      int64
 	now           func() time.Time
 	random        io.Reader
 }
 
-// NewUpload 按 Base 配置创建本地上传服务。
+// 本地受管上传文件位置
+type ManagedUploadLocation struct {
+	Root         string
+	RelativePath string
+	Key          string
+}
+
+// 按 Base 配置创建本地上传服务
 func NewUpload(config base.Config) (*UploadService, error) {
 	upload := config.Upload
 	if upload.Root == "" {
@@ -76,13 +84,47 @@ func NewUpload(config base.Config) (*UploadService, error) {
 	return &UploadService{
 		root:          root,
 		publicBaseURL: publicBaseURL,
+		publicURL:     parsedURL,
 		maxBytes:      maxBytes,
 		now:           time.Now,
 		random:        cryptorand.Reader,
 	}, nil
 }
 
-// Save 保存 multipart 文件并返回公开 URL。
+// 解析属于当前本地上传配置的公开 URL
+func (service *UploadService) ResolveManagedURL(rawURL string) (ManagedUploadLocation, bool) {
+	if service == nil || service.publicURL == nil || strings.Contains(rawURL, "#") {
+		return ManagedUploadLocation{}, false
+	}
+	candidate, err := url.Parse(rawURL)
+	if err != nil || candidate.Opaque != "" || candidate.User != nil || candidate.RawQuery != "" || candidate.ForceQuery ||
+		!strings.EqualFold(candidate.Scheme, service.publicURL.Scheme) ||
+		!strings.EqualFold(candidate.Host, service.publicURL.Host) {
+		return ManagedUploadLocation{}, false
+	}
+	prefix := strings.TrimRight(service.publicURL.EscapedPath(), "/") + "/upload/"
+	remainder, isManaged := strings.CutPrefix(candidate.EscapedPath(), prefix)
+	if !isManaged {
+		return ManagedUploadLocation{}, false
+	}
+	escapedDate, escapedName, exists := strings.Cut(remainder, "/")
+	if !exists || strings.Contains(escapedName, "/") {
+		return ManagedUploadLocation{}, false
+	}
+	date, dateErr := url.PathUnescape(escapedDate)
+	name, nameErr := url.PathUnescape(escapedName)
+	if dateErr != nil || nameErr != nil || !validUploadDate(date) || !validUploadBasename(name) {
+		return ManagedUploadLocation{}, false
+	}
+
+	return ManagedUploadLocation{
+		Root:         service.root,
+		RelativePath: filepath.Join(date, name),
+		Key:          "/upload/" + date + "/" + url.PathEscape(name),
+	}, true
+}
+
+// 保存 multipart 文件并返回公开 URL
 func (service *UploadService) Save(file *ghttp.UploadFile, key string) (string, error) {
 	if service == nil || file == nil || file.FileHeader == nil {
 		return "", exception.Validate("上传文件无效")
@@ -172,52 +214,52 @@ func (service *UploadService) Save(file *ghttp.UploadFile, key string) (string, 
 	return service.publicBaseURL + "/upload/" + date + "/" + url.PathEscape(name), nil
 }
 
-// Read 校验公开文件路径并构造受控文件响应。
-func (service *UploadService) Read(date, name string) (controller.FileResponse, error) {
+// 校验公开文件路径并构造受控文件响应
+func (service *UploadService) Read(date, name string) (gnctrl.FileResponse, error) {
 	if service == nil || !validUploadDate(date) || !validUploadBasename(name) {
-		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+		return gnctrl.FileResponse{}, exception.Validate("上传文件不存在")
 	}
 	root, err := service.openRoot(false)
 	if err != nil {
-		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+		return gnctrl.FileResponse{}, exception.Validate("上传文件不存在")
 	}
 	defer root.Close()
 
 	relative := filepath.Join(date, name)
 	directory, err := root.Lstat(date)
 	if err != nil || !directory.IsDir() {
-		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+		return gnctrl.FileResponse{}, exception.Validate("上传文件不存在")
 	}
 	entry, err := root.Lstat(relative)
 	if err != nil || !entry.Mode().IsRegular() {
-		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+		return gnctrl.FileResponse{}, exception.Validate("上传文件不存在")
 	}
 	file, err := root.Open(relative)
 	if err != nil {
-		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+		return gnctrl.FileResponse{}, exception.Validate("上传文件不存在")
 	}
 	info, err := file.Stat()
 	if err != nil || !info.Mode().IsRegular() {
 		_ = file.Close()
-		return controller.FileResponse{}, exception.Validate("上传文件不存在")
+		return gnctrl.FileResponse{}, exception.Validate("上传文件不存在")
 	}
 
 	sniff := make([]byte, 512)
 	count, err := file.Read(sniff)
 	if err != nil && !errors.Is(err, io.EOF) {
 		_ = file.Close()
-		return controller.FileResponse{}, exception.Core("读取上传文件失败")
+		return gnctrl.FileResponse{}, exception.Core("读取上传文件失败")
 	}
 	contentType := http.DetectContentType(sniff[:count])
-	disposition := controller.FileDispositionAttachment
+	disposition := gnctrl.FileDispositionAttachment
 	extension := strings.ToLower(filepath.Ext(name))
 	if extensions := trustedUploadMedia[contentType]; extensions[extension] {
-		disposition = controller.FileDispositionInline
+		disposition = gnctrl.FileDispositionInline
 	} else {
 		contentType = "application/octet-stream"
 	}
 
-	return controller.FileResponse{
+	return gnctrl.FileResponse{
 		Content:     file,
 		Name:        name,
 		ContentType: contentType,

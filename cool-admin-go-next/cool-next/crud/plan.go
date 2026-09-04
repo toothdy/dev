@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
 const (
@@ -21,7 +22,7 @@ const operatorKeyword conditionOperator = "keyword"
 
 // Descriptor 解析器
 type DescriptorResolver interface {
-	Resolve(entity any) (coreentity.Metadata, bool)
+	Resolve(entity any) (gnentity.Metadata, bool)
 }
 
 // 不可变查询计划
@@ -43,7 +44,7 @@ type planEntity struct {
 
 type resolvedPlanEntity struct {
 	planEntity
-	metadata coreentity.Metadata
+	metadata gnentity.Metadata
 }
 
 type planColumn struct {
@@ -53,7 +54,7 @@ type planColumn struct {
 	name        string
 	jsonName    string
 	goType      reflect.Type
-	logicalType coreentity.LogicalType
+	logicalType gnentity.LogicalType
 	nullable    bool
 }
 
@@ -102,23 +103,10 @@ func compileQueryPlan(
 	if isNilPlanValue(ctx) {
 		return nil, exception.Core("查询上下文不能为空")
 	}
-	if isNilPlanValue(resolver) {
-		return nil, exception.Core("Descriptor 解析器不能为空")
-	}
-	if isNilPlanValue(rootEntity) {
-		return nil, exception.Core("根实体不能为空")
-	}
-
-	compiler := &queryPlanCompiler{
-		resolver: resolver,
-		aliases:  make(map[string]resolvedPlanEntity),
-	}
-	root, err := compiler.resolveEntity(rootEntity, rootQueryAlias)
+	compiler, err := newPlanCompiler(resolver, rootEntity)
 	if err != nil {
 		return nil, err
 	}
-	compiler.plan.root = root.planEntity
-	compiler.aliases[rootQueryAlias] = root
 
 	builder := &QueryBuilder{}
 	if op.Extend != nil {
@@ -142,7 +130,7 @@ func compileQueryPlan(
 		}
 	}
 
-	selects, err := mergeQuerySelects(op, builder.selects)
+	selects, err := mergeSelects(op, builder.selects)
 	if err != nil {
 		return nil, err
 	}
@@ -180,11 +168,33 @@ func compileQueryPlan(
 	return &compiler.plan, nil
 }
 
-func mergeQuerySelects(op QueryOp, dynamic []SelectField) ([]SelectField, error) {
+func newPlanCompiler(resolver DescriptorResolver, rootEntity any) (*queryPlanCompiler, error) {
+	if isNilPlanValue(resolver) {
+		return nil, exception.Core("Descriptor 解析器不能为空")
+	}
+	if isNilPlanValue(rootEntity) {
+		return nil, exception.Core("根实体不能为空")
+	}
+
+	compiler := &queryPlanCompiler{
+		resolver: resolver,
+		aliases:  make(map[string]resolvedPlanEntity),
+	}
+	root, err := compiler.resolveEntity(rootEntity, rootQueryAlias)
+	if err != nil {
+		return nil, err
+	}
+	compiler.plan.root = root.planEntity
+	compiler.aliases[rootQueryAlias] = root
+
+	return compiler, nil
+}
+
+func mergeSelects(op QueryOp, dynamic []SelectField) ([]SelectField, error) {
 	selects := append([]SelectField(nil), op.Select...)
 	switch op.shape {
 	case queryShapeStatic:
-		return mergeStaticQuerySelects(selects, dynamic)
+		return mergeStaticSelects(selects, dynamic)
 	case queryShapeDynamic:
 		if len(dynamic) > 0 {
 			return nil, exception.Core("动态查询扩展不能追加响应字段")
@@ -205,7 +215,7 @@ func mergeQuerySelects(op QueryOp, dynamic []SelectField) ([]SelectField, error)
 	}
 }
 
-func mergeStaticQuerySelects(static, dynamic []SelectField) ([]SelectField, error) {
+func mergeStaticSelects(static, dynamic []SelectField) ([]SelectField, error) {
 	if len(dynamic) == 0 {
 		return static, nil
 	}
@@ -331,7 +341,7 @@ func (compiler *queryPlanCompiler) compileSelects(selects []SelectField) error {
 			if !exists {
 				return exception.Core(fmt.Sprintf("查询别名 %s 不存在", node.alias))
 			}
-			for _, field := range resolved.metadata.Fields() {
+			for _, field := range resolved.metadata.PersistentFields() {
 				if isNilPlanValue(field) {
 					return exception.Core(fmt.Sprintf("查询别名 %s 包含无效字段", node.alias))
 				}
@@ -409,7 +419,7 @@ func (compiler *queryPlanCompiler) compileCondition(condition Condition) (planCo
 		return planCondition{
 			operator:   operatorRaw,
 			expression: node.expression,
-			arguments:  clonePlanArguments(node.arguments),
+			arguments:  cloneArgs(node.arguments),
 		}, nil
 	}
 	if node.operator == operatorOn || node.operator == operatorKeyword {
@@ -432,7 +442,7 @@ func (compiler *queryPlanCompiler) compileCondition(condition Condition) (planCo
 			}
 			return result, nil
 		}
-		if !isAssignablePlanValue(node.value, column.goType) {
+		if !validPlanValue(node.value, column.goType) {
 			return planCondition{}, exception.Core(fmt.Sprintf("字段 %s 的查询值类型不匹配", column.name))
 		}
 		if err = compiler.addBindings(1, false); err != nil {
@@ -440,7 +450,7 @@ func (compiler *queryPlanCompiler) compileCondition(condition Condition) (planCo
 		}
 		result.value = clonePlanValue(node.value)
 	case operatorIn:
-		values, valueErr := normalizePlanCollection(node.value, column.goType)
+		values, valueErr := planValues(node.value, column.goType)
 		if valueErr != nil {
 			return planCondition{}, exception.Core(fmt.Sprintf("字段 %s 的集合查询值无效", column.name))
 		}
@@ -449,7 +459,7 @@ func (compiler *queryPlanCompiler) compileCondition(condition Condition) (planCo
 		}
 		result.value = values
 	case operatorLike:
-		if column.logicalType != coreentity.LogicalString {
+		if column.logicalType != gnentity.LogicalString {
 			return planCondition{}, exception.Core(fmt.Sprintf("字段 %s 不支持模糊查询", column.name))
 		}
 		value, matches := node.value.(string)
@@ -461,10 +471,10 @@ func (compiler *queryPlanCompiler) compileCondition(condition Condition) (planCo
 		}
 		result.value = value
 	case operatorGT, operatorGTE, operatorLT, operatorLTE:
-		if !supportsPlanOrdering(column.logicalType) {
+		if !supportsOrdering(column.logicalType) {
 			return planCondition{}, exception.Core(fmt.Sprintf("字段 %s 不支持范围比较", column.name))
 		}
-		if isNilPlanValue(node.value) || !isAssignablePlanValue(node.value, column.goType) {
+		if isNilPlanValue(node.value) || !validPlanValue(node.value, column.goType) {
 			return planCondition{}, exception.Core(fmt.Sprintf("字段 %s 的范围查询值类型不匹配", column.name))
 		}
 		if err = compiler.addBindings(1, false); err != nil {
@@ -485,7 +495,7 @@ func (compiler *queryPlanCompiler) compileKeyword(fields []ColumnRef, request *Q
 		if err != nil {
 			return err
 		}
-		if column.logicalType != coreentity.LogicalString {
+		if column.logicalType != gnentity.LogicalString {
 			return exception.Core(fmt.Sprintf("字段 %s 不支持关键词查询", column.name))
 		}
 		columns = append(columns, column)
@@ -530,7 +540,7 @@ func (compiler *queryPlanCompiler) compileFieldLikes(matches []FieldLike, reques
 		if err != nil {
 			return err
 		}
-		if column.logicalType != coreentity.LogicalString {
+		if column.logicalType != gnentity.LogicalString {
 			return exception.Core(fmt.Sprintf("字段 %s 不支持模糊查询", column.name))
 		}
 		value, exists := request.Value(match.RequestParam)
@@ -578,7 +588,10 @@ func (compiler *queryPlanCompiler) compileFieldEqs(matches []FieldEq, request *Q
 		} else {
 			reflected := reflect.ValueOf(value)
 			if reflected.Kind() == reflect.Slice || reflected.Kind() == reflect.Array {
-				values, valueErr := normalizePlanCollection(value, column.goType)
+				if reflected.Len() == 0 {
+					continue
+				}
+				values, valueErr := planValues(value, column.goType)
 				if valueErr != nil {
 					return exception.Validate(fmt.Sprintf("请求参数 %s 的集合值无效", match.RequestParam))
 				}
@@ -588,13 +601,14 @@ func (compiler *queryPlanCompiler) compileFieldEqs(matches []FieldEq, request *Q
 				condition.operator = operatorIn
 				condition.value = values
 			} else {
-				if !isAssignablePlanValue(value, column.goType) {
+				normalized, valid := planValue(value, column.goType)
+				if !valid {
 					return exception.Validate(fmt.Sprintf("请求参数 %s 的类型无效", match.RequestParam))
 				}
 				if err = compiler.addBindings(1, true); err != nil {
 					return err
 				}
-				condition.value = clonePlanValue(value)
+				condition.value = normalized
 			}
 		}
 		if err = compiler.addNodes(1); err != nil {
@@ -655,6 +669,9 @@ func (compiler *queryPlanCompiler) resolveColumn(reference ColumnRef) (planColum
 	if !exists || isNilPlanValue(field) {
 		return planColumn{}, exception.Core(fmt.Sprintf("实体别名 %s 的字段 %s 不存在", alias, reference.name))
 	}
+	if !field.Persistent() {
+		return planColumn{}, exception.Core(fmt.Sprintf("实体别名 %s 的字段 %s 不是持久化字段", alias, reference.name))
+	}
 
 	return makePlanColumn(resolved, field), nil
 }
@@ -680,7 +697,7 @@ func (compiler *queryPlanCompiler) addBindings(count int, fromRequest bool) erro
 	return exception.Core("查询绑定值数量超过上限")
 }
 
-func makePlanColumn(resolved resolvedPlanEntity, field coreentity.Field) planColumn {
+func makePlanColumn(resolved resolvedPlanEntity, field gnentity.Field) planColumn {
 	return planColumn{
 		table:       resolved.table,
 		alias:       resolved.alias,
@@ -693,7 +710,7 @@ func makePlanColumn(resolved resolvedPlanEntity, field coreentity.Field) planCol
 	}
 }
 
-func normalizePlanCollection(value any, target reflect.Type) ([]any, error) {
+func planValues(value any, target reflect.Type) ([]any, error) {
 	reflected := reflect.ValueOf(value)
 	if !reflected.IsValid() || (reflected.Kind() != reflect.Slice && reflected.Kind() != reflect.Array) || reflected.Len() == 0 {
 		return nil, errors.New("集合不能为空")
@@ -701,16 +718,107 @@ func normalizePlanCollection(value any, target reflect.Type) ([]any, error) {
 	values := make([]any, reflected.Len())
 	for index := 0; index < reflected.Len(); index++ {
 		item := reflected.Index(index).Interface()
-		if isNilPlanValue(item) || !isAssignablePlanValue(item, target) {
+		normalized, valid := planValue(item, target)
+		if !valid {
 			return nil, errors.New("集合元素类型无效")
 		}
-		values[index] = clonePlanValue(item)
+		values[index] = normalized
 	}
 
 	return values, nil
 }
 
-func isAssignablePlanValue(value any, target reflect.Type) bool {
+func planValue(value any, target reflect.Type) (any, bool) {
+	if isNilPlanValue(value) || target == nil {
+		return nil, false
+	}
+	target = planValueType(target)
+	source := reflect.ValueOf(value)
+	if source.Type().AssignableTo(target) {
+		return clonePlanValue(value), true
+	}
+	result := reflect.New(target).Elem()
+	switch target.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		number, valid := requestInt64(source)
+		if !valid || result.OverflowInt(number) {
+			return nil, false
+		}
+		result.SetInt(number)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		number, valid := requestUint64(source)
+		if !valid || result.OverflowUint(number) {
+			return nil, false
+		}
+		result.SetUint(number)
+	case reflect.Float32, reflect.Float64:
+		number, valid := requestFloat64(source)
+		if !valid || result.OverflowFloat(number) {
+			return nil, false
+		}
+		result.SetFloat(number)
+	default:
+		return nil, false
+	}
+
+	return result.Interface(), true
+}
+
+func requestInt64(value reflect.Value) (int64, bool) {
+	switch value.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return value.Int(), true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		if value.Uint() > math.MaxInt64 {
+			return 0, false
+		}
+		return int64(value.Uint()), true
+	case reflect.Float32, reflect.Float64:
+		number := value.Float()
+		if math.IsNaN(number) || math.IsInf(number, 0) || number != math.Trunc(number) || number < math.MinInt64 || number >= -float64(math.MinInt64) {
+			return 0, false
+		}
+		return int64(number), true
+	default:
+		return 0, false
+	}
+}
+
+func requestUint64(value reflect.Value) (uint64, bool) {
+	switch value.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if value.Int() < 0 {
+			return 0, false
+		}
+		return uint64(value.Int()), true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return value.Uint(), true
+	case reflect.Float32, reflect.Float64:
+		number := value.Float()
+		if math.IsNaN(number) || math.IsInf(number, 0) || number < 0 || number != math.Trunc(number) || number >= math.Exp2(64) {
+			return 0, false
+		}
+		return uint64(number), true
+	default:
+		return 0, false
+	}
+}
+
+func requestFloat64(value reflect.Value) (float64, bool) {
+	switch value.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return float64(value.Int()), true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return float64(value.Uint()), true
+	case reflect.Float32, reflect.Float64:
+		number := value.Float()
+		return number, !math.IsNaN(number) && !math.IsInf(number, 0)
+	default:
+		return 0, false
+	}
+}
+
+func validPlanValue(value any, target reflect.Type) bool {
 	if isNilPlanValue(value) || target == nil {
 		return false
 	}
@@ -726,16 +834,16 @@ func planValueType(valueType reflect.Type) reflect.Type {
 	return valueType
 }
 
-func supportsPlanOrdering(logicalType coreentity.LogicalType) bool {
+func supportsOrdering(logicalType gnentity.LogicalType) bool {
 	switch logicalType {
-	case coreentity.LogicalInt, coreentity.LogicalUint, coreentity.LogicalFloat, coreentity.LogicalString, coreentity.LogicalTime:
+	case gnentity.LogicalInt, gnentity.LogicalUint, gnentity.LogicalFloat, gnentity.LogicalString, gnentity.LogicalTime:
 		return true
 	default:
 		return false
 	}
 }
 
-func clonePlanArguments(arguments []any) []any {
+func cloneArgs(arguments []any) []any {
 	cloned := make([]any, len(arguments))
 	for index, argument := range arguments {
 		cloned[index] = clonePlanValue(argument)
@@ -749,16 +857,16 @@ func clonePlanValue(value any) any {
 		return nil
 	}
 
-	return clonePlanReflectValue(reflect.ValueOf(value)).Interface()
+	return cloneReflect(reflect.ValueOf(value)).Interface()
 }
 
-func clonePlanReflectValue(value reflect.Value) reflect.Value {
+func cloneReflect(value reflect.Value) reflect.Value {
 	switch value.Kind() {
 	case reflect.Interface:
 		if value.IsNil() {
 			return reflect.Zero(value.Type())
 		}
-		cloned := clonePlanReflectValue(value.Elem())
+		cloned := cloneReflect(value.Elem())
 		result := reflect.New(value.Type()).Elem()
 		result.Set(cloned)
 		return result
@@ -768,13 +876,13 @@ func clonePlanReflectValue(value reflect.Value) reflect.Value {
 		}
 		result := reflect.MakeSlice(value.Type(), value.Len(), value.Len())
 		for index := 0; index < value.Len(); index++ {
-			result.Index(index).Set(clonePlanReflectValue(value.Index(index)))
+			result.Index(index).Set(cloneReflect(value.Index(index)))
 		}
 		return result
 	case reflect.Array:
 		result := reflect.New(value.Type()).Elem()
 		for index := 0; index < value.Len(); index++ {
-			result.Index(index).Set(clonePlanReflectValue(value.Index(index)))
+			result.Index(index).Set(cloneReflect(value.Index(index)))
 		}
 		return result
 	default:

@@ -2,13 +2,13 @@ package entity
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
-	coreentity "github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
-// Param 是公开参数配置。
+// 公开参数配置
 type Param struct {
 	g.Meta `orm:"table:base_sys_param" description:"参数配置"`
-	coreentity.Base
+	gnentity.Base
 	KeyName  string  `json:"keyName" orm:"keyName" description:"键" cool:"size=255"`
 	Name     string  `json:"name" orm:"name" description:"名称" cool:"size=255"`
 	Data     string  `json:"data" orm:"data" description:"数据"`
@@ -16,9 +16,9 @@ type Param struct {
 	Remark   *string `json:"remark" orm:"remark" description:"备注" cool:"size=255"`
 }
 
-// ParamSchema 返回参数表补充索引。
-func ParamSchema() coreentity.Schema {
-	return coreentity.Schema{Indexes: []coreentity.Index{
-		coreentity.UniqueIndexOf("uk_base_sys_param_key_name", "keyName"),
+// 参数表补充索引
+func ParamSchema() gnentity.Schema {
+	return gnentity.Schema{Indexes: []gnentity.Index{
+		gnentity.UniqueIndexOf("uk_base_sys_param_key_name", "keyName"),
 	}}
 }

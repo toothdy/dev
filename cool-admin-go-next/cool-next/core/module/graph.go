@@ -9,7 +9,7 @@ import (
 	"unicode"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 )
 
 var descriptorTablePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
@@ -23,23 +23,23 @@ type Graph struct {
 	modules      []StaticModule
 	outbox       OutboxGraph
 	providers    []Provider
-	routes       coreroute.Table
+	routes       route.Table
 	transports   []Component
 	validated    bool
 }
 
 // 静态模块图构建输入
 type GraphInput struct {
-	Components   []ComponentDefinition            // 已排序的组件定义
-	Controllers  []coreroute.ControllerDefinition // Controller 静态定义
-	Dependencies []DependencyDefinition           // 组件依赖定义
-	Descriptors  []DescriptorDefinition           // 实体 Descriptor 定义
-	Lifecycles   []LifecycleDefinition            // 组件生命周期定义
-	Modules      []ModuleDefinition               // 模块静态定义
-	Outbox       OutboxDefinition                 // 可靠消息装配定义
-	Providers    []ProviderDefinition             // Provider 定义
-	Routes       []coreroute.Definition           // 路由静态定义
-	Transports   []ComponentDefinition            // Transport 组件引用
+	Components   []ComponentDefinition        // 已排序的组件定义
+	Controllers  []route.ControllerDefinition // Controller 静态定义
+	Dependencies []DependencyDefinition       // 组件依赖定义
+	Descriptors  []DescriptorDefinition       // 实体 Descriptor 定义
+	Lifecycles   []LifecycleDefinition        // 组件生命周期定义
+	Modules      []ModuleDefinition           // 模块静态定义
+	Outbox       OutboxDefinition             // 可靠消息装配定义
+	Providers    []ProviderDefinition         // Provider 定义
+	Routes       []route.Definition           // 路由静态定义
+	Transports   []ComponentDefinition        // Transport 组件引用
 }
 
 // 模块静态定义
@@ -57,6 +57,7 @@ type ProviderKind string
 
 const (
 	ProviderKindConfig             ProviderKind = "config"          // 模块配置
+	ProviderKindSeed               ProviderKind = "seed"            // 模块种子数据
 	ProviderKindComponent          ProviderKind = "component"       // 普通组件
 	ProviderKindDescriptor         ProviderKind = "descriptor"      // 实体 Descriptor
 	ProviderKindBase               ProviderKind = "base"            // 实体 Base Service
@@ -183,7 +184,7 @@ func BuildGraph(input GraphInput) (Graph, error) {
 	if err != nil {
 		return Graph{}, err
 	}
-	routes, err := coreroute.BuildTable(coreroute.TableInput{Controllers: input.Controllers, Routes: input.Routes})
+	routes, err := route.BuildTable(route.TableInput{Controllers: input.Controllers, Routes: input.Routes})
 	if err != nil {
 		return Graph{}, err
 	}
@@ -267,7 +268,7 @@ func (g Graph) Transports() []Component { return append([]Component(nil), g.tran
 func (g Graph) Outbox() OutboxGraph { return g.outbox.clone() }
 
 // 返回静态路由表
-func (g Graph) Routes() coreroute.Table { return g.routes }
+func (g Graph) Routes() route.Table { return g.routes }
 
 // 返回模块身份
 func (m StaticModule) Identity() Identity { return m.identity }
@@ -315,8 +316,8 @@ func (c Component) PackagePath() string { return c.packagePath }
 // 返回构造器名称
 func (c Component) Name() string { return c.name }
 
-// ComponentFromDefinition 将静态组件定义转换为已登记组件身份
-func ComponentFromDefinition(definition ComponentDefinition) Component {
+// 已登记组件身份
+func ComponentOf(definition ComponentDefinition) Component {
 	return Component{module: definition.Module, packagePath: definition.PackagePath, name: definition.Name}
 }
 
@@ -389,22 +390,22 @@ func compileModules(definitions []ModuleDefinition) ([]StaticModule, map[string]
 	modules := make([]StaticModule, len(definitions))
 	for index, definition := range definitions {
 		identity := Identity{key: definition.Key}
-		if err := validateIdentity(identity); err != nil {
+		if err := checkIdentity(identity); err != nil {
 			return nil, nil, exception.WrapCore(err, "模块定义无效")
 		}
 		if keys[definition.Key] {
 			return nil, nil, exception.Core(fmt.Sprintf("模块定义重复: %s", definition.Key))
 		}
-		if err := validateDisplayText("名称", definition.Name); err != nil {
+		if err := checkText("名称", definition.Name); err != nil {
 			return nil, nil, exception.WrapCore(err, fmt.Sprintf("模块定义 %s 无效", definition.Key))
 		}
-		if err := validateDisplayText("描述", definition.Description); err != nil {
+		if err := checkText("描述", definition.Description); err != nil {
 			return nil, nil, exception.WrapCore(err, fmt.Sprintf("模块定义 %s 无效", definition.Key))
 		}
-		if err := validateRefs("中间件", definition.Middlewares); err != nil {
+		if err := checkRefs("中间件", definition.Middlewares); err != nil {
 			return nil, nil, exception.WrapCore(err, fmt.Sprintf("模块定义 %s 无效", definition.Key))
 		}
-		if err := validateRefs("全局中间件", definition.GlobalMiddlewares); err != nil {
+		if err := checkRefs("全局中间件", definition.GlobalMiddlewares); err != nil {
 			return nil, nil, exception.WrapCore(err, fmt.Sprintf("模块定义 %s 无效", definition.Key))
 		}
 		keys[definition.Key] = true
@@ -426,30 +427,30 @@ func compileProviders(definitions []ProviderDefinition, moduleKeys map[string]bo
 	indexes := make(map[providerKey]int, len(definitions))
 	componentProviders := make(map[componentKey]bool)
 	for index, definition := range definitions {
-		if err := validateProviderDefinition(definition, moduleKeys); err != nil {
+		if err := checkProvider(definition, moduleKeys); err != nil {
 			return nil, nil, err
 		}
-		key := providerDefinitionKey(definition)
+		key := providerDefKey(definition)
 		if _, exists := indexes[key]; exists {
-			return nil, nil, exception.Core(fmt.Sprintf("Provider 重复: %s", providerDefinitionLabel(definition)))
+			return nil, nil, exception.Core(fmt.Sprintf("Provider 重复: %s", providerLabel(definition)))
 		}
-		if isComponentProviderKind(definition.Kind) {
-			component := componentDefinitionKey(componentFromProvider(definition))
+		if isComponentProvider(definition.Kind) {
+			component := componentDefKey(providerComponent(definition))
 			if componentProviders[component] {
 				return nil, nil, exception.Core(fmt.Sprintf("组件 Provider 重复: %s", componentKeyLabel(component)))
 			}
 			componentProviders[component] = true
 		}
 		indexes[key] = index
-		providers[index] = providerFromDefinition(definition)
+		providers[index] = providerOf(definition)
 	}
 
 	return providers, indexes, nil
 }
 
-func validateProviderDefinition(definition ProviderDefinition, moduleKeys map[string]bool) error {
+func checkProvider(definition ProviderDefinition, moduleKeys map[string]bool) error {
 	switch definition.Kind {
-	case ProviderKindConfig, ProviderKindComponent, ProviderKindDescriptor, ProviderKindBase,
+	case ProviderKindConfig, ProviderKindSeed, ProviderKindComponent, ProviderKindDescriptor, ProviderKindBase,
 		ProviderKindEnqueuer, ProviderKindConsumerDefinition:
 	default:
 		return exception.Core(fmt.Sprintf("Provider 类别无效: %s", definition.Kind))
@@ -457,14 +458,14 @@ func validateProviderDefinition(definition ProviderDefinition, moduleKeys map[st
 	if !moduleKeys[definition.Module] {
 		return exception.Core(fmt.Sprintf("Provider 所属模块不存在: %s", definition.Module))
 	}
-	if err := validatePackagePath(definition.PackagePath); err != nil {
-		return exception.WrapCore(err, fmt.Sprintf("Provider %s 包路径无效", providerDefinitionLabel(definition)))
+	if err := checkPkg(definition.PackagePath); err != nil {
+		return exception.WrapCore(err, fmt.Sprintf("Provider %s 包路径无效", providerLabel(definition)))
 	}
 	if !token.IsIdentifier(definition.Name) {
 		return exception.Core(fmt.Sprintf("Provider 名称无效: %s", definition.Name))
 	}
-	if err := validateTypeText(definition.Type); err != nil {
-		return exception.WrapCore(err, fmt.Sprintf("Provider %s 类型无效", providerDefinitionLabel(definition)))
+	if err := checkType(definition.Type); err != nil {
+		return exception.WrapCore(err, fmt.Sprintf("Provider %s 类型无效", providerLabel(definition)))
 	}
 
 	return nil
@@ -475,15 +476,15 @@ func compileComponents(definitions []ComponentDefinition, providers []Provider, 
 	indexes := make(map[componentKey]int, len(definitions))
 	componentProviders := make(map[componentKey]bool)
 	for _, provider := range providers {
-		if isComponentProviderKind(provider.kind) {
+		if isComponentProvider(provider.kind) {
 			componentProviders[componentKey{module: provider.module, packagePath: provider.packagePath, name: provider.name}] = true
 		}
 	}
 	for index, definition := range definitions {
-		if err := validateComponentDefinition(definition, moduleKeys); err != nil {
+		if err := checkComponent(definition, moduleKeys); err != nil {
 			return nil, nil, err
 		}
-		key := componentDefinitionKey(definition)
+		key := componentDefKey(definition)
 		if _, exists := indexes[key]; exists {
 			return nil, nil, exception.Core(fmt.Sprintf("组件重复: %s", componentKeyLabel(key)))
 		}
@@ -491,10 +492,10 @@ func compileComponents(definitions []ComponentDefinition, providers []Provider, 
 			return nil, nil, exception.Core(fmt.Sprintf("组件缺少 Provider: %s", componentKeyLabel(key)))
 		}
 		indexes[key] = index
-		components[index] = componentFromDefinition(definition)
+		components[index] = componentFromDef(definition)
 	}
 	for _, provider := range providers {
-		if !isComponentProviderKind(provider.kind) {
+		if !isComponentProvider(provider.kind) {
 			continue
 		}
 		key := componentKey{module: provider.module, packagePath: provider.packagePath, name: provider.name}
@@ -506,15 +507,15 @@ func compileComponents(definitions []ComponentDefinition, providers []Provider, 
 	return components, indexes, nil
 }
 
-func isComponentProviderKind(kind ProviderKind) bool {
+func isComponentProvider(kind ProviderKind) bool {
 	return kind == ProviderKindComponent || kind == ProviderKindConsumerDefinition
 }
 
-func validateComponentDefinition(definition ComponentDefinition, moduleKeys map[string]bool) error {
+func checkComponent(definition ComponentDefinition, moduleKeys map[string]bool) error {
 	if !moduleKeys[definition.Module] {
 		return exception.Core(fmt.Sprintf("组件所属模块不存在: %s", definition.Module))
 	}
-	if err := validatePackagePath(definition.PackagePath); err != nil {
+	if err := checkPkg(definition.PackagePath); err != nil {
 		return exception.WrapCore(err, fmt.Sprintf("组件 %s 包路径无效", definition.Name))
 	}
 	if !token.IsIdentifier(definition.Name) {
@@ -538,13 +539,13 @@ func compileDescriptors(definitions []DescriptorDefinition, providers []Provider
 		if definition.Provider.Module != definition.Module {
 			return nil, exception.Core(fmt.Sprintf("实体 Descriptor 与 Provider 所属模块不一致: %s", definition.Module))
 		}
-		providerKey := providerDefinitionKey(definition.Provider)
+		providerKey := providerDefKey(definition.Provider)
 		providerIndex, exists := providerIndexes[providerKey]
 		if !exists || providers[providerIndex].typ != definition.Provider.Type {
-			return nil, exception.Core(fmt.Sprintf("实体 Descriptor Provider 不存在: %s", providerDefinitionLabel(definition.Provider)))
+			return nil, exception.Core(fmt.Sprintf("实体 Descriptor Provider 不存在: %s", providerLabel(definition.Provider)))
 		}
 		if seenProviders[providerKey] {
-			return nil, exception.Core(fmt.Sprintf("实体 Descriptor Provider 重复关联: %s", providerDefinitionLabel(definition.Provider)))
+			return nil, exception.Core(fmt.Sprintf("实体 Descriptor Provider 重复关联: %s", providerLabel(definition.Provider)))
 		}
 		if !descriptorTablePattern.MatchString(definition.Table) {
 			return nil, exception.Core(fmt.Sprintf("实体 Descriptor 表名 %q 无效", definition.Table))
@@ -566,7 +567,7 @@ func compileDescriptors(definitions []DescriptorDefinition, providers []Provider
 		}
 		key := providerValueKey(provider)
 		if !seenProviders[key] {
-			return nil, exception.Core(fmt.Sprintf("Descriptor Provider 缺少实体 Descriptor: %s", providerDefinitionLabel(providerDefinitionFromValue(provider))))
+			return nil, exception.Core(fmt.Sprintf("Descriptor Provider 缺少实体 Descriptor: %s", providerLabel(providerDef(provider))))
 		}
 	}
 
@@ -577,14 +578,14 @@ func compileDependencies(definitions []DependencyDefinition, components []Compon
 	dependencies := make([]Dependency, len(definitions))
 	parameterIndexes := make(map[componentKey]map[int]bool)
 	for index, definition := range definitions {
-		consumerKey := componentDefinitionKey(definition.Consumer)
+		consumerKey := componentDefKey(definition.Consumer)
 		consumerIndex, exists := componentIndexes[consumerKey]
 		if !exists {
 			return nil, exception.Core(fmt.Sprintf("依赖方组件不存在: %s", componentKeyLabel(consumerKey)))
 		}
-		providerIndex, exists := providerIndexes[providerDefinitionKey(definition.Provider)]
+		providerIndex, exists := providerIndexes[providerDefKey(definition.Provider)]
 		if !exists || providers[providerIndex].typ != definition.Provider.Type {
-			return nil, exception.Core(fmt.Sprintf("依赖 Provider 不存在: %s", providerDefinitionLabel(definition.Provider)))
+			return nil, exception.Core(fmt.Sprintf("依赖 Provider 不存在: %s", providerLabel(definition.Provider)))
 		}
 		if definition.ParameterIndex < 0 {
 			return nil, exception.Core(fmt.Sprintf("依赖参数序号无效: %d", definition.ParameterIndex))
@@ -597,7 +598,7 @@ func compileDependencies(definitions []DependencyDefinition, components []Compon
 		}
 		parameterIndexes[consumerKey][definition.ParameterIndex] = true
 		provider := providers[providerIndex]
-		if isComponentProviderKind(provider.kind) {
+		if isComponentProvider(provider.kind) {
 			providerComponent := componentKey{module: provider.module, packagePath: provider.packagePath, name: provider.name}
 			if componentIndexes[providerComponent] >= consumerIndex {
 				return nil, exception.Core(fmt.Sprintf("组件拓扑顺序无效: %s 必须先于 %s", componentKeyLabel(providerComponent), componentKeyLabel(consumerKey)))
@@ -640,7 +641,7 @@ func compileLifecycles(
 ) ([]Lifecycle, error) {
 	byComponent := make(map[componentKey]LifecycleDefinition, len(definitions))
 	for _, definition := range definitions {
-		key := componentDefinitionKey(definition.Component)
+		key := componentDefKey(definition.Component)
 		_, exists := componentIndexes[key]
 		if !exists {
 			return nil, exception.Core(fmt.Sprintf("生命周期组件不存在: %s", componentKeyLabel(key)))
@@ -648,7 +649,7 @@ func compileLifecycles(
 		if _, exists = byComponent[key]; exists {
 			return nil, exception.Core(fmt.Sprintf("生命周期组件重复: %s", componentKeyLabel(key)))
 		}
-		providerKey := providerDefinitionKey(ProviderDefinition{
+		providerKey := providerDefKey(ProviderDefinition{
 			Kind:        ProviderKindComponent,
 			Module:      definition.Component.Module,
 			PackagePath: definition.Component.PackagePath,
@@ -659,7 +660,7 @@ func compileLifecycles(
 			providerKey.kind = ProviderKindConsumerDefinition
 			providerIndex, exists = providerIndexes[providerKey]
 		}
-		if !exists || !isComponentProviderKind(providers[providerIndex].kind) {
+		if !exists || !isComponentProvider(providers[providerIndex].kind) {
 			return nil, exception.Core(fmt.Sprintf("生命周期组件 Provider 不存在: %s", componentKeyLabel(key)))
 		}
 		byComponent[key] = definition
@@ -703,7 +704,7 @@ func compileTransports(definitions []ComponentDefinition, components []Component
 	transports := make([]Component, len(definitions))
 	seen := make(map[componentKey]bool, len(definitions))
 	for index, definition := range definitions {
-		key := componentDefinitionKey(definition)
+		key := componentDefKey(definition)
 		componentIndex, exists := componentIndexes[key]
 		if !exists {
 			return nil, exception.Core(fmt.Sprintf("Transport 组件不存在: %s", componentKeyLabel(key)))
@@ -720,7 +721,7 @@ func compileTransports(definitions []ComponentDefinition, components []Component
 	return transports, nil
 }
 
-func validatePackagePath(packagePath string) error {
+func checkPkg(packagePath string) error {
 	if strings.TrimSpace(packagePath) == "" || strings.TrimSpace(packagePath) != packagePath {
 		return exception.Core("包路径不能为空且不能包含首尾空白")
 	}
@@ -738,7 +739,7 @@ func validatePackagePath(packagePath string) error {
 	return nil
 }
 
-func validateTypeText(typ string) error {
+func checkType(typ string) error {
 	if strings.TrimSpace(typ) == "" || strings.TrimSpace(typ) != typ {
 		return exception.Core("类型文本不能为空且不能包含首尾空白")
 	}
@@ -751,15 +752,15 @@ func validateTypeText(typ string) error {
 	return nil
 }
 
-func componentFromProvider(definition ProviderDefinition) ComponentDefinition {
+func providerComponent(definition ProviderDefinition) ComponentDefinition {
 	return ComponentDefinition{Module: definition.Module, PackagePath: definition.PackagePath, Name: definition.Name}
 }
 
-func componentFromDefinition(definition ComponentDefinition) Component {
+func componentFromDef(definition ComponentDefinition) Component {
 	return Component{module: definition.Module, packagePath: definition.PackagePath, name: definition.Name}
 }
 
-func componentDefinitionKey(definition ComponentDefinition) componentKey {
+func componentDefKey(definition ComponentDefinition) componentKey {
 	return componentKey{module: definition.Module, packagePath: definition.PackagePath, name: definition.Name}
 }
 
@@ -771,7 +772,7 @@ func componentKeyLabel(key componentKey) string {
 	return key.module + ":" + key.packagePath + ":" + key.name
 }
 
-func providerFromDefinition(definition ProviderDefinition) Provider {
+func providerOf(definition ProviderDefinition) Provider {
 	return Provider{
 		kind:        definition.Kind,
 		module:      definition.Module,
@@ -781,7 +782,7 @@ func providerFromDefinition(definition ProviderDefinition) Provider {
 	}
 }
 
-func providerDefinitionFromValue(provider Provider) ProviderDefinition {
+func providerDef(provider Provider) ProviderDefinition {
 	return ProviderDefinition{
 		Kind:        provider.kind,
 		Module:      provider.module,
@@ -791,7 +792,7 @@ func providerDefinitionFromValue(provider Provider) ProviderDefinition {
 	}
 }
 
-func providerDefinitionKey(definition ProviderDefinition) providerKey {
+func providerDefKey(definition ProviderDefinition) providerKey {
 	return providerKey{
 		kind:        definition.Kind,
 		module:      definition.Module,
@@ -809,6 +810,6 @@ func providerValueKey(provider Provider) providerKey {
 	}
 }
 
-func providerDefinitionLabel(definition ProviderDefinition) string {
+func providerLabel(definition ProviderDefinition) string {
 	return string(definition.Kind) + ":" + definition.Module + ":" + definition.PackagePath + ":" + definition.Name + ":" + definition.Type
 }

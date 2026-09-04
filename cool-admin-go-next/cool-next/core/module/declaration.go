@@ -26,22 +26,22 @@ type Declaration[T any] struct {
 }
 
 // 校验模块声明
-func validateDeclaration[T any](declaration Declaration[T]) error {
-	if err := validateDisplayText("名称", declaration.Name); err != nil {
+func checkDecl[T any](declaration Declaration[T]) error {
+	if err := checkText("名称", declaration.Name); err != nil {
 		return err
 	}
-	if err := validateDisplayText("描述", declaration.Description); err != nil {
+	if err := checkText("描述", declaration.Description); err != nil {
 		return err
 	}
-	if err := validateRefs("中间件", declaration.Middlewares); err != nil {
+	if err := checkRefs("中间件", declaration.Middlewares); err != nil {
 		return err
 	}
 
-	return validateRefs("全局中间件", declaration.GlobalMiddlewares)
+	return checkRefs("全局中间件", declaration.GlobalMiddlewares)
 }
 
 // 校验展示文本
-func validateDisplayText(field, value string) error {
+func checkText(field, value string) error {
 	if strings.TrimSpace(value) == "" {
 		return fmt.Errorf("模块%s不能为空", field)
 	}
@@ -55,10 +55,10 @@ func validateDisplayText(field, value string) error {
 }
 
 // 校验中间件静态引用
-func validateRefs(group string, refs []ComponentRef) error {
+func checkRefs(group string, refs []ComponentRef) error {
 	seen := make(map[ComponentRef]struct{}, len(refs))
 	for _, ref := range refs {
-		if err := validateRef(ref); err != nil {
+		if err := checkRef(ref); err != nil {
 			return fmt.Errorf("模块%s引用 %q 无效: %w", group, ref, err)
 		}
 		if _, exists := seen[ref]; exists {
@@ -71,7 +71,7 @@ func validateRefs(group string, refs []ComponentRef) error {
 }
 
 // 校验单个静态引用
-func validateRef(ref ComponentRef) error {
+func checkRef(ref ComponentRef) error {
 	value := string(ref)
 	if value == "" {
 		return fmt.Errorf("引用不能为空")

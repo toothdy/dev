@@ -8,7 +8,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 )
 
-// 启动探测边界
+// Runtime 探测的存储抽象
 type ConsumerRuntimeStore interface {
 	Probe(context.Context) error
 }
@@ -25,7 +25,7 @@ type ConsumerRuntime struct {
 	terminated <-chan error
 }
 
-// 创建受应用 Host 管理的可靠消费组件
+// 受应用 Host 管理的可靠消费组件
 func NewConsumerRuntime(
 	adapter ConsumerAdapter,
 	store ConsumerRuntimeStore,
@@ -37,7 +37,7 @@ func NewConsumerRuntime(
 	return &ConsumerRuntime{adapter: adapter, store: store, deliverer: deliverer}, nil
 }
 
-// 探测 Inbox Schema、Broker 能力和订阅拓扑
+// 启动前的基础校验
 func (runtime *ConsumerRuntime) OnInit(ctx context.Context) error {
 	if runtime == nil {
 		return gerror.New("outbox consumer runtime: Runtime 不能为空")
@@ -63,7 +63,7 @@ func (runtime *ConsumerRuntime) OnInit(ctx context.Context) error {
 	return nil
 }
 
-// 启动 Broker 消费循环
+// Broker 消费循环
 func (runtime *ConsumerRuntime) OnStart(ctx context.Context) error {
 	if runtime == nil {
 		return gerror.New("outbox consumer runtime: Runtime 不能为空")
@@ -97,7 +97,7 @@ func (runtime *ConsumerRuntime) OnStart(ctx context.Context) error {
 	return nil
 }
 
-// 停止拉取并排空在途消费事务
+// 拉取并排空在途消费事务
 func (runtime *ConsumerRuntime) OnStop(ctx context.Context) error {
 	if runtime == nil {
 		return nil
@@ -116,7 +116,7 @@ func (runtime *ConsumerRuntime) OnStop(ctx context.Context) error {
 	return runtime.adapter.Stop(ctx)
 }
 
-// 返回消费循环终止信号
+// 消费循环终止信号
 func (runtime *ConsumerRuntime) Terminated() <-chan error {
 	if runtime == nil {
 		return nil

@@ -3,6 +3,7 @@ package schema
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/gogf/gf/v2/database/gdb"
@@ -16,7 +17,7 @@ func inspectTable(ctx context.Context, database gdb.DB, dialect driver.Dialect, 
 	if err != nil {
 		return Table{}, gerror.Wrap(err, "读取数据库表列表")
 	}
-	if !containsString(tables, tableName) {
+	if !slices.Contains(tables, tableName) {
 		return Table{}, nil
 	}
 	columns, err := inspectColumns(ctx, database, dialect, tableName)
@@ -32,7 +33,7 @@ func inspectTable(ctx context.Context, database gdb.DB, dialect driver.Dialect, 
 
 func inspectColumns(ctx context.Context, database gdb.DB, dialect driver.Dialect, tableName string) ([]Column, error) {
 	if dialect.Kind() == driver.PostgreSQL {
-		return inspectPostgreSQLColumns(ctx, database, tableName)
+		return postgresColumns(ctx, database, tableName)
 	}
 	fields, err := database.TableFields(ctx, tableName)
 	if err != nil {
@@ -41,12 +42,12 @@ func inspectColumns(ctx context.Context, database gdb.DB, dialect driver.Dialect
 	columns := make([]Column, 0, len(fields))
 	for _, field := range fields {
 		isAutoIncrement := strings.Contains(strings.ToLower(field.Extra), "auto_increment") || strings.Contains(strings.ToLower(fmt.Sprint(field.Default)), "nextval")
-		if dialect.Kind() == driver.SQLite && strings.EqualFold(field.Key, "pri") && normalizeType(driver.SQLite, field.Type) == "INTEGER" {
+		if dialect.Kind() == driver.SQLite && strings.EqualFold(field.Key, "pri") && typeName(driver.SQLite, field.Type) == "INTEGER" {
 			isAutoIncrement = true
 		}
 		columns = append(columns, Column{
 			Name:          field.Name,
-			Type:          normalizeType(dialect.Kind(), field.Type),
+			Type:          typeName(dialect.Kind(), field.Type),
 			Nullable:      field.Null,
 			Primary:       strings.EqualFold(field.Key, "pri"),
 			AutoIncrement: isAutoIncrement,
@@ -55,7 +56,7 @@ func inspectColumns(ctx context.Context, database gdb.DB, dialect driver.Dialect
 	return columns, nil
 }
 
-func inspectPostgreSQLColumns(ctx context.Context, database gdb.DB, tableName string) ([]Column, error) {
+func postgresColumns(ctx context.Context, database gdb.DB, tableName string) ([]Column, error) {
 	const query = `
 SELECT
     attribute.attname AS columnName,
@@ -89,7 +90,7 @@ ORDER BY attribute.attnum`
 	for _, row := range rows {
 		columns = append(columns, Column{
 			Name:          valueOf(row, "columnName"),
-			Type:          normalizeType(driver.PostgreSQL, valueOf(row, "columnType")),
+			Type:          typeName(driver.PostgreSQL, valueOf(row, "columnType")),
 			Nullable:      boolValueOf(row, "nullable"),
 			Primary:       boolValueOf(row, "isPrimary"),
 			AutoIncrement: strings.Contains(strings.ToLower(valueOf(row, "defaultValue")), "nextval"),
@@ -101,17 +102,17 @@ ORDER BY attribute.attnum`
 func inspectIndexes(ctx context.Context, database gdb.DB, dialect driver.Dialect, tableName string) ([]Index, error) {
 	switch dialect.Kind() {
 	case driver.MySQL:
-		return inspectMySQLIndexes(ctx, database, tableName)
+		return mysqlIndexes(ctx, database, tableName)
 	case driver.PostgreSQL:
-		return inspectPostgreSQLIndexes(ctx, database, tableName)
+		return postgresIndexes(ctx, database, tableName)
 	case driver.SQLite:
-		return inspectSQLiteIndexes(ctx, database, dialect, tableName)
+		return sqliteIndexes(ctx, database, dialect, tableName)
 	default:
 		return nil, gerror.Newf("不支持的数据库类型: %s", dialect.Kind())
 	}
 }
 
-func inspectMySQLIndexes(ctx context.Context, database gdb.DB, tableName string) ([]Index, error) {
+func mysqlIndexes(ctx context.Context, database gdb.DB, tableName string) ([]Index, error) {
 	rows, err := database.GetAll(ctx, "SELECT INDEX_NAME AS indexName, NON_UNIQUE AS nonUnique, SEQ_IN_INDEX AS sequence, COLUMN_NAME AS columnName FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY INDEX_NAME, SEQ_IN_INDEX", tableName)
 	if err != nil {
 		return nil, gerror.Wrapf(err, "读取表 %s 索引", tableName)
@@ -119,7 +120,7 @@ func inspectMySQLIndexes(ctx context.Context, database gdb.DB, tableName string)
 	return collectIndexes(rows, "indexName", "nonUnique", "columnName", true), nil
 }
 
-func inspectPostgreSQLIndexes(ctx context.Context, database gdb.DB, tableName string) ([]Index, error) {
+func postgresIndexes(ctx context.Context, database gdb.DB, tableName string) ([]Index, error) {
 	rows, err := database.GetAll(ctx, "SELECT indexrel.relname AS indexName, CASE WHEN idx.indisunique THEN 0 ELSE 1 END AS nonUnique, attribute.attname AS columnName FROM pg_index idx JOIN pg_class tableRel ON tableRel.oid = idx.indrelid JOIN pg_class indexrel ON indexrel.oid = idx.indexrelid JOIN pg_namespace namespace ON namespace.oid = tableRel.relnamespace JOIN unnest(idx.indkey) WITH ORDINALITY AS keys(attributeNumber, sequence) ON TRUE JOIN pg_attribute attribute ON attribute.attrelid = tableRel.oid AND attribute.attnum = keys.attributeNumber WHERE namespace.nspname = current_schema() AND tableRel.relname = ? AND NOT idx.indisprimary ORDER BY indexrel.relname, keys.sequence", tableName)
 	if err != nil {
 		return nil, gerror.Wrapf(err, "读取表 %s 索引", tableName)
@@ -127,7 +128,7 @@ func inspectPostgreSQLIndexes(ctx context.Context, database gdb.DB, tableName st
 	return collectIndexes(rows, "indexName", "nonUnique", "columnName", true), nil
 }
 
-func inspectSQLiteIndexes(ctx context.Context, database gdb.DB, dialect driver.Dialect, tableName string) ([]Index, error) {
+func sqliteIndexes(ctx context.Context, database gdb.DB, dialect driver.Dialect, tableName string) ([]Index, error) {
 	quotedTable, err := dialect.Quote(tableName)
 	if err != nil {
 		return nil, err
@@ -191,15 +192,6 @@ func boolValueOf(row gdb.Record, name string) bool {
 	for key, value := range row {
 		if strings.EqualFold(key, name) {
 			return value.Bool()
-		}
-	}
-	return false
-}
-
-func containsString(items []string, wanted string) bool {
-	for _, item := range items {
-		if item == wanted {
-			return true
 		}
 	}
 	return false

@@ -6,7 +6,7 @@ import (
 
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
 
@@ -17,7 +17,7 @@ type logWrite struct {
 	Params map[string]any `orm:"params"`
 }
 
-// LogRecord 是操作日志写入数据。
+// 操作日志写入数据
 type LogRecord struct {
 	UserID *uint64
 	Action string
@@ -25,7 +25,7 @@ type LogRecord struct {
 	Params map[string]any
 }
 
-// LogPageItem 是带用户名称的操作日志分页项。
+// 带用户名称的操作日志分页项
 type LogPageItem struct {
 	ID         uint64         `json:"id"`
 	CreateTime *gtime.Time    `json:"createTime"`
@@ -37,25 +37,25 @@ type LogPageItem struct {
 	Params     map[string]any `json:"params"`
 }
 
-// LogPageResult 是操作日志分页结果。
+// 操作日志分页结果
 type LogPageResult struct {
-	List       []LogPageItem          `json:"list"`
-	Pagination coreservice.Pagination `json:"pagination"`
+	List       []LogPageItem        `json:"list"`
+	Pagination gnservice.Pagination `json:"pagination"`
 }
 
-// LogService 提供操作日志记录、分页和清理。
+// 操作日志记录、分页和清理
 type LogService struct {
-	*coreservice.Base[entity.Log, uint64]
+	*gnservice.Base[entity.Log, uint64]
 	conf *ConfService
-	user *coreservice.Base[entity.User, uint64]
+	user *gnservice.Base[entity.User, uint64]
 	now  func() time.Time
 }
 
-// NewLog 创建操作日志服务。
+// 操作日志服务
 func NewLog(
-	baseService *coreservice.Base[entity.Log, uint64],
+	baseService *gnservice.Base[entity.Log, uint64],
 	conf *ConfService,
-	user *coreservice.Base[entity.User, uint64],
+	user *gnservice.Base[entity.User, uint64],
 ) (*LogService, error) {
 	if baseService == nil || baseService.Descriptor() == nil || conf == nil ||
 		user == nil || user.Descriptor() == nil {
@@ -65,7 +65,7 @@ func NewLog(
 	return &LogService{Base: baseService, conf: conf, user: user, now: time.Now}, nil
 }
 
-// Record 写入一条后台业务操作日志。
+// 写入一条后台业务操作日志
 func (service *LogService) Record(ctx context.Context, record LogRecord) error {
 	if service == nil || service.Base == nil || record.Action == "" {
 		return exception.Core("操作日志服务或记录无效")
@@ -87,8 +87,8 @@ func (service *LogService) Record(ctx context.Context, record LogRecord) error {
 	return nil
 }
 
-// Page 返回带用户名称的操作日志分页。
-func (service *LogService) Page(ctx context.Context, query coreservice.Query) (LogPageResult, error) {
+// 带用户名称的操作日志分页
+func (service *LogService) Page(ctx context.Context, query gnservice.Query) (LogPageResult, error) {
 	page, err := service.Base.Page(ctx, query)
 	if err != nil {
 		return LogPageResult{}, err
@@ -116,7 +116,7 @@ func (service *LogService) Page(ctx context.Context, query coreservice.Query) (L
 	return LogPageResult{List: items, Pagination: page.Pagination}, nil
 }
 
-// Clear 清空全部或超过保留期的操作日志。
+// 清空全部或超过保留期的操作日志
 func (service *LogService) Clear(ctx context.Context, all bool) (int64, error) {
 	if service == nil || service.Base == nil || service.conf == nil || service.now == nil {
 		return 0, exception.Core("操作日志服务未初始化")
@@ -125,7 +125,10 @@ func (service *LogService) Clear(ctx context.Context, all bool) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	if !all {
+	if all {
+		// GoFrame 要求删除操作显式携带 WHERE 条件
+		model = model.Where("1=1")
+	} else {
 		days, keepErr := service.conf.LogKeep(ctx)
 		if keepErr != nil {
 			return 0, keepErr
@@ -145,12 +148,12 @@ func (service *LogService) Clear(ctx context.Context, all bool) (int64, error) {
 	return count, nil
 }
 
-// GetKeep 返回操作日志保留天数。
+// 返回操作日志保留天数
 func (service *LogService) GetKeep(ctx context.Context) (int, error) {
 	return service.conf.LogKeep(ctx)
 }
 
-// SetKeep 更新操作日志保留天数。
+// 更新操作日志保留天数
 func (service *LogService) SetKeep(ctx context.Context, days int) error {
 	return service.conf.SetLogKeep(ctx, days)
 }

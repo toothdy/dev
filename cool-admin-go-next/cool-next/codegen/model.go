@@ -5,7 +5,7 @@ import (
 	"go/types"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/module"
-	coreroute "github.com/toothdy/cool-admin-go-next/cool-next/core/route"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/route"
 )
 
 // 源码位置
@@ -60,7 +60,7 @@ type entityField struct {
 	variable *types.Var // 字段对象
 }
 
-// Schema 声明
+// Schema 函数声明
 type SchemaDeclaration struct {
 	entity   string        // 目标实体名称
 	name     string        // 函数名称
@@ -155,12 +155,12 @@ func (d GRPCRegistrarDeclaration) Position() Position { return d.position }
 type ServiceActionMode string
 
 const (
-	ServiceActionBase     ServiceActionMode = "base"
-	ServiceActionOverride ServiceActionMode = "override"
-	ServiceActionDelegate ServiceActionMode = "delegate"
+	ServiceActionBase     ServiceActionMode = "base"     // 基础实现
+	ServiceActionOverride ServiceActionMode = "override" // 完全覆盖
+	ServiceActionDelegate ServiceActionMode = "delegate" // 委托基础实现
 )
 
-// Service 动作分析结果
+// Service 动作声明
 type ServiceAction struct {
 	mode     ServiceActionMode
 	name     string
@@ -214,8 +214,8 @@ func (d ServiceDeclaration) HasModifyAfter() bool { return d.hasAfter }
 type ControllerArea string
 
 const (
-	ControllerAdmin ControllerArea = "admin"
-	ControllerApp   ControllerArea = "app"
+	ControllerAdmin ControllerArea = "admin" // 后台区域
+	ControllerApp   ControllerArea = "app"   // 应用端区域
 )
 
 // Controller 工厂声明
@@ -268,7 +268,7 @@ func (d ControllerDeclaration) Middleware() []string {
 	return append([]string(nil), d.middleware...)
 }
 
-// DevelopmentOnly 是否仅在开发环境注册
+// 仅在开发环境注册
 func (d ControllerDeclaration) DevelopmentOnly() bool { return d.developmentOnly }
 
 // 返回静态路由副本
@@ -284,23 +284,22 @@ func (d ControllerDeclaration) Routes() []RouteDeclaration {
 
 // 静态路由声明
 type RouteDeclaration struct {
-	bind            coreroute.BindSource
+	bind            route.BindSource
 	description     string
 	developmentOnly bool
-	handler         coreroute.CallableRef
-	kind            coreroute.Kind
+	handler         route.CallableRef
+	kind            route.Kind
 	method          string
 	middleware      []string
 	path            string
-	permission      string
 	position        Position
 	summary         string
 	tags            []string
-	transaction     coreroute.TransactionPolicy
+	transaction     route.TransactionPolicy
 }
 
 // 返回路由种类
-func (d RouteDeclaration) Kind() coreroute.Kind { return d.kind }
+func (d RouteDeclaration) Kind() route.Kind { return d.kind }
 
 // 返回 HTTP Method
 func (d RouteDeclaration) Method() string { return d.method }
@@ -309,10 +308,9 @@ func (d RouteDeclaration) Method() string { return d.method }
 func (d RouteDeclaration) Path() string { return d.path }
 
 // 返回绑定来源
-func (d RouteDeclaration) Bind() coreroute.BindSource { return d.bind }
+func (d RouteDeclaration) Bind() route.BindSource { return d.bind }
 
 // 返回权限字符串
-func (d RouteDeclaration) Permission() string { return d.permission }
 
 // 返回标签副本
 func (d RouteDeclaration) Tags() []string { return append([]string(nil), d.tags...) }
@@ -325,7 +323,7 @@ func (d RouteDeclaration) Middleware() []string {
 // 返回声明位置
 func (d RouteDeclaration) Position() Position { return d.position }
 
-// DevelopmentOnly 是否仅在开发环境注册
+// 仅在开发环境注册
 func (d RouteDeclaration) DevelopmentOnly() bool { return d.developmentOnly }
 
 // 静态组件引用
@@ -358,6 +356,8 @@ type Module struct {
 	registrars   []GRPCRegistrarDeclaration // gRPC 服务注册函数
 	references   []Reference                // 静态组件引用
 	root         string                     // 工作区相对模块根目录
+	seedDB       bool                       // 模块根存在 db.json
+	seedMenu     bool                       // 模块根存在 menu.json
 	schemas      []SchemaDeclaration        // Schema 声明
 	services     []ServiceDeclaration       // Base Service 声明
 }
@@ -367,6 +367,12 @@ func (m Module) Identity() module.Identity { return m.identity }
 
 // 返回模块配置声明
 func (m Module) Config() ConfigDeclaration { return m.config }
+
+// 模块是否包含数据库种子
+func (m Module) HasSeedDB() bool { return m.seedDB }
+
+// 模块是否包含菜单种子
+func (m Module) HasSeedMenu() bool { return m.seedMenu }
 
 // 返回实体声明副本
 func (m Module) Entities() []EntityDeclaration {

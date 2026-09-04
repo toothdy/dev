@@ -29,7 +29,7 @@ func newPipelineExecution() pipelineExecution {
 		build:    buildCandidate,
 		readFile: os.ReadFile,
 		target:   pipelineTarget,
-		validate: validateCandidate,
+		validate: checkCandidate,
 		write:    atomicWriteFile,
 	}
 }

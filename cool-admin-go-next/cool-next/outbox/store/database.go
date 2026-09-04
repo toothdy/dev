@@ -13,13 +13,13 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 
-	coredb "github.com/toothdy/cool-admin-go-next/cool-next/db"
+	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
 )
 
 // 三数据库可靠消息存储
 type DatabaseStore struct {
-	runtime    *coredb.Runtime
+	runtime    *db.Runtime
 	statements sqlStatements
 }
 
@@ -74,8 +74,8 @@ type sqliteErrorCoder interface {
 	Code() int
 }
 
-// 创建当前 Framework Database Group 的 Store
-func New(runtime *coredb.Runtime) (*DatabaseStore, error) {
+// 当前 Framework Database Group 的 Store
+func New(runtime *db.Runtime) (*DatabaseStore, error) {
 	if runtime == nil || runtime.DB() == nil || runtime.Group() == "" {
 		return nil, gerror.New("outbox store: 数据库 Runtime 无效")
 	}
@@ -87,7 +87,7 @@ func New(runtime *coredb.Runtime) (*DatabaseStore, error) {
 	return &DatabaseStore{runtime: runtime, statements: statements}, nil
 }
 
-// 写入初始待发布记录
+// 初始待发布记录
 func (store *DatabaseStore) Enqueue(ctx context.Context, transaction gdb.TX, record Record) error {
 	if store == nil || store.runtime == nil || transaction == nil || transaction.GetDB() == nil {
 		return gerror.New("outbox store: 入队事务无效")
@@ -116,7 +116,7 @@ func (store *DatabaseStore) Enqueue(ctx context.Context, transaction gdb.TX, rec
 	return nil
 }
 
-// 领取当前可发布记录
+// 抢占可发布记录的所有权
 func (store *DatabaseStore) Claim(
 	ctx context.Context,
 	owner string,
@@ -126,7 +126,7 @@ func (store *DatabaseStore) Claim(
 	return store.claim(ctx, owner, limit, leaseDuration, store.statements.claimCandidates, store.statements.claim)
 }
 
-// 领取待首次发布或重试的记录
+// 抢占可立即发布的记录
 func (store *DatabaseStore) ClaimAvailable(
 	ctx context.Context,
 	owner string,
@@ -143,7 +143,7 @@ func (store *DatabaseStore) ClaimAvailable(
 	)
 }
 
-// 重新领取 Lease 已过期的记录
+// 抢占 Lease 已过期的记录
 func (store *DatabaseStore) ClaimExpired(
 	ctx context.Context,
 	owner string,
@@ -251,10 +251,7 @@ func (store *DatabaseStore) claimWithin(
 	}
 	records := make([]Record, 0, len(candidates))
 	for _, candidate := range candidates {
-		token, err := newClaimToken()
-		if err != nil {
-			return nil, err
-		}
+		token := newClaimToken()
 		arguments := store.statements.claimArguments(owner, token, leaseDuration, candidate.MessageID)
 		result, err := transaction.Ctx(ctx).Exec(claimStatement, arguments...)
 		if err != nil {
@@ -297,7 +294,7 @@ func (store *DatabaseStore) readClaimed(
 	return stored.toRecord()
 }
 
-// 推进当前 Lease 截止时间
+// 续签当前 Lease 截止
 func (store *DatabaseStore) Renew(
 	ctx context.Context,
 	messageID string,
@@ -311,12 +308,12 @@ func (store *DatabaseStore) Renew(
 	return store.execClaimUpdate(ctx, "续租", store.statements.renew, arguments...)
 }
 
-// 标记消息已发布
+// 将记录置为已发布
 func (store *DatabaseStore) MarkSent(ctx context.Context, messageID string, token ClaimToken) error {
 	return store.execClaimUpdate(ctx, "标记已发布", store.statements.markSent, messageID, token)
 }
 
-// 安排消息重试
+// 推迟记录至下次可领取
 func (store *DatabaseStore) MarkRetry(
 	ctx context.Context,
 	messageID string,
@@ -331,7 +328,7 @@ func (store *DatabaseStore) MarkRetry(
 	return store.execClaimUpdate(ctx, "标记重试", store.statements.markRetry, arguments...)
 }
 
-// 标记消息进入死信
+// 将记录置为死信
 func (store *DatabaseStore) MarkDead(
 	ctx context.Context,
 	messageID string,
@@ -341,7 +338,7 @@ func (store *DatabaseStore) MarkDead(
 	return store.execClaimUpdate(ctx, "标记死信", store.statements.markDead, summary, messageID, token)
 }
 
-// 清理超过保留期的已发布记录
+// 超过保留期的已发布记录
 func (store *DatabaseStore) CleanupSent(ctx context.Context, retention time.Duration, limit int) (int64, error) {
 	if store == nil || store.runtime == nil {
 		return 0, gerror.New("outbox store: Store 未初始化")
@@ -388,7 +385,7 @@ func (store *DatabaseStore) CleanupSent(ctx context.Context, retention time.Dura
 	return cleaned, nil
 }
 
-// 返回按 Topic 和状态聚合的可观测快照
+// 按 Topic 和状态聚合的可观测快照
 func (store *DatabaseStore) TopicStatuses(ctx context.Context) ([]TopicStatus, error) {
 	if store == nil || store.runtime == nil {
 		return nil, gerror.New("outbox store: Store 未初始化")
@@ -417,7 +414,7 @@ func (store *DatabaseStore) TopicStatuses(ctx context.Context) ([]TopicStatus, e
 	return statuses, nil
 }
 
-// 查询指定状态的安全运维快照
+// 指定状态的安全运维快照
 func (store *DatabaseStore) List(ctx context.Context, filter ListFilter) ([]Metadata, error) {
 	if store == nil || store.runtime == nil {
 		return nil, gerror.New("outbox store: Store 未初始化")
@@ -449,7 +446,7 @@ func (store *DatabaseStore) List(ctx context.Context, filter ListFilter) ([]Meta
 	return result, nil
 }
 
-// 查询单条安全运维快照
+// 单条安全运维快照
 func (store *DatabaseStore) Show(ctx context.Context, messageID string) (Metadata, error) {
 	if store == nil || store.runtime == nil {
 		return Metadata{}, gerror.New("outbox store: Store 未初始化")
@@ -497,7 +494,7 @@ func (store *DatabaseStore) execClaimUpdate(
 	return nil
 }
 
-// 将死信重置为待重试
+// 将死信回退为待重试
 func (store *DatabaseStore) ReplayDead(ctx context.Context, messageID string) error {
 	if store == nil || store.runtime == nil {
 		return gerror.New("outbox store: Store 未初始化")
@@ -547,7 +544,7 @@ func (store *DatabaseStore) ReplayDead(ctx context.Context, messageID string) er
 	return nil
 }
 
-// 原子写入消费幂等标记
+// 消费幂等标记
 func (store *DatabaseStore) InsertIfAbsent(
 	ctx context.Context,
 	transaction gdb.TX,
@@ -656,13 +653,11 @@ func validStatus(status Status) bool {
 	return status == Pending || status == Retry || status == Leased || status == Sent || status == Dead
 }
 
-func newClaimToken() (ClaimToken, error) {
+func newClaimToken() ClaimToken {
 	randomBytes := make([]byte, 16)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", gerror.Wrap(err, "outbox store: 生成 Claim Token")
-	}
+	rand.Read(randomBytes)
 
-	return ClaimToken(hex.EncodeToString(randomBytes)), nil
+	return ClaimToken(hex.EncodeToString(randomBytes))
 }
 
 func invariantError(action string, affected int64) error {

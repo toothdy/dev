@@ -14,7 +14,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	outboxstore "github.com/toothdy/cool-admin-go-next/cool-next/outbox/store"
+	"github.com/toothdy/cool-admin-go-next/cool-next/outbox/store"
 )
 
 const (
@@ -38,14 +38,14 @@ type WorkerConfig struct {
 // 发布循环持久化边界
 type WorkerStore interface {
 	Probe(context.Context) error
-	ClaimAvailable(context.Context, string, int, time.Duration) ([]outboxstore.Record, error)
-	ClaimExpired(context.Context, string, int, time.Duration) ([]outboxstore.Record, error)
-	Renew(context.Context, string, outboxstore.ClaimToken, time.Duration) error
-	MarkSent(context.Context, string, outboxstore.ClaimToken) error
-	MarkRetry(context.Context, string, outboxstore.ClaimToken, time.Duration, string) error
-	MarkDead(context.Context, string, outboxstore.ClaimToken, string) error
+	ClaimAvailable(context.Context, string, int, time.Duration) ([]store.Record, error)
+	ClaimExpired(context.Context, string, int, time.Duration) ([]store.Record, error)
+	Renew(context.Context, string, store.ClaimToken, time.Duration) error
+	MarkSent(context.Context, string, store.ClaimToken) error
+	MarkRetry(context.Context, string, store.ClaimToken, time.Duration, string) error
+	MarkDead(context.Context, string, store.ClaimToken, string) error
 	CleanupSent(context.Context, time.Duration, int) (int64, error)
-	TopicStatuses(context.Context) ([]outboxstore.TopicStatus, error)
+	TopicStatuses(context.Context) ([]store.TopicStatus, error)
 }
 
 // 发布状态日志边界
@@ -56,9 +56,9 @@ type WorkerLogger interface {
 
 // 发布指标观察边界
 type WorkerObserver interface {
-	ObserveStatuses(context.Context, []outboxstore.TopicStatus)
+	ObserveStatuses(context.Context, []store.TopicStatus)
 	ObserveClaim(context.Context, string, bool, time.Duration)
-	ObservePublish(context.Context, string, outboxstore.Status, uint32, time.Duration)
+	ObservePublish(context.Context, string, store.Status, uint32, time.Duration)
 	ObserveClaimLost(context.Context, string)
 }
 
@@ -92,12 +92,12 @@ type Worker struct {
 }
 
 type claimedRecord struct {
-	record outboxstore.Record
+	record store.Record
 }
 
 type noopWorkerObserver struct{}
 
-// 创建受应用 Host 管理的发布组件
+// 受应用 Host 管理的发布组件
 func NewWorker(
 	store WorkerStore,
 	publisher Publisher,
@@ -108,13 +108,10 @@ func NewWorker(
 	if store == nil || publisher == nil {
 		return nil, gerror.New("outbox worker: Store 和 Publisher 不能为空")
 	}
-	if err := validateWorkerConfig(config); err != nil {
+	if err := checkWorker(config); err != nil {
 		return nil, err
 	}
-	id, err := newWorkerID()
-	if err != nil {
-		return nil, err
-	}
+	id := newWorkerID()
 	if logger == nil {
 		logger = g.Log()
 	}
@@ -132,7 +129,7 @@ func NewWorker(
 	}, nil
 }
 
-// 返回当前 Worker 实例 ID
+// 当前 Worker 实例 ID
 func (worker *Worker) ID() string {
 	if worker == nil {
 		return ""
@@ -141,7 +138,7 @@ func (worker *Worker) ID() string {
 	return worker.id
 }
 
-// 启动轮询和 Retention 清理
+// 轮询和 Retention 清理
 func (worker *Worker) OnStart(ctx context.Context) error {
 	if worker == nil {
 		return gerror.New("outbox worker: Worker 不能为空")
@@ -171,7 +168,7 @@ func (worker *Worker) OnStart(ctx context.Context) error {
 	return nil
 }
 
-// 停止领取并等待在途发布
+// 领取并等待在途发布
 func (worker *Worker) OnStop(ctx context.Context) error {
 	if worker == nil {
 		return nil
@@ -199,7 +196,7 @@ func (worker *Worker) OnStop(ctx context.Context) error {
 	}
 }
 
-// 返回发布循环终止信号
+// 发布循环终止信号
 func (worker *Worker) Terminated() <-chan error {
 	if worker == nil {
 		return nil
@@ -299,7 +296,7 @@ func (worker *Worker) claim(ctx context.Context, isExpired bool, limit int) ([]c
 	}
 	startedAt := time.Now()
 	var (
-		records []outboxstore.Record
+		records []store.Record
 		err     error
 	)
 	if isExpired {
@@ -323,7 +320,7 @@ func (worker *Worker) claim(ctx context.Context, isExpired bool, limit int) ([]c
 func (worker *Worker) publish(claimed claimedRecord) {
 	record := claimed.record
 	startedAt := time.Now()
-	message, err := envelopeFromRecord(record)
+	message, err := envelope(record)
 	if err != nil {
 		worker.finishFailure(record, startedAt, err)
 		return
@@ -359,7 +356,7 @@ func (worker *Worker) publish(claimed claimedRecord) {
 	worker.observer.ObservePublish(
 		worker.publishCtx,
 		record.Topic(),
-		outboxstore.Sent,
+		store.Sent,
 		record.Attempts(),
 		time.Since(startedAt),
 	)
@@ -367,7 +364,7 @@ func (worker *Worker) publish(claimed claimedRecord) {
 
 func (worker *Worker) renew(
 	publishCtx context.Context,
-	record outboxstore.Record,
+	record store.Record,
 	ownership chan<- error,
 	done chan<- struct{},
 ) {
@@ -400,17 +397,17 @@ func (worker *Worker) renew(
 	}
 }
 
-func (worker *Worker) finishFailure(record outboxstore.Record, startedAt time.Time, cause error) {
+func (worker *Worker) finishFailure(record store.Record, startedAt time.Time, cause error) {
 	if worker.publishCtx.Err() != nil {
 		return
 	}
 	summary := errorSummary(cause)
 	operationCtx, cancelOperation := context.WithTimeout(worker.publishCtx, worker.config.PublishTimeout)
 	defer cancelOperation()
-	status := outboxstore.Retry
+	status := store.Retry
 	var err error
 	if record.Attempts() >= worker.config.PublishMaxAttempts {
-		status = outboxstore.Dead
+		status = store.Dead
 		err = worker.store.MarkDead(operationCtx, record.MessageID(), record.ClaimToken(), summary)
 	} else {
 		delay, delayErr := retryDelay(worker.config, record.Attempts())
@@ -439,7 +436,7 @@ func (worker *Worker) finishFailure(record outboxstore.Record, startedAt time.Ti
 		WorkerID:  worker.id,
 		Error:     summary,
 	}
-	if status == outboxstore.Dead {
+	if status == store.Dead {
 		worker.logger.Error(operationCtx, logEntry)
 	} else {
 		worker.logger.Info(operationCtx, logEntry)
@@ -453,12 +450,12 @@ func (worker *Worker) finishFailure(record outboxstore.Record, startedAt time.Ti
 	)
 }
 
-func (worker *Worker) handleClaimLoss(record outboxstore.Record, cause error) {
+func (worker *Worker) handleClaimLoss(record store.Record, cause error) {
 	if worker.publishCtx.Err() != nil {
 		return
 	}
 	event := "state_update_failed"
-	if errors.Is(cause, outboxstore.ErrClaimLost) {
+	if errors.Is(cause, store.ErrClaimLost) {
 		event = "claim_lost"
 		worker.observer.ObserveClaimLost(worker.publishCtx, record.Topic())
 	}
@@ -494,7 +491,7 @@ func (worker *Worker) cleanup(ctx context.Context) error {
 	return nil
 }
 
-func validateWorkerConfig(config WorkerConfig) error {
+func checkWorker(config WorkerConfig) error {
 	if config.PollInterval <= 0 || config.BatchSize <= 0 || config.LeaseDuration <= 0 ||
 		config.PublishTimeout <= 0 || config.PublishMaxAttempts == 0 || config.PublishRetryBase <= 0 ||
 		config.PublishRetryMax <= 0 || config.Retention <= 0 {
@@ -532,13 +529,11 @@ func retryDelay(config WorkerConfig, attempt uint32) (time.Duration, error) {
 	return floor + time.Duration(random.Int64()), nil
 }
 
-func newWorkerID() (string, error) {
+func newWorkerID() string {
 	randomBytes := make([]byte, workerIDBytes)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", gerror.Wrap(err, "outbox worker: 生成 Worker ID")
-	}
+	rand.Read(randomBytes)
 
-	return hex.EncodeToString(randomBytes), nil
+	return hex.EncodeToString(randomBytes)
 }
 
 func errorSummary(err error) string {
@@ -554,15 +549,15 @@ func errorSummary(err error) string {
 	return string(runes[:maxErrorSummaryRunes])
 }
 
-// ObserveStatuses 不执行任何操作
-func (noopWorkerObserver) ObserveStatuses(context.Context, []outboxstore.TopicStatus) {}
+// 空实现
+func (noopWorkerObserver) ObserveStatuses(context.Context, []store.TopicStatus) {}
 
-// ObserveClaim 不执行任何操作
+// 空实现
 func (noopWorkerObserver) ObserveClaim(context.Context, string, bool, time.Duration) {}
 
-// ObservePublish 不执行任何操作
-func (noopWorkerObserver) ObservePublish(context.Context, string, outboxstore.Status, uint32, time.Duration) {
+// 空实现
+func (noopWorkerObserver) ObservePublish(context.Context, string, store.Status, uint32, time.Duration) {
 }
 
-// ObserveClaimLost 不执行任何操作
+// 空实现
 func (noopWorkerObserver) ObserveClaimLost(context.Context, string) {}

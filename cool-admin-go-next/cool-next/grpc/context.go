@@ -20,8 +20,8 @@ type Authenticator interface {
 // gRPC 方法鉴权规则解析器
 type RuleResolver func(string) (auth.Rule, error)
 
-// 创建 Unary 请求上下文拦截器
-func NewUnaryContextInterceptor(authenticator Authenticator, resolver RuleResolver) (googlegrpc.UnaryServerInterceptor, error) {
+// 构造 Unary 鉴权拦截器
+func UnaryContext(authenticator Authenticator, resolver RuleResolver) (googlegrpc.UnaryServerInterceptor, error) {
 	if authenticator == nil {
 		return nil, exception.Core("gRPC Authenticator 不能为空")
 	}
@@ -38,7 +38,7 @@ func NewUnaryContextInterceptor(authenticator Authenticator, resolver RuleResolv
 		if info == nil || handler == nil {
 			return nil, exception.Core("gRPC Unary 调用信息无效")
 		}
-		verified, err := authenticateContext(ctx, authenticator, resolver, info.FullMethod)
+		verified, err := authenticate(ctx, authenticator, resolver, info.FullMethod)
 		if err != nil {
 			return nil, Error(err)
 		}
@@ -47,8 +47,8 @@ func NewUnaryContextInterceptor(authenticator Authenticator, resolver RuleResolv
 	}, nil
 }
 
-// 创建 Stream 请求上下文拦截器
-func NewStreamContextInterceptor(authenticator Authenticator, resolver RuleResolver) (googlegrpc.StreamServerInterceptor, error) {
+// 构造 Stream 鉴权拦截器
+func StreamContext(authenticator Authenticator, resolver RuleResolver) (googlegrpc.StreamServerInterceptor, error) {
 	if authenticator == nil {
 		return nil, exception.Core("gRPC Authenticator 不能为空")
 	}
@@ -65,7 +65,7 @@ func NewStreamContextInterceptor(authenticator Authenticator, resolver RuleResol
 		if stream == nil || info == nil || handler == nil {
 			return exception.Core("gRPC Stream 调用信息无效")
 		}
-		verified, err := authenticateContext(stream.Context(), authenticator, resolver, info.FullMethod)
+		verified, err := authenticate(stream.Context(), authenticator, resolver, info.FullMethod)
 		if err != nil {
 			return Error(err)
 		}
@@ -79,11 +79,11 @@ type contextServerStream struct {
 	ctx context.Context
 }
 
-// 返回已验证的请求上下文
+// 鉴权后请求上下文
 func (stream *contextServerStream) Context() context.Context { return stream.ctx }
 
 // 建立并认证 gRPC 请求上下文
-func authenticateContext(
+func authenticate(
 	ctx context.Context,
 	authenticator Authenticator,
 	resolver RuleResolver,
@@ -106,7 +106,7 @@ func authenticateContext(
 
 	return authenticator.AuthenticateGRPC(
 		ctx,
-		authorizationMetadata(ctx),
+		authMetadata(ctx),
 		fullMethod,
 		rule.Permission,
 		rule.IgnoreToken,
@@ -131,8 +131,7 @@ func withRequestTrace(ctx context.Context) (context.Context, error) {
 	return app.WithTraceID(ctx, traceID)
 }
 
-// 读取唯一 Authorization Metadata
-func authorizationMetadata(ctx context.Context) string {
+func authMetadata(ctx context.Context) string {
 	values := metadata.ValueFromIncomingContext(ctx, "authorization")
 	if len(values) != 1 {
 		return ""

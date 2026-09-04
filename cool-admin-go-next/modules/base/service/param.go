@@ -5,14 +5,16 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"html"
 	"strings"
 	"sync"
 
 	"github.com/gogf/gf/v2/os/gcache"
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/controller"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
-	coreservice "github.com/toothdy/cool-admin-go-next/cool-next/core/service"
-	base "github.com/toothdy/cool-admin-go-next/modules/base"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
+	"github.com/toothdy/cool-admin-go-next/modules/base"
 	"github.com/toothdy/cool-admin-go-next/modules/base/entity"
 )
 
@@ -20,6 +22,9 @@ const (
 	paramCachePrefix  = "param:"
 	paramHTMLTemplate = "<html><title>@title</title><body>@content</body></html>"
 )
+
+// 参数富文本输出的白名单清洗策略,包级创建一次,创建后并发安全
+var paramHTMLPolicy = bluemonday.UGCPolicy()
 
 type paramCacheEntry struct {
 	ID       uint64 `orm:"id"`
@@ -29,17 +34,17 @@ type paramCacheEntry struct {
 	DataType int32  `orm:"dataType"`
 }
 
-// ParamService 提供参数查询、HTML 输出和变更缓存协调。
+// 参数查询、HTML 输出和变更缓存协调
 type ParamService struct {
-	*coreservice.Base[entity.Param, uint64]
+	*gnservice.Base[entity.Param, uint64]
 	allowKeys map[string]struct{}
 	cache     *gcache.Cache
 	dirty     map[string]struct{}
 	mu        sync.Mutex
 }
 
-// NewParam 创建使用私有内存缓存的参数服务。
-func NewParam(baseService *coreservice.Base[entity.Param, uint64], config base.Config) (*ParamService, error) {
+// 使用私有内存缓存的参数服务
+func NewParam(baseService *gnservice.Base[entity.Param, uint64], config base.Config) (*ParamService, error) {
 	if baseService == nil || baseService.Descriptor() == nil {
 		return nil, exception.Core("参数基础 Service 无效")
 	}
@@ -56,7 +61,7 @@ func NewParam(baseService *coreservice.Base[entity.Param, uint64], config base.C
 	}, nil
 }
 
-// DataByKey 按键返回已按 dataType 解析的参数值。
+// 按键返回已按 dataType 解析的参数值
 func (service *ParamService) DataByKey(ctx context.Context, key string) (any, error) {
 	record, err := service.paramByKey(ctx, key)
 	if err != nil || record == nil {
@@ -79,7 +84,7 @@ func (service *ParamService) DataByKey(ctx context.Context, key string) (any, er
 	}
 }
 
-// AppDataByKey 校验 App 公开键后返回参数值。
+// 校验 App 公开键后返回参数值
 func (service *ParamService) AppDataByKey(ctx context.Context, key string) (any, error) {
 	if service == nil {
 		return nil, exception.Core("参数服务未初始化")
@@ -91,49 +96,62 @@ func (service *ParamService) AppDataByKey(ctx context.Context, key string) (any,
 	return service.DataByKey(ctx, key)
 }
 
-// HTMLByKey 按键返回原始 HTML 响应。
-func (service *ParamService) HTMLByKey(ctx context.Context, key string) (controller.HTMLResponse, error) {
+// 按键返回清洗后的 HTML 响应
+func (service *ParamService) HTMLByKey(ctx context.Context, key string) (gnctrl.HTMLResponse, error) {
 	record, err := service.paramByKey(ctx, key)
 	if err != nil {
 		return "", err
 	}
 	if record == nil {
-		return controller.HTMLResponse(strings.Replace(paramHTMLTemplate, "@content", "key notfound", 1)), nil
+		return gnctrl.HTMLResponse(strings.Replace(paramHTMLTemplate, "@content", "key notfound", 1)), nil
 	}
 
-	return controller.HTMLResponse(strings.NewReplacer(
-		"@title", record.Name,
-		"@content", record.Data,
+	// 标题转义、正文白名单清洗,防止存储型 XSS
+	return gnctrl.HTMLResponse(strings.NewReplacer(
+		"@title", html.EscapeString(record.Name),
+		"@content", paramHTMLPolicy.Sanitize(record.Data),
 	).Replace(paramHTMLTemplate)), nil
 }
 
-// Add 新增参数并失效相关缓存。
+// 校验公开键后返回清洗后的 HTML 页面
+func (service *ParamService) PublicHTMLByKey(ctx context.Context, key string) (gnctrl.HTMLResponse, error) {
+	if service == nil {
+		return "", exception.Core("参数服务未初始化")
+	}
+	if _, allowed := service.allowKeys[key]; !allowed {
+		return "", exception.Comm("非法操作")
+	}
+
+	return service.HTMLByKey(ctx, key)
+}
+
+// 新增参数并失效相关缓存
 func (service *ParamService) Add(
 	ctx context.Context,
-	input coreservice.AddInput[entity.Param],
-) (coreservice.AddResult[uint64], error) {
+	input gnservice.AddInput[entity.Param],
+) (gnservice.AddResult[uint64], error) {
 	service.mu.Lock()
 	defer service.mu.Unlock()
 
 	result, err := service.Base.Add(ctx, input)
 	if err != nil {
-		return coreservice.AddResult[uint64]{}, err
+		return gnservice.AddResult[uint64]{}, err
 	}
 	rows, err := service.paramsByIDs(ctx, addResultIDs(result))
 	if err != nil {
-		return coreservice.AddResult[uint64]{}, err
+		return gnservice.AddResult[uint64]{}, err
 	}
 	if err = service.markParamCacheDirty(ctx, rows); err != nil {
-		return coreservice.AddResult[uint64]{}, err
+		return gnservice.AddResult[uint64]{}, err
 	}
 
 	return result, nil
 }
 
-// Update 更新参数并失效旧键与新键。
+// 更新参数并失效旧键与新键
 func (service *ParamService) Update(
 	ctx context.Context,
-	input coreservice.UpdateInput[entity.Param, uint64],
+	input gnservice.UpdateInput[entity.Param, uint64],
 ) error {
 	service.mu.Lock()
 	defer service.mu.Unlock()
@@ -156,8 +174,8 @@ func (service *ParamService) Update(
 	return service.markParamCacheDirty(ctx, affectedRows)
 }
 
-// Delete 删除参数并失效旧键缓存。
-func (service *ParamService) Delete(ctx context.Context, input coreservice.DeleteInput[uint64]) error {
+// 删除参数并失效旧键缓存
+func (service *ParamService) Delete(ctx context.Context, input gnservice.DeleteInput[uint64]) error {
 	service.mu.Lock()
 	defer service.mu.Unlock()
 
@@ -271,7 +289,7 @@ func (service *ParamService) markParamCacheDirty(ctx context.Context, rows []par
 	return nil
 }
 
-func addResultIDs(result coreservice.AddResult[uint64]) []uint64 {
+func addResultIDs(result gnservice.AddResult[uint64]) []uint64 {
 	if result.IsMany() {
 		return result.Many()
 	}
@@ -279,7 +297,7 @@ func addResultIDs(result coreservice.AddResult[uint64]) []uint64 {
 	return []uint64{result.One()}
 }
 
-func updateInputIDs(input coreservice.UpdateInput[entity.Param, uint64]) []uint64 {
+func updateInputIDs(input gnservice.UpdateInput[entity.Param, uint64]) []uint64 {
 	if !input.IsMany() {
 		return []uint64{input.One().ID()}
 	}

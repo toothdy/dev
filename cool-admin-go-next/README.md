@@ -158,11 +158,14 @@ main / cmd
 | `queue/**` | 队列 |
 | `consumer/**` | Outbox/Inbox 可靠消息 Consumer |
 | `dto/**` | 数据传输对象 |
+| `grpc/**` | gRPC Register/Service |
 | 模块根 `config.go` | `ModuleConfig() module.Declaration[Config]` |
 | `db.json` / `menu.json` | 可选初始化数据 |
 
 目录可以任意深度嵌套。`_test.go`、`testdata`、隐藏目录和标准生成文件不参与发现。  
 `middleware/global/**` 目录本身不构成隐式注册，必须由 `ModuleConfig.GlobalMiddlewares` 显式引用构造器。
+
+`cool check`/`cool generate` 强制校验模块根只能包含上表列出的子目录、`config.go` 和可选的 `db.json`/`menu.json`；出现其他文件或目录一律报 `CG111`，不再静默跳过。
 
 ### 模块 `config.go` 模板
 
@@ -185,7 +188,7 @@ func ModuleConfig() module.Declaration[Config] {
          module.Ref("middleware.New"),
       },
       GlobalMiddlewares: []module.ComponentRef{
-         module.Ref("middleware/global.NewTrace"),
+         module.Ref("middleware.global.NewTrace"),
       },
       Defaults: Config{
          Enabled: true,
@@ -197,7 +200,8 @@ func ModuleConfig() module.Declaration[Config] {
 
 `Declaration` 公开字段是 `Name`、`Description`、`Order`、`Middlewares`、`GlobalMiddlewares`、`Defaults`。  
 框架按 “默认值 -> 主配置 -> 环境覆盖” 合并配置，然后统一调用 GoFrame `gvalid` 校验 `v` 标签。  
-`module.Ref("middleware.New")` 只是供 AST 编译器解析和类型检查的符号引用，运行时不按字符串查找组件。
+`module.Ref("middleware.New")` 只是供 AST 编译器解析和类型检查的符号引用，运行时不按字符串查找组件。  
+符号路径以 `.` 分隔且按 Go 包路径解析（`cool-next/codegen/module.go` 用最后一段前的部分拼接目标包路径），因此嵌套目录写作 `middleware.global.NewTrace`，不能用 `/`。
 
 ---
 

@@ -6,11 +6,11 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
-	"github.com/toothdy/cool-admin-go-next/cool-next/core/entity"
+	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/driver"
 )
 
-func expectedTable(dialect driver.Dialect, metadata entity.Metadata) (Table, error) {
+func expectedTable(dialect driver.Dialect, metadata gnentity.Metadata) (Table, error) {
 	if metadata == nil {
 		return Table{}, gerror.New("实体元数据不能为 nil")
 	}
@@ -19,14 +19,14 @@ func expectedTable(dialect driver.Dialect, metadata entity.Metadata) (Table, err
 	}
 
 	table := Table{Name: metadata.Table()}
-	for _, field := range metadata.Fields() {
-		columnType, err := expectedColumnType(dialect, field)
+	for _, field := range metadata.PersistentFields() {
+		typ, err := columnType(dialect, field)
 		if err != nil {
 			return Table{}, gerror.Wrapf(err, "构建表 %s 的期望字段", metadata.Table())
 		}
 		table.Columns = append(table.Columns, Column{
 			Name:          field.Column(),
-			Type:          normalizeType(dialect.Kind(), columnType),
+			Type:          typeName(dialect.Kind(), typ),
 			Nullable:      field.Nullable(),
 			Primary:       field.Primary(),
 			AutoIncrement: field.AutoIncrement(),
@@ -38,6 +38,9 @@ func expectedTable(dialect driver.Dialect, metadata entity.Metadata) (Table, err
 			field, exists := metadata.Field(fieldName)
 			if !exists {
 				return Table{}, gerror.Newf("索引 %s 引用未知字段 %s", source.Name, fieldName)
+			}
+			if !field.Persistent() {
+				return Table{}, gerror.Newf("索引 %s 引用非持久化字段 %s", source.Name, fieldName)
 			}
 			fields = append(fields, field.Column())
 		}
@@ -51,7 +54,7 @@ func expectedTable(dialect driver.Dialect, metadata entity.Metadata) (Table, err
 	return table, nil
 }
 
-func expectedColumnType(dialect driver.Dialect, field entity.Field) (string, error) {
+func columnType(dialect driver.Dialect, field gnentity.Field) (string, error) {
 	if field.AutoIncrement() {
 		switch dialect.Kind() {
 		case driver.MySQL:
@@ -65,7 +68,7 @@ func expectedColumnType(dialect driver.Dialect, field entity.Field) (string, err
 	return dialect.ColumnType(field)
 }
 
-func normalizeType(kind driver.Kind, raw string) string {
+func typeName(kind driver.Kind, raw string) string {
 	typeName := strings.ToUpper(strings.Join(strings.Fields(raw), " "))
 	switch kind {
 	case driver.MySQL:

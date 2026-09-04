@@ -53,21 +53,18 @@ func Probe(
 		return Report{}, err
 	}
 	if kind == MySQL {
-		if err = validateMySQLDefaultEngine(ctx, database); err != nil {
+		if err = checkMySQLDefault(ctx, database); err != nil {
 			return Report{}, err
 		}
 	}
 
-	probeTable, err := newProbeTableName()
-	if err != nil {
-		return Report{}, err
-	}
+	probeTable := probeTableName()
 	cleanupNeeded := true
 	defer func() {
 		if !cleanupNeeded {
 			return
 		}
-		cleanupCtx, cancelCleanup := probeCleanupContext(ctx)
+		cleanupCtx, cancelCleanup := cleanupContext(ctx)
 		defer cancelCleanup()
 		cleanupErr := dropProbeTable(cleanupCtx, database, dialect, probeTable)
 		if cleanupErr != nil {
@@ -81,7 +78,7 @@ func Probe(
 	if err = probeTransaction(ctx, database, dialect, probeTable); err != nil {
 		return Report{}, err
 	}
-	if err = probeConditionalWrite(ctx, database, dialect, probeTable); err != nil {
+	if err = probeWrite(ctx, database, dialect, probeTable); err != nil {
 		return Report{}, err
 	}
 	if kind != SQLite {
@@ -95,7 +92,7 @@ func Probe(
 	cleanupNeeded = false
 
 	if kind == MySQL {
-		if err = validateMySQLTables(ctx, database, transactionTables); err != nil {
+		if err = checkMySQLTables(ctx, database, transactionTables); err != nil {
 			return Report{}, err
 		}
 	}
@@ -107,7 +104,7 @@ func Probe(
 	}, nil
 }
 
-func probeCleanupContext(ctx context.Context) (context.Context, context.CancelFunc) {
+func cleanupContext(ctx context.Context) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.WithoutCancel(ctx), probeCleanupTimeout)
 }
 
@@ -145,13 +142,11 @@ func readVersion(ctx context.Context, database gdb.DB, kind Kind) (Version, erro
 	return version, nil
 }
 
-func newProbeTableName() (string, error) {
+func probeTableName() string {
 	randomBytes := make([]byte, 8)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", gerror.Wrap(err, "生成数据库探测表名")
-	}
+	rand.Read(randomBytes)
 
-	return "cool_probe_" + hex.EncodeToString(randomBytes), nil
+	return "cool_probe_" + hex.EncodeToString(randomBytes)
 }
 
 func createProbeTable(ctx context.Context, database gdb.DB, dialect Dialect, tableName string) error {
@@ -204,7 +199,7 @@ func probeTransaction(ctx context.Context, database gdb.DB, dialect Dialect, tab
 
 		return errProbeRollback
 	})
-	if err = requireProbeRollback(err, dialect.kind); err != nil {
+	if err = checkRollback(err, dialect.kind); err != nil {
 		return err
 	}
 	count, err := database.GetCount(
@@ -222,7 +217,7 @@ func probeTransaction(ctx context.Context, database gdb.DB, dialect Dialect, tab
 	return nil
 }
 
-func requireProbeRollback(err error, kind Kind) error {
+func checkRollback(err error, kind Kind) error {
 	if errors.Is(err, errProbeRollback) {
 		return nil
 	}
@@ -233,7 +228,7 @@ func requireProbeRollback(err error, kind Kind) error {
 	return gerror.Wrapf(err, "%s 事务回滚能力探测失败", kind)
 }
 
-func probeConditionalWrite(
+func probeWrite(
 	ctx context.Context,
 	database gdb.DB,
 	dialect Dialect,
@@ -252,7 +247,7 @@ func probeConditionalWrite(
 		return gerror.Wrapf(err, "准备 %s 条件写入探测行", dialect.kind)
 	}
 	if dialect.kind != MySQL {
-		insertStatement, err := conditionalInsertStatement(dialect, tableName)
+		insertStatement, err := insertSQL(dialect, tableName)
 		if err != nil {
 			return err
 		}
@@ -260,7 +255,7 @@ func probeConditionalWrite(
 		if err != nil {
 			return gerror.Wrapf(err, "%s 条件插入能力探测失败", dialect.kind)
 		}
-		if err = requireAffectedRows(insertResult, 0, dialect.kind); err != nil {
+		if err = checkRows(insertResult, 0, dialect.kind); err != nil {
 			return err
 		}
 	}
@@ -275,7 +270,7 @@ func probeConditionalWrite(
 	if err != nil {
 		return gerror.Wrapf(err, "%s 条件写入能力探测失败", dialect.kind)
 	}
-	if err = requireAffectedRows(result, 1, dialect.kind); err != nil {
+	if err = checkRows(result, 1, dialect.kind); err != nil {
 		return err
 	}
 	result, err = database.Exec(ctx, statement, 30, 2, 10)
@@ -283,10 +278,10 @@ func probeConditionalWrite(
 		return gerror.Wrapf(err, "%s 过期条件写入探测失败", dialect.kind)
 	}
 
-	return requireAffectedRows(result, 0, dialect.kind)
+	return checkRows(result, 0, dialect.kind)
 }
 
-func conditionalInsertStatement(dialect Dialect, tableName string) (string, error) {
+func insertSQL(dialect Dialect, tableName string) (string, error) {
 	if dialect.kind == MySQL {
 		return "", gerror.New("MySQL 条件插入由具体 Store 处理")
 	}
@@ -304,7 +299,7 @@ func conditionalInsertStatement(dialect Dialect, tableName string) (string, erro
 	), nil
 }
 
-func requireAffectedRows(result sql.Result, expected int64, kind Kind) error {
+func checkRows(result sql.Result, expected int64, kind Kind) error {
 	affected, err := result.RowsAffected()
 	if err != nil {
 		return gerror.Wrapf(err, "读取 %s 条件写入行数", kind)
@@ -354,7 +349,7 @@ func probeIdentifiers(dialect Dialect, tableName string) (table string, id strin
 	return table, id, value, nil
 }
 
-func validateMySQLDefaultEngine(ctx context.Context, database gdb.DB) error {
+func checkMySQLDefault(ctx context.Context, database gdb.DB) error {
 	value, err := database.GetValue(ctx, "SELECT @@default_storage_engine")
 	if err != nil {
 		return gerror.Wrap(err, "读取 MySQL 默认存储引擎")
@@ -366,7 +361,7 @@ func validateMySQLDefaultEngine(ctx context.Context, database gdb.DB) error {
 	return nil
 }
 
-func validateMySQLTables(ctx context.Context, database gdb.DB, tables []string) error {
+func checkMySQLTables(ctx context.Context, database gdb.DB, tables []string) error {
 	for _, table := range tables {
 		value, err := database.GetValue(
 			ctx,

@@ -13,7 +13,7 @@ const DefaultCost = 12 // 默认摘要计算成本
 
 // bcrypt 配置
 type Config struct {
-	Cost int // 摘要计算成本
+	Cost int `json:"cost"` // 摘要计算成本
 }
 
 // bcrypt 密码适配器
@@ -24,7 +24,7 @@ type Verifier struct {
 // 密码校验结果
 type VerifyResult struct {
 	Valid       bool // 密码是否匹配
-	NeedsRehash bool // 是否需要升级摘要成本
+	NeedsRehash bool // 是否需要按目标成本重新生成摘要
 }
 
 // 创建密码适配器
@@ -73,5 +73,5 @@ func (verifier *Verifier) Verify(password, encoded string) (VerifyResult, error)
 		return VerifyResult{}, exception.WrapCore(err, "读取密码摘要成本失败")
 	}
 
-	return VerifyResult{Valid: true, NeedsRehash: cost < verifier.cost}, nil
+	return VerifyResult{Valid: true, NeedsRehash: cost != verifier.cost}, nil
 }
