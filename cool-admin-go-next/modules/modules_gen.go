@@ -1278,9 +1278,12 @@ func descriptortaskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog(
 
 type infrastructureConfig struct {
 	Cool struct {
-		CRUD       crud.Config   `json:"crud"`
-		Outbox     outbox.Config `json:"outbox"`
-		Transports struct {
+		ShouldExposeEPS bool          `json:"eps"`
+		ShouldInitDB    bool          `json:"initDB"`
+		ShouldInitMenu  bool          `json:"initMenu"`
+		CRUD            crud.Config   `json:"crud"`
+		Outbox          outbox.Config `json:"outbox"`
+		Transports      struct {
 			HTTP gnhttp.Config `json:"http"`
 			GRPC grpc.Config   `json:"grpc"`
 		} `json:"transports"`
@@ -1296,6 +1299,9 @@ type infrastructureConfig struct {
 
 func generatedInfrastructureConfig(ctx context.Context, source config.Source) (infrastructureConfig, error) {
 	defaults := infrastructureConfig{}
+	defaults.Cool.ShouldExposeEPS = false
+	defaults.Cool.ShouldInitDB = false
+	defaults.Cool.ShouldInitMenu = true
 	defaults.Cool.CRUD = crud.DefaultConfig()
 	defaults.Cool.Outbox = outbox.DefaultConfig()
 	defaults.Cool.Transports.HTTP = gnhttp.DefaultConfig()
@@ -2512,7 +2518,10 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	assembly.AddComponent(module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/auth/bcrypt", Name: "Verifier"}, app.Hooks{})
 	assembly.AddComponent(module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/db", Name: "Runtime"}, app.Hooks{})
 	assembly.AddComponent(module.ComponentDefinition{Module: ".framework", PackagePath: "github.com/toothdy/cool-admin-go-next/cool-next/db/gnrecycle", Name: "Store"}, app.Hooks{})
-	seedRuntime, err := seed.NewRuntime(runtime,
+	seedRuntime, err := seed.NewRuntime(runtime, seed.Config{
+		ShouldImportDB:   infrastructure.Cool.ShouldInitDB,
+		ShouldImportMenu: infrastructure.Cool.ShouldInitMenu,
+	},
 		seed.NewDefinition("base", seed.NewData(seedDB_base, seedMenu_base), descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser, descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole),
 		seed.NewDefinition("dict", seed.NewData(seedDB_dict, nil), descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo, descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType),
 		seed.NewDefinition("task", seed.NewData(seedDB_task, nil), descriptor_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo, descriptor_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog),
@@ -2861,49 +2870,52 @@ func assemble(ctx context.Context, input app.AssembleInput, identity0 module.Ide
 	controller_spacegithub_com_toothdy_cool_admin_go_next_modules_space_controller_adminAdminSpaceInfoController := controllerspacegithub_com_toothdy_cool_admin_go_next_modules_space_controller_adminAdminSpaceInfoController(component_spacegithub_com_toothdy_cool_admin_go_next_modules_space_serviceNewInfo)
 	controller_spacegithub_com_toothdy_cool_admin_go_next_modules_space_controller_adminAdminSpaceTypeController := controllerspacegithub_com_toothdy_cool_admin_go_next_modules_space_controller_adminAdminSpaceTypeController(component_spacegithub_com_toothdy_cool_admin_go_next_modules_space_serviceNewType)
 	controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController := controllertaskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController(component_taskgithub_com_toothdy_cool_admin_go_next_modules_task_serviceNewInfo)
-	epsViews, err := eps.CompileViews(eps.Input{
-		Graph: generatedGraph(),
-		Controllers: []eps.ControllerInput{
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCodingController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCodingController},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCommController},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminOpenController},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminUploadController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminUploadController},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysDepartmentController},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysLogController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysLogController},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController},
-			{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appAppCommController},
-			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Definition: controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController},
-			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Definition: controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController},
-			{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Definition: controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_appAppDictInfoController},
-			{Key: "recycle:github.com/toothdy/cool-admin-go-next/modules/recycle/controller/admin.AdminRecycleDataController", Definition: controller_recyclegithub_com_toothdy_cool_admin_go_next_modules_recycle_controller_adminAdminRecycleDataController},
-			{Key: "space:github.com/toothdy/cool-admin-go-next/modules/space/controller/admin.AdminSpaceInfoController", Definition: controller_spacegithub_com_toothdy_cool_admin_go_next_modules_space_controller_adminAdminSpaceInfoController},
-			{Key: "space:github.com/toothdy/cool-admin-go-next/modules/space/controller/admin.AdminSpaceTypeController", Definition: controller_spacegithub_com_toothdy_cool_admin_go_next_modules_space_controller_adminAdminSpaceTypeController},
-			{Key: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Definition: controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController},
-		},
-		Descriptors: []gnentity.RuntimeDescriptor{
-			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf,
-			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment,
-			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog,
-			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu,
-			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam,
-			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole,
-			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment,
-			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu,
-			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser,
-			descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole,
-			descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo,
-			descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType,
-			descriptor_spacegithub_com_toothdy_cool_admin_go_next_modules_space_entityInfo,
-			descriptor_spacegithub_com_toothdy_cool_admin_go_next_modules_space_entityType,
-			descriptor_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo,
-			descriptor_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog,
-		},
-	}, gmode.IsDevelop())
-	if err != nil {
-		return assembly, exception.WrapCore(err, "编译 EPS 视图失败")
+	epsViews := &eps.Views{Admin: map[string][]eps.Controller{}, App: map[string][]eps.Controller{}}
+	if infrastructure.Cool.ShouldExposeEPS {
+		epsViews, err = eps.CompileViews(eps.Input{
+			Graph: generatedGraph(),
+			Controllers: []eps.ControllerInput{
+				{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCodingController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCodingController},
+				{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminCommController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminCommController},
+				{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminOpenController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminOpenController},
+				{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin.AdminUploadController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_adminAdminUploadController},
+				{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysDepartmentController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysDepartmentController},
+				{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysLogController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysLogController},
+				{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysMenuController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysMenuController},
+				{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysParamController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysParamController},
+				{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysRoleController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysRoleController},
+				{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/admin/sys.AdminSysUserController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_admin_sysAdminSysUserController},
+				{Key: "base:github.com/toothdy/cool-admin-go-next/modules/base/controller/app.AppCommController", Definition: controller_basegithub_com_toothdy_cool_admin_go_next_modules_base_controller_appAppCommController},
+				{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictInfoController", Definition: controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictInfoController},
+				{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/admin.AdminDictTypeController", Definition: controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_adminAdminDictTypeController},
+				{Key: "dict:github.com/toothdy/cool-admin-go-next/modules/dict/controller/app.AppDictInfoController", Definition: controller_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_controller_appAppDictInfoController},
+				{Key: "recycle:github.com/toothdy/cool-admin-go-next/modules/recycle/controller/admin.AdminRecycleDataController", Definition: controller_recyclegithub_com_toothdy_cool_admin_go_next_modules_recycle_controller_adminAdminRecycleDataController},
+				{Key: "space:github.com/toothdy/cool-admin-go-next/modules/space/controller/admin.AdminSpaceInfoController", Definition: controller_spacegithub_com_toothdy_cool_admin_go_next_modules_space_controller_adminAdminSpaceInfoController},
+				{Key: "space:github.com/toothdy/cool-admin-go-next/modules/space/controller/admin.AdminSpaceTypeController", Definition: controller_spacegithub_com_toothdy_cool_admin_go_next_modules_space_controller_adminAdminSpaceTypeController},
+				{Key: "task:github.com/toothdy/cool-admin-go-next/modules/task/controller/admin.AdminTaskInfoController", Definition: controller_taskgithub_com_toothdy_cool_admin_go_next_modules_task_controller_adminAdminTaskInfoController},
+			},
+			Descriptors: []gnentity.RuntimeDescriptor{
+				descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityConf,
+				descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityDepartment,
+				descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityLog,
+				descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityMenu,
+				descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityParam,
+				descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRole,
+				descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleDepartment,
+				descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityRoleMenu,
+				descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUser,
+				descriptor_basegithub_com_toothdy_cool_admin_go_next_modules_base_entityUserRole,
+				descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityInfo,
+				descriptor_dictgithub_com_toothdy_cool_admin_go_next_modules_dict_entityType,
+				descriptor_spacegithub_com_toothdy_cool_admin_go_next_modules_space_entityInfo,
+				descriptor_spacegithub_com_toothdy_cool_admin_go_next_modules_space_entityType,
+				descriptor_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityInfo,
+				descriptor_taskgithub_com_toothdy_cool_admin_go_next_modules_task_entityLog,
+			},
+		}, gmode.IsDevelop())
+		if err != nil {
+			return assembly, exception.WrapCore(err, "编译 EPS 视图失败")
+		}
 	}
 	if err = eps.PublishViews(epsViews); err != nil {
 		return assembly, exception.WrapCore(err, "发布 EPS 视图失败")

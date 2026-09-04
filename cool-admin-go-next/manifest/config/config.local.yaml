@@ -1,46 +1,36 @@
-cool:
-  auth:
-    bcrypt:
-      cost: 10
-    jwt:
-      issuer: cool-admin-go-next
-      audience: cool-admin
-      currentKeyId: primary
-      accessTTL: 2h
-      refreshTTL: 360h
-      clockSkew: 30s
-      keys:
-        primary: ${COOL_AUTH_JWT_SECRET}
-    session:
-      type: redis
-      group: default
-      prefix: "cool:session:"
-  outbox:
-    enabled: false
-    databaseGroup: default
-  transports:
-    http:
-      enabled: true
-      address: 0.0.0.0
-      port: 8001
-      startTimeout: 5s
-    grpc:
-      enabled: false
-      address: 0.0.0.0
-      port: 8002
-      name: cool
-      registry: false
+cool: # Cool 应用配置
+  eps: true # 是否暴露实体与接口元数据，仅建议本地开发开启
+  initDB: true # 是否自动导入模块数据库种子
+  initMenu: true # 是否自动导入模块菜单种子
 
-database:
-  default:
-    - type: mysql
-      link: "mysql:root:123456@tcp(127.0.0.1:3306)/cool-go?loc=Local&parseTime=true&charset=utf8mb4"
-      createdAt: createTime
-      updatedAt: updateTime
+  crud: # CRUD 配置
+    softDelete: true # 是否启用回收站软删除
+  auth: # 认证配置
+    bcrypt: # 密码摘要配置
+      cost: 10 # 本地开发降低计算成本以加快登录
+    jwt: # JWT 配置
+      currentKeyId: primary # 当前签发密钥 ID
+      keys: # JWT 签名密钥集合
+        primary: ${COOL_AUTH_JWT_SECRET} # 从环境变量读取签名密钥
+    session: # 登录会话配置
+      type: redis # 本地使用 Redis 存储会话
+  outbox: # 可靠消息配置
+    enabled: false # 是否启用事务消息 Outbox、Inbox 与可靠投递
+  transports: # 服务传输配置
+    http: # HTTP 服务配置
+      enabled: true # 是否启用 HTTP Transport
+      address: 0.0.0.0 # HTTP 监听地址
+      port: 8001 # HTTP 监听端口
+    grpc: # gRPC 服务配置
+      enabled: false # 是否启用 gRPC Transport
 
-redis:
-  default:
-    address: "127.0.0.1:6379"
-    db: 0
-    user: ""
-    pass: ""
+database: # 数据库配置
+  default: # 默认数据库连接组
+    - link: "mysql:root:123456@tcp(127.0.0.1:3306)/cool-go?loc=Local&parseTime=true&charset=utf8mb4" # MySQL 连接地址
+      createdAt: createTime # 自动维护的创建时间字段
+      updatedAt: updateTime # 自动维护的更新时间字段
+
+redis: # Redis 配置
+  default: # 默认 Redis 连接组
+    address: "127.0.0.1:6379" # Redis 服务地址
+    db: 0 # Redis 数据库编号

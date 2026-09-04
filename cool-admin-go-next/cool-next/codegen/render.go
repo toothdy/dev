@@ -686,6 +686,9 @@ func writeDescriptors(source *strings.Builder, fragments []DescriptorFragment, i
 func writeInfra(source *strings.Builder, fragments []DescriptorFragment, hasOutbox, hasHTTP, hasAuth, hasBcrypt bool) {
 	source.WriteString("type infrastructureConfig struct {\n")
 	source.WriteString("\tCool struct {\n")
+	source.WriteString("\t\tShouldExposeEPS bool `json:\"eps\"`\n")
+	source.WriteString("\t\tShouldInitDB bool `json:\"initDB\"`\n")
+	source.WriteString("\t\tShouldInitMenu bool `json:\"initMenu\"`\n")
 	source.WriteString("\t\tCRUD crud.Config `json:\"crud\"`\n")
 	source.WriteString("\t\tOutbox outbox.Config `json:\"outbox\"`\n")
 	source.WriteString("\t\tTransports struct {\n")
@@ -709,6 +712,9 @@ func writeInfra(source *strings.Builder, fragments []DescriptorFragment, hasOutb
 	source.WriteString("}\n\n")
 	source.WriteString("func generatedInfrastructureConfig(ctx context.Context, source config.Source) (infrastructureConfig, error) {\n")
 	source.WriteString("\tdefaults := infrastructureConfig{}\n")
+	source.WriteString("\tdefaults.Cool.ShouldExposeEPS = false\n")
+	source.WriteString("\tdefaults.Cool.ShouldInitDB = false\n")
+	source.WriteString("\tdefaults.Cool.ShouldInitMenu = true\n")
 	source.WriteString("\tdefaults.Cool.CRUD = crud.DefaultConfig()\n")
 	source.WriteString("\tdefaults.Cool.Outbox = outbox.DefaultConfig()\n")
 	source.WriteString("\tdefaults.Cool.Transports.HTTP = gnhttp.DefaultConfig()\n")
@@ -1099,7 +1105,10 @@ func writeGenerated(
 		}
 	}
 	if hasSeedModules(modules) {
-		source.WriteString("\tseedRuntime, err := seed.NewRuntime(runtime,\n")
+		source.WriteString("\tseedRuntime, err := seed.NewRuntime(runtime, seed.Config{\n")
+		source.WriteString("\t\tShouldImportDB: infrastructure.Cool.ShouldInitDB,\n")
+		source.WriteString("\t\tShouldImportMenu: infrastructure.Cool.ShouldInitMenu,\n")
+		source.WriteString("\t},\n")
 		for _, current := range modules {
 			if !current.seedDB && !current.seedMenu {
 				continue
@@ -1236,29 +1245,32 @@ func writeEPSPublish(source *strings.Builder, controllers []renderController, fr
 	if len(controllers) == 0 {
 		return
 	}
-	source.WriteString("\tepsViews, err := eps.CompileViews(eps.Input{\n")
-	source.WriteString("\t\tGraph: generatedGraph(),\n")
-	source.WriteString("\t\tControllers: []eps.ControllerInput{\n")
+	source.WriteString("\tepsViews := &eps.Views{Admin: map[string][]eps.Controller{}, App: map[string][]eps.Controller{}}\n")
+	source.WriteString("\tif infrastructure.Cool.ShouldExposeEPS {\n")
+	source.WriteString("\t\tepsViews, err = eps.CompileViews(eps.Input{\n")
+	source.WriteString("\t\t\tGraph: generatedGraph(),\n")
+	source.WriteString("\t\t\tControllers: []eps.ControllerInput{\n")
 	for _, controller := range controllers {
 		fmt.Fprintf(
 			source,
-			"\t\t\t{Key: %q, Definition: controller_%s},\n",
+			"\t\t\t\t{Key: %q, Definition: controller_%s},\n",
 			controllerKey(controller),
 			identifier(controller.module, controller.declaration.packagePath, controller.declaration.name),
 		)
 	}
-	source.WriteString("\t\t},\n")
-	source.WriteString("\t\tDescriptors: []gnentity.RuntimeDescriptor{\n")
+	source.WriteString("\t\t\t},\n")
+	source.WriteString("\t\t\tDescriptors: []gnentity.RuntimeDescriptor{\n")
 	for _, fragment := range fragments {
 		fmt.Fprintf(
 			source,
-			"\t\t\tdescriptor_%s,\n",
+			"\t\t\t\tdescriptor_%s,\n",
 			identifier(fragment.module, fragment.entityPackage, fragment.entity),
 		)
 	}
-	source.WriteString("\t\t},\n")
-	source.WriteString("\t}, gmode.IsDevelop())\n")
-	source.WriteString("\tif err != nil { return assembly, exception.WrapCore(err, \"编译 EPS 视图失败\") }\n")
+	source.WriteString("\t\t\t},\n")
+	source.WriteString("\t\t}, gmode.IsDevelop())\n")
+	source.WriteString("\t\tif err != nil { return assembly, exception.WrapCore(err, \"编译 EPS 视图失败\") }\n")
+	source.WriteString("\t}\n")
 	source.WriteString("\tif err = eps.PublishViews(epsViews); err != nil { return assembly, exception.WrapCore(err, \"发布 EPS 视图失败\") }\n")
 }
 

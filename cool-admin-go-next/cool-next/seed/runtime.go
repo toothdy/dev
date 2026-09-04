@@ -17,6 +17,12 @@ type Definition struct {
 	Key         string
 }
 
+// Config 控制模块种子的导入范围
+type Config struct {
+	ShouldImportDB   bool
+	ShouldImportMenu bool
+}
+
 // 模块种子定义
 func NewDefinition(key string, data Data, descriptors ...gnentity.RuntimeDescriptor) Definition {
 	return Definition{Key: key, Data: data, Descriptors: append([]gnentity.RuntimeDescriptor(nil), descriptors...)}
@@ -24,18 +30,24 @@ func NewDefinition(key string, data Data, descriptors ...gnentity.RuntimeDescrip
 
 // 框架启动阶段统一导入模块种子
 type Runtime struct {
+	config      Config
 	definitions []Definition
 	runtime     *db.Runtime
 	store       *Store
 }
 
 // 框架种子运行时
-func NewRuntime(runtime *db.Runtime, definitions ...Definition) (*Runtime, error) {
+func NewRuntime(runtime *db.Runtime, config Config, definitions ...Definition) (*Runtime, error) {
 	store, err := NewStore(runtime)
 	if err != nil {
 		return nil, err
 	}
-	result := &Runtime{runtime: runtime, store: store, definitions: append([]Definition(nil), definitions...)}
+	result := &Runtime{
+		config:      config,
+		runtime:     runtime,
+		store:       store,
+		definitions: append([]Definition(nil), definitions...),
+	}
 	for _, definition := range result.definitions {
 		if definition.Key == "" {
 			return nil, exception.Core("模块种子定义缺少模块键")
@@ -51,7 +63,13 @@ func NewRuntime(runtime *db.Runtime, definitions ...Definition) (*Runtime, error
 
 // 以模块和文件类型为幂等边界导入全部嵌入种子
 func (runtime *Runtime) OnInit(ctx context.Context) error {
-	if runtime == nil || runtime.runtime == nil || runtime.store == nil {
+	if runtime == nil {
+		return exception.Core("框架种子运行时未初始化")
+	}
+	if !runtime.config.ShouldImportDB && !runtime.config.ShouldImportMenu {
+		return nil
+	}
+	if runtime.runtime == nil || runtime.store == nil {
 		return exception.Core("框架种子运行时未初始化")
 	}
 	if err := runtime.store.Prepare(ctx); err != nil {
@@ -65,14 +83,18 @@ func (runtime *Runtime) OnInit(ctx context.Context) error {
 		if legacy {
 			continue
 		}
-		if data := definition.Data.DB(); len(data) > 0 {
-			if err := runtime.importDB(ctx, definition, data); err != nil {
-				return err
+		if runtime.config.ShouldImportDB {
+			if data := definition.Data.DB(); len(data) > 0 {
+				if err := runtime.importDB(ctx, definition, data); err != nil {
+					return err
+				}
 			}
 		}
-		if data := definition.Data.Menu(); len(data) > 0 {
-			if err := runtime.importMenu(ctx, definition, data); err != nil {
-				return err
+		if runtime.config.ShouldImportMenu {
+			if data := definition.Data.Menu(); len(data) > 0 {
+				if err := runtime.importMenu(ctx, definition, data); err != nil {
+					return err
+				}
 			}
 		}
 	}

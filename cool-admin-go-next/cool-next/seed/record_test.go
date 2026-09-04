@@ -31,3 +31,20 @@ func TestSeedRejectsTransientFields(t *testing.T) {
 		t.Fatal("NewDO() error = nil")
 	}
 }
+
+func TestRuntimeOnInitHonorsDisabledImports(t *testing.T) {
+	runtime := &Runtime{}
+	if err := runtime.OnInit(t.Context()); err != nil {
+		t.Fatalf("OnInit() with disabled imports error = %v", err)
+	}
+
+	for _, config := range []Config{
+		{ShouldImportDB: true},
+		{ShouldImportMenu: true},
+	} {
+		runtime.config = config
+		if err := runtime.OnInit(t.Context()); err == nil {
+			t.Fatalf("OnInit() with config %#v error = nil", config)
+		}
+	}
+}
