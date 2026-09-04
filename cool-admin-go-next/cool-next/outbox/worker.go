@@ -549,15 +549,15 @@ func errorSummary(err error) string {
 	return string(runes[:maxErrorSummaryRunes])
 }
 
-// ObserveStatuses 不执行任何操作
+// 空实现
 func (noopWorkerObserver) ObserveStatuses(context.Context, []store.TopicStatus) {}
 
-// ObserveClaim 不执行任何操作
+// 空实现
 func (noopWorkerObserver) ObserveClaim(context.Context, string, bool, time.Duration) {}
 
-// ObservePublish 不执行任何操作
+// 空实现
 func (noopWorkerObserver) ObservePublish(context.Context, string, store.Status, uint32, time.Duration) {
 }
 
-// ObserveClaimLost 不执行任何操作
+// 空实现
 func (noopWorkerObserver) ObserveClaimLost(context.Context, string) {}

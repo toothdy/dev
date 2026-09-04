@@ -27,10 +27,7 @@ type preparedCodeFile struct {
 	content []byte
 }
 
-// 受工作区边界约束的开发代码读写能力：受控写入 modules/ 下的新
-// 生成文件、列出可生成代码的模块目录。业务模块不直接注册它为 DI 组件——它只
-// 服务于开发期的一个管理端点，模块的 Controller 直接在构造函数里创建实例，
-// 用法与 bcrypt.New() 等纯库依赖一致
+// 受工作区边界约束的开发代码读写能力
 type Scaffold struct {
 	workspace string
 	mu        sync.Mutex
@@ -102,7 +99,7 @@ func (scaffold *Scaffold) GetModuleTree() ([]string, error) {
 	return modules, nil
 }
 
-// CreateCode 创建一批不允许覆盖的 Go 文件
+// 创建一批不允许覆盖的 Go 文件
 func (scaffold *Scaffold) CreateCode(codes []CodeFile) error {
 	if scaffold == nil {
 		return exception.Core("代码脚手架未初始化")

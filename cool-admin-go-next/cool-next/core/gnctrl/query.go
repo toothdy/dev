@@ -57,10 +57,10 @@ type SelectField = crud.SelectField
 type QueryBuilder = crud.QueryBuilder
 
 const (
-	Ascending  = crud.Ascending
-	Descending = crud.Descending
-	JoinLeft   = crud.JoinLeft
-	JoinInner  = crud.JoinInner
+	Ascending  = crud.Ascending  // 升序
+	Descending = crud.Descending // 降序
+	JoinLeft   = crud.JoinLeft   // 左连接
+	JoinInner  = crud.JoinInner  // 内连接
 )
 
 // 静态或动态查询配置

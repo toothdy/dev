@@ -10,11 +10,9 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/task/entity"
 )
 
-// 间隔任务的最小粒度
-const minimumIntervalMillisecond = 1000
+const minimumIntervalMillisecond = 1000 // 间隔任务的最小粒度
 
-// 前向扫描下次执行时间的上限
-const nextRunTimeHorizon = 366 * 24 * time.Hour
+const nextRunTimeHorizon = 366 * 24 * time.Hour // 前向扫描下次执行时间的上限
 
 // gcron 六段模式的段序
 const (

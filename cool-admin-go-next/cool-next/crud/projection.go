@@ -7,26 +7,26 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
-// QueryColumn 是已解析的查询字段来源
+// 已解析的查询字段来源
 type QueryColumn struct {
 	Descriptor gnentity.Metadata
 	Field      gnentity.Field
 	Source     string
 }
 
-// QueryMatch 是已解析的请求字段匹配
+// 已解析的请求字段匹配
 type QueryMatch struct {
 	Column       QueryColumn
 	RequestParam string
 }
 
-// QuerySelect 是已解析的查询输出字段
+// 已解析的查询输出字段
 type QuerySelect struct {
 	Column QueryColumn
 	Name   string
 }
 
-// QueryProjection 是静态 QueryOp 的只读字段投影
+// 静态 QueryOp 的只读字段投影
 type QueryProjection struct {
 	KeyWordLikeFields []QueryColumn
 	FieldEq           []QueryMatch
@@ -34,7 +34,7 @@ type QueryProjection struct {
 	Select            []QuerySelect
 }
 
-// ProjectColumns 解析根实体字段引用
+// 解析根实体字段引用
 func ProjectColumns(
 	resolver DescriptorResolver,
 	rootEntity any,
@@ -59,7 +59,7 @@ func ProjectColumns(
 	return result, nil
 }
 
-// ProjectQuery 解析静态 QueryOp，不执行 Extend
+// 解析静态 QueryOp
 func ProjectQuery(
 	resolver DescriptorResolver,
 	rootEntity any,

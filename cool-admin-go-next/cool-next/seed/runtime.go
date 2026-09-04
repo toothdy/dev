@@ -17,7 +17,7 @@ type Definition struct {
 	Key         string
 }
 
-// Config 控制模块种子的导入范围
+// 模块种子导入范围
 type Config struct {
 	ShouldImportDB   bool
 	ShouldImportMenu bool
@@ -131,8 +131,7 @@ func (runtime *Runtime) importDB(ctx context.Context, definition Definition, dat
 						return exception.WrapCore(insertErr, "写入数据库种子失败: "+table)
 					}
 				}
-				// SeedData 保留种子里的显式主键，PostgreSQL 的序列不会因此推进，
-				// 必须显式同步，否则后续自动分配的主键会从 1 开始撞上种子行。
+				// PostgreSQL 显式主键写入不会推进序列，需在种子导入后同步
 				if err = runtime.syncSequence(guardCtx, descriptors[table]); err != nil {
 					return err
 				}
@@ -167,7 +166,7 @@ func (runtime *Runtime) importMenu(ctx context.Context, definition Definition, d
 	})
 }
 
-// 种子写入显式主键后同步自增序列，非自增主键直接跳过。
+// 同步种子写入后的自增序列
 func (runtime *Runtime) syncSequence(ctx context.Context, descriptor gnentity.RuntimeDescriptor) error {
 	primary := descriptor.Primary()
 	if primary == nil || !primary.AutoIncrement() {

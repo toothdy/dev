@@ -46,7 +46,7 @@ type messageOptions struct {
 	headers map[string]string
 }
 
-// Option 修改消息创建参数
+// 消息创建参数修改器
 type Option func(*messageOptions) error
 
 // 新的消息
@@ -250,7 +250,7 @@ func NewSubscription(definition ConsumerDefinition) (Subscription, error) {
 	return definition.subscription(), nil
 }
 
-// Subscription 不可变的消费订阅
+// 不可变消费订阅
 type Subscription struct {
 	name              string
 	topic             string
@@ -267,7 +267,7 @@ func (subscription Subscription) Topic() string { return subscription.topic }
 // 订阅契约类型
 func (subscription Subscription) MessageType() string { return subscription.messageType }
 
-// SupportedVersions 支持版本副本
+// 支持版本副本
 func (subscription Subscription) SupportedVersions() []uint32 {
 	return append([]uint32(nil), subscription.supportedVersions...)
 }
@@ -281,16 +281,16 @@ func newSubscription(name, topic, messageType string, versions []uint32) Subscri
 	}
 }
 
-// DeliveryDisposition 消费结果类别
+// 消费结果类别
 type DeliveryDisposition string
 
 const (
-	DeliveryAck        DeliveryDisposition = "ack"
-	DeliveryRetry      DeliveryDisposition = "retry"
-	DeliveryDeadLetter DeliveryDisposition = "dead-letter"
+	DeliveryAck        DeliveryDisposition = "ack"         // 确认
+	DeliveryRetry      DeliveryDisposition = "retry"       // 重试
+	DeliveryDeadLetter DeliveryDisposition = "dead-letter" // 死信
 )
 
-// DeliveryDecision 消费结果
+// 消费结果
 type DeliveryDecision struct {
 	disposition DeliveryDisposition
 	retryAfter  time.Duration
@@ -313,10 +313,10 @@ func DeadLetter(err error) DeliveryDecision {
 	return DeliveryDecision{disposition: DeliveryDeadLetter, err: err}
 }
 
-// Disposition 消费结果类别
+// 消费结果类别
 func (decision DeliveryDecision) Disposition() DeliveryDisposition { return decision.disposition }
 
-// RetryAfter 建议重试延迟
+// 建议重试延迟
 func (decision DeliveryDecision) RetryAfter() time.Duration { return decision.retryAfter }
 
 // 消费错误

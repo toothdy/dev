@@ -21,12 +21,12 @@ var pageOrderColumns = map[string]string{
 	"count":      "count",
 }
 
-// Enabled 报告回收站是否启用。
+// 回收站是否启用
 func (store *Store) Enabled() bool {
 	return store != nil && store.config.SoftDelete
 }
 
-// Info 按 ID 查询回收记录。
+// 按 ID 查询回收记录
 func (store *Store) Info(ctx context.Context, id uint64) (*Record, error) {
 	if err := store.validate(); err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func recordNotFoundError(id uint64) error {
 	return exception.WrapCore(ErrRecordNotFound, "回收记录不存在: "+strconv.FormatUint(id, 10))
 }
 
-// Page 分页查询回收记录。
+// 分页查询回收记录
 func (store *Store) Page(ctx context.Context, input PageInput) (PageResult, error) {
 	if err := store.validate(); err != nil {
 		return PageResult{}, err
@@ -94,7 +94,7 @@ func (store *Store) Page(ctx context.Context, input PageInput) (PageResult, erro
 	return result, nil
 }
 
-// DeleteExpired 物理删除截止时间前的回收记录。
+// 物理删除截止时间前的回收记录
 func (store *Store) DeleteExpired(ctx context.Context, cutoff time.Time) (int64, error) {
 	if err := store.validate(); err != nil {
 		return 0, err

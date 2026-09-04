@@ -14,8 +14,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/task/entity"
 )
 
-// 单次执行占用任务的租约时长
-const executeLease = 5 * time.Minute
+const executeLease = 5 * time.Minute // 单次执行占用任务的租约时长
 
 // 执行结果
 type Outcome struct {
@@ -209,7 +208,7 @@ func (executor *Executor) settle(ctx context.Context, taskID uint64, status int3
 	})
 }
 
-// 调用任务目标，panic 与错误统一转成失败日志
+// 调用任务目标并统一记录失败
 func (executor *Executor) invoke(ctx context.Context, expression *string) (status int32, detail string) {
 	defer func() {
 		if recovered := recover(); recovered != nil {

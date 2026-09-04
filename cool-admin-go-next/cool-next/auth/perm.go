@@ -13,22 +13,13 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/db"
 )
 
-// 参与菜单权限校验的后台路由前缀
-const adminPathPrefix = "/admin/"
+const adminPathPrefix = "/admin/" // 参与菜单权限校验的后台路由前缀
 
-// 约定只校验登录、不校验菜单权限的通用接口路径段
-const commPathSegment = "comm"
+const commPathSegment = "comm" // 只校验登录的通用接口路径段
 
-// 字典数据供后台通用组件读取，只校验登录
-const adminDictDataPath = "/admin/dict/info/data"
+const adminDictDataPath = "/admin/dict/info/data" // 只校验登录的后台字典数据路径
 
-// 按最终路由路径推导后台权限标识，与 cool-admin-node 的 URL 反推等价。
-//
-// 返回空串表示无需菜单权限：ignoreToken 路由、非后台路由、通用接口和后台字典数据接口。
-//
-// 路径段按字符形状校验，不使用 go/token.IsIdentifier —— 后者拒绝 Go 关键字，
-// 而 /admin/base/sys/menu/import、/admin/dict/type 等真实路由的路径段正是关键字。
-// 权限标识只作为映射键与字符串使用，不会成为 Go 标识符。
+// 从后台路由路径推导菜单权限标识
 func DerivePermission(fullPath string, ignoreToken bool) (string, error) {
 	if ignoreToken || !strings.HasPrefix(fullPath, adminPathPrefix) {
 		return "", nil

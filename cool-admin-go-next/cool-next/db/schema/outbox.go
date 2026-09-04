@@ -3,12 +3,12 @@ package schema
 import "github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 
 const (
-	OutboxTableName = "cool_outbox"
-	InboxTableName  = "cool_inbox"
+	OutboxTableName = "cool_outbox" // 发件箱表名
+	InboxTableName  = "cool_inbox"  // 收件箱表名
 
-	OutboxAvailableIndex = "idx_cool_outbox_available"
-	OutboxLeaseIndex     = "idx_cool_outbox_lease"
-	OutboxSentIndex      = "idx_cool_outbox_sent"
+	OutboxAvailableIndex = "idx_cool_outbox_available" // 可投递消息索引
+	OutboxLeaseIndex     = "idx_cool_outbox_lease"     // 投递租约索引
+	OutboxSentIndex      = "idx_cool_outbox_sent"      // 已投递消息索引
 )
 
 // 内部表字段定义

@@ -60,6 +60,7 @@ type entityField struct {
 	variable *types.Var // 字段对象
 }
 
+// Schema 函数声明
 type SchemaDeclaration struct {
 	entity   string        // 目标实体名称
 	name     string        // 函数名称
@@ -150,14 +151,16 @@ func (d GRPCRegistrarDeclaration) PackagePath() string { return d.packagePath }
 // 返回声明位置
 func (d GRPCRegistrarDeclaration) Position() Position { return d.position }
 
+// Service 动作模式
 type ServiceActionMode string
 
 const (
-	ServiceActionBase     ServiceActionMode = "base"
-	ServiceActionOverride ServiceActionMode = "override"
-	ServiceActionDelegate ServiceActionMode = "delegate"
+	ServiceActionBase     ServiceActionMode = "base"     // 基础实现
+	ServiceActionOverride ServiceActionMode = "override" // 完全覆盖
+	ServiceActionDelegate ServiceActionMode = "delegate" // 委托基础实现
 )
 
+// Service 动作声明
 type ServiceAction struct {
 	mode     ServiceActionMode
 	name     string
@@ -211,8 +214,8 @@ func (d ServiceDeclaration) HasModifyAfter() bool { return d.hasAfter }
 type ControllerArea string
 
 const (
-	ControllerAdmin ControllerArea = "admin"
-	ControllerApp   ControllerArea = "app"
+	ControllerAdmin ControllerArea = "admin" // 后台区域
+	ControllerApp   ControllerArea = "app"   // 应用端区域
 )
 
 // Controller 工厂声明
@@ -365,7 +368,10 @@ func (m Module) Identity() module.Identity { return m.identity }
 // 返回模块配置声明
 func (m Module) Config() ConfigDeclaration { return m.config }
 
-func (m Module) HasSeedDB() bool   { return m.seedDB }
+// 模块是否包含数据库种子
+func (m Module) HasSeedDB() bool { return m.seedDB }
+
+// 模块是否包含菜单种子
 func (m Module) HasSeedMenu() bool { return m.seedMenu }
 
 // 返回实体声明副本

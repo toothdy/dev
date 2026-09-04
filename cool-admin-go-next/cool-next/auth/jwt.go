@@ -156,7 +156,7 @@ func validateCommon(
 	return nil
 }
 
-// JWT 签发与验证服务
+// 令牌签发与验证服务
 type JWT struct {
 	config JWTConfig
 	keys   map[string][]byte

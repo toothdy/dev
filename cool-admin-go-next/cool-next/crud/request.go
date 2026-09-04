@@ -74,6 +74,7 @@ func (request *QueryRequest) Has(name string) bool {
 	return exists
 }
 
+// 查询字段值
 func (request *QueryRequest) Value(name string) (any, bool) {
 	if request == nil {
 		return nil, false
@@ -89,6 +90,7 @@ func (request *QueryRequest) Value(name string) (any, bool) {
 	return cloneRequestData(value.value), true
 }
 
+// 字符串查询字段
 func (request *QueryRequest) String(name string) (string, bool) {
 	value, exists := request.Value(name)
 	if !exists || value == nil {
@@ -99,6 +101,7 @@ func (request *QueryRequest) String(name string) (string, bool) {
 	return result, matches
 }
 
+// 布尔查询字段
 func (request *QueryRequest) Bool(name string) (bool, bool) {
 	value, exists := request.Value(name)
 	if !exists || value == nil {

@@ -351,7 +351,7 @@ func (base *Base[E, ID]) mutableData(
 			return nil, 0, exception.Validate(fmt.Sprintf("系统字段 %s 不允许写入", field.JSONName()))
 		}
 		if policy.IsReadonly(field.Name()) {
-			// 客户端把只读字段原样回传是前端整行提交的常态，Add 与 Update 一律忽略；
+			// 前端整行提交通常会原样回传只读字段，Add 与 Update 统一忽略
 			// 业务代码通过 Set 改写后按服务端字段写入
 			if item.source == fieldSourceClient {
 				continue

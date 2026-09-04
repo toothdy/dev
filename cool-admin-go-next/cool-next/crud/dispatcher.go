@@ -13,9 +13,9 @@ import (
 type ActionMode string
 
 const (
-	ActionModeBase     ActionMode = "base"
-	ActionModeOverride ActionMode = "override"
-	ActionModeDelegate ActionMode = "delegate"
+	ActionModeBase     ActionMode = "base"     // 基础实现
+	ActionModeOverride ActionMode = "override" // 完全覆盖
+	ActionModeDelegate ActionMode = "delegate" // 委托基础实现
 )
 
 // 生成期选定的 CRUD 调用入口
@@ -75,6 +75,7 @@ func (dispatcher *Dispatcher) Dispatch(
 	})
 }
 
+// 返回当前调度上下文
 func CurrentDispatch(ctx context.Context) (*DispatchScope, bool) {
 	if ctx == nil {
 		return nil, false
@@ -87,6 +88,7 @@ func CurrentDispatch(ctx context.Context) (*DispatchScope, bool) {
 	return scope, true
 }
 
+// CRUD 动作
 func (scope *DispatchScope) Action() Action {
 	if scope == nil {
 		return ""
@@ -95,6 +97,7 @@ func (scope *DispatchScope) Action() Action {
 	return scope.action
 }
 
+// CRUD 动作模式
 func (scope *DispatchScope) Mode() ActionMode {
 	if scope == nil {
 		return ""

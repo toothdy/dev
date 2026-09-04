@@ -17,12 +17,10 @@ import (
 
 const adminRoleLabel = "admin"
 
-// 授权变更加锁用的表名。只在没有持有对应实体 Base 引用、拿不到
-// Descriptor().Table() 的 service 里使用；能拿到引用的地方一律用 Descriptor
 const (
-	userTable       = "base_sys_user"
-	menuTable       = "base_sys_menu"
-	departmentTable = "base_sys_department"
+	userTable       = "base_sys_user"       // 缺少实体 Base 引用时使用的用户表
+	menuTable       = "base_sys_menu"       // 缺少实体 Base 引用时使用的菜单表
+	departmentTable = "base_sys_department" // 缺少实体 Base 引用时使用的部门表
 )
 
 type roleIDRow struct {

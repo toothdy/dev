@@ -16,9 +16,9 @@ type Action = crud.Action
 type ActionMode = crud.ActionMode
 
 const (
-	ActionModeBase     = crud.ActionModeBase
-	ActionModeOverride = crud.ActionModeOverride
-	ActionModeDelegate = crud.ActionModeDelegate
+	ActionModeBase     = crud.ActionModeBase     // 基础实现
+	ActionModeOverride = crud.ActionModeOverride // 完全覆盖
+	ActionModeDelegate = crud.ActionModeDelegate // 委托基础实现
 )
 
 // 修改前 Hook

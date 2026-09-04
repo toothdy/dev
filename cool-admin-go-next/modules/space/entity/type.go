@@ -5,7 +5,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
-// Type 文件空间分类
+// 文件空间分类
 type Type struct {
 	g.Meta `orm:"table:space_type" description:"文件空间分类"`
 	gnentity.Base
@@ -13,7 +13,7 @@ type Type struct {
 	ParentID *uint64 `json:"parentId" orm:"parentId" description:"父分类ID"`
 }
 
-// TypeSchema 文件空间分类表约束
+// 文件空间分类表约束
 func TypeSchema() gnentity.Schema {
 	return gnentity.Schema{}
 }

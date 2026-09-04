@@ -15,8 +15,7 @@ type CodingCreateRequest struct {
 	Codes []codegen.CodeFile `json:"codes" v:"required"`
 }
 
-// 实体无关的代码生成工具，与 Node 版 AdminCodingController 对齐。
-// 访问控制由路由权限标识承担：超管全通，其他角色需在后台菜单中获得授权
+// 实体无关的代码生成工具
 type ToolHandler struct {
 	scaffold *codegen.Scaffold
 }

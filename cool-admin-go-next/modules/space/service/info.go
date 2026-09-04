@@ -14,14 +14,14 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/space/entity"
 )
 
-// InfoService 文件空间信息业务服务
+// 文件空间信息业务服务
 type InfoService struct {
 	*gnservice.Base[entity.Info, uint64]
 	upload *baseservice.UploadService
 	config space.Config
 }
 
-// NewInfo 文件空间信息业务服务
+// 创建文件空间信息业务服务
 func NewInfo(
 	infoBase *gnservice.Base[entity.Info, uint64],
 	upload *baseservice.UploadService,
@@ -34,7 +34,7 @@ func NewInfo(
 	return &InfoService{Base: infoBase, upload: upload, config: config}, nil
 }
 
-// Add 新增文件信息并规范本地文件位置
+// 新增文件信息并规范本地文件位置
 func (service *InfoService) Add(
 	ctx context.Context,
 	input gnservice.AddInput[entity.Info],
@@ -66,7 +66,7 @@ func (service *InfoService) Add(
 	return service.Base.Add(ctx, input)
 }
 
-// Delete 删除文件信息并按配置删除本地真实文件
+// 删除文件信息并按配置删除本地真实文件
 func (service *InfoService) Delete(ctx context.Context, input gnservice.DeleteInput[uint64]) error {
 	if !service.config.ShouldDeletePhysicalFile {
 		return service.Base.Delete(ctx, input)

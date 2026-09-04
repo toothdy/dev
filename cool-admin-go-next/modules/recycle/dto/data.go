@@ -7,7 +7,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/db/gnrecycle"
 )
 
-// DataPageRequest 回收记录分页请求
+// 回收记录分页请求
 type DataPageRequest struct {
 	Page    int    `json:"page"`
 	Size    int    `json:"size"`
@@ -16,23 +16,23 @@ type DataPageRequest struct {
 	Sort    string `json:"sort"`
 }
 
-// DataInfoRequest 回收记录详情请求
+// 回收记录详情请求
 type DataInfoRequest struct {
 	ID uint64 `json:"id" v:"required|min:1"`
 }
 
-// DataRestoreRequest 回收记录恢复请求
+// 回收记录恢复请求
 type DataRestoreRequest struct {
 	IDs []uint64 `json:"ids" v:"required"`
 }
 
-// EntityInfo 回收记录目标实体信息
+// 回收记录目标实体信息
 type EntityInfo struct {
 	DataSourceName string `json:"dataSourceName"`
 	Entity         string `json:"entity"`
 }
 
-// DataItem Node 兼容的回收记录
+// Node 兼容的回收记录
 type DataItem struct {
 	ID         uint64          `json:"id"`
 	CreateTime *gtime.Time     `json:"createTime"`
@@ -46,7 +46,7 @@ type DataItem struct {
 	EntityInfo EntityInfo      `json:"entityInfo"`
 }
 
-// DataPageResult 回收记录分页响应
+// 回收记录分页响应
 type DataPageResult struct {
 	List       []DataItem           `json:"list"`
 	Pagination gnrecycle.Pagination `json:"pagination"`

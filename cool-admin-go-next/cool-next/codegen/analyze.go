@@ -226,8 +226,7 @@ func allowedDir(directory string) bool {
 
 func ignoredDir(name string) bool { return name == "testdata" || strings.HasPrefix(name, ".") }
 
-// 校验模块根目录只包含协议允许的子目录和 config.go；
-// 不符合项一律以诊断码显式报告，不被静默跳过
+// 校验模块根目录并显式报告协议外内容
 func checkDirs(dir string, roots []string) []Diagnostic {
 	var diagnostics []Diagnostic
 	for _, root := range roots {

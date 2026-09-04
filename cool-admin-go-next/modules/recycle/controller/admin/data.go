@@ -7,7 +7,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/recycle/service"
 )
 
-// AdminRecycleDataController 回收记录后台管理路由
+// 回收记录后台管理路由
 func AdminRecycleDataController(data *service.DataService) gnctrl.Definition {
 	return gnctrl.Admin().
 		Options(gnctrl.RouterOptions{Description: "数据回收", TagName: "数据回收"}).

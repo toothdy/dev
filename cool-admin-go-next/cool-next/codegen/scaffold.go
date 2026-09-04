@@ -41,8 +41,7 @@ type MenuParseResult struct {
 	Path      string       `json:"path"`
 }
 
-// 新模块代码创建请求：Parse 解析出的元数据回填后，连同
-// entity/controller/service 三段源码一起提交，由 Scaffold 写入工作区
+// 开发端模块代码创建请求
 type MenuCreateInput struct {
 	Module     string `json:"module"`
 	Entity     string `json:"entity"`

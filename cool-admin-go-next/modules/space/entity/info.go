@@ -5,7 +5,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
-// Info 文件空间信息
+// 文件空间信息
 type Info struct {
 	g.Meta `orm:"table:space_info" description:"文件空间信息"`
 	gnentity.Base
@@ -23,7 +23,7 @@ type Info struct {
 	Error      string  `json:"error" description:"上传错误" cool:"transient"`
 }
 
-// InfoSchema 文件空间信息表约束
+// 文件空间信息表约束
 func InfoSchema() gnentity.Schema {
 	return gnentity.Schema{Indexes: []gnentity.Index{
 		gnentity.IndexOf("idx_space_info_file_id", "fileId"),

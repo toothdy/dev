@@ -14,7 +14,7 @@ import (
 
 const dataCleanupJobName = "recycle-data-cleanup"
 
-// DataJob 回收记录每日清理任务
+// 回收记录每日清理任务
 type DataJob struct {
 	service *service.DataService
 	cleanup func(context.Context) (int64, error)
@@ -25,7 +25,7 @@ type DataJob struct {
 	started bool
 }
 
-// NewDataJob 创建回收记录清理生命周期组件
+// 创建回收记录清理生命周期组件
 func NewDataJob(data *service.DataService, config modulerecycle.Config) (*DataJob, error) {
 	if data == nil || config.Cleanup.Pattern == "" || config.Cleanup.Timeout <= 0 {
 		return nil, exception.Core("回收记录清理配置无效")
@@ -40,7 +40,7 @@ func NewDataJob(data *service.DataService, config modulerecycle.Config) (*DataJo
 	}, nil
 }
 
-// OnStart 注册单例回收记录清理任务
+// 注册单例回收记录清理任务
 func (job *DataJob) OnStart(ctx context.Context) error {
 	if job == nil || job.cron == nil || job.service == nil || job.cleanup == nil {
 		return exception.Core("回收记录清理任务未初始化")
@@ -58,7 +58,7 @@ func (job *DataJob) OnStart(ctx context.Context) error {
 	return nil
 }
 
-// OnStop 移除任务并等待当前清理完成
+// 移除任务并等待当前清理完成
 func (job *DataJob) OnStop(ctx context.Context) error {
 	if job == nil || job.cron == nil {
 		return nil

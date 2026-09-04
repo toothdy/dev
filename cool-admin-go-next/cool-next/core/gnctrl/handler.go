@@ -348,7 +348,7 @@ func HandleDTO[T any](
 	})
 }
 
-// HandleNoDTO 依事务策略调用无 DTO Handler
+// 依事务策略调用无 DTO Handler
 func HandleNoDTO(
 	ctx context.Context,
 	runner tx.Runner,

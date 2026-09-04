@@ -49,7 +49,7 @@ type UploadService struct {
 	random        io.Reader
 }
 
-// ManagedUploadLocation 本地受管上传文件位置
+// 本地受管上传文件位置
 type ManagedUploadLocation struct {
 	Root         string
 	RelativePath string
@@ -91,7 +91,7 @@ func NewUpload(config base.Config) (*UploadService, error) {
 	}, nil
 }
 
-// ResolveManagedURL 解析属于当前本地上传配置的公开 URL
+// 解析属于当前本地上传配置的公开 URL
 func (service *UploadService) ResolveManagedURL(rawURL string) (ManagedUploadLocation, bool) {
 	if service == nil || service.publicURL == nil || strings.Contains(rawURL, "#") {
 		return ManagedUploadLocation{}, false

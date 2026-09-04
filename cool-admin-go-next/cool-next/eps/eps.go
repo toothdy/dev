@@ -17,26 +17,26 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
 )
 
-// Input 是 EPS 自动投影所需的框架运行时输入
+// EPS 自动投影所需的框架运行时输入
 type Input struct {
 	Graph       module.Graph
 	Controllers []ControllerInput
 	Descriptors []gnentity.RuntimeDescriptor
 }
 
-// ControllerInput 将静态 Graph Controller 与运行时 Definition 对齐
+// 静态 Graph Controller 与运行时 Definition 的映射
 type ControllerInput struct {
 	Key        string
 	Definition gnctrl.Definition
 }
 
-// Views 是后台与 App 的最终 EPS 视图
+// 后台与 App 的最终 EPS 视图
 type Views struct {
 	Admin map[string][]Controller `json:"admin"`
 	App   map[string][]Controller `json:"app"`
 }
 
-// Controller 是 cool-admin-vue 消费的 EPS Controller
+// cool-admin-vue 消费的 EPS Controller
 type Controller struct {
 	Module      string      `json:"module"`
 	Name        string      `json:"name,omitempty"`
@@ -48,15 +48,18 @@ type Controller struct {
 	PageColumns []Column    `json:"pageColumns"`
 }
 
+// EPS Controller 元信息
 type Info struct {
 	Type InfoType `json:"type"`
 }
 
+// EPS Controller 类型元信息
 type InfoType struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
+// EPS 路由契约
 type API struct {
 	Method      string         `json:"method"`
 	Path        string         `json:"path"`
@@ -67,6 +70,7 @@ type API struct {
 	IgnoreToken bool           `json:"ignoreToken"`
 }
 
+// EPS 实体字段契约
 type Column struct {
 	PropertyName string `json:"propertyName"`
 	Type         string `json:"type"`
@@ -78,19 +82,20 @@ type Column struct {
 	Source       string `json:"source"`
 }
 
+// EPS 分页查询配置
 type PageQueryOp struct {
 	KeyWordLikeFields []string     `json:"keyWordLikeFields"`
 	FieldEq           []QueryField `json:"fieldEq"`
 	FieldLike         []QueryField `json:"fieldLike"`
 }
 
-// QueryField 保留查询列与真实请求参数名
+// 查询列与真实请求参数名
 type QueryField struct {
 	Column       string
 	RequestParam string
 }
 
-// MarshalJSON 对齐 Node 的字符串或对象联合格式
+// 编码 Node 兼容的字符串或对象联合格式
 func (field QueryField) MarshalJSON() ([]byte, error) {
 	name := field.Column
 	if index := strings.LastIndexByte(name, '.'); index >= 0 {
@@ -118,6 +123,7 @@ type descriptorResolver struct {
 	byTable map[string]gnentity.RuntimeDescriptor
 }
 
+// 按实体类型解析 Descriptor
 func (resolver descriptorResolver) Resolve(value any) (gnentity.Metadata, bool) {
 	descriptor, exists := resolver.byType[reflect.TypeOf(value)]
 
@@ -131,7 +137,7 @@ type routeBucket struct {
 
 var publishedViews atomic.Pointer[Views]
 
-// CompileViews 从已校验 Graph 与运行时定义直接生成最终 EPS 契约
+// 从已校验 Graph 与运行时定义生成最终 EPS 契约
 func CompileViews(input Input, includeDevelopment bool) (*Views, error) {
 	current := &compiler{
 		input:       input,
@@ -574,7 +580,7 @@ func isNil(value any) bool {
 	}
 }
 
-// PublishViews 发布启动期已编译的 EPS 快照
+// 发布启动期已编译的 EPS 快照
 func PublishViews(views *Views) error {
 	if views == nil {
 		return exception.Core("EPS 视图不能为空")
@@ -585,7 +591,7 @@ func PublishViews(views *Views) error {
 	return nil
 }
 
-// AdminView 返回已发布的后台 EPS 视图
+// 返回已发布的后台 EPS 视图
 func AdminView() (map[string][]Controller, error) {
 	views := publishedViews.Load()
 	if views == nil {
@@ -595,7 +601,7 @@ func AdminView() (map[string][]Controller, error) {
 	return views.Admin, nil
 }
 
-// AppView 返回已发布的 App EPS 视图
+// 返回已发布的 App EPS 视图
 func AppView() (map[string][]Controller, error) {
 	views := publishedViews.Load()
 	if views == nil {

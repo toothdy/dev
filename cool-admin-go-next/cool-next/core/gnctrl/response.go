@@ -26,15 +26,15 @@ type Response struct {
 	Data    any    `json:"data,omitempty"` // 响应数据
 }
 
-// HTMLResponse 原始 HTML 响应
+// 原始 HTML 响应
 type HTMLResponse string
 
-// FileDisposition 文件响应处置方式
+// 文件响应处置方式
 type FileDisposition string
 
 const (
-	FileDispositionInline     FileDisposition = "inline"
-	FileDispositionAttachment FileDisposition = "attachment"
+	FileDispositionInline     FileDisposition = "inline"     // 内联展示
+	FileDispositionAttachment FileDisposition = "attachment" // 附件下载
 )
 
 // 响应层负责关闭的可定位文件内容
@@ -43,7 +43,7 @@ type FileContent interface {
 	Stat() (fs.FileInfo, error)
 }
 
-// FileResponse 原始文件响应
+// 原始文件响应
 type FileResponse struct {
 	Content     FileContent
 	Name        string

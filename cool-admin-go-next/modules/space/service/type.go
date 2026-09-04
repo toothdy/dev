@@ -8,13 +8,13 @@ import (
 	"github.com/toothdy/cool-admin-go-next/modules/space/entity"
 )
 
-// TypeService 文件空间分类业务服务
+// 文件空间分类业务服务
 type TypeService struct {
 	*gnservice.Base[entity.Type, uint64]
 	info *InfoService
 }
 
-// NewType 文件空间分类业务服务
+// 创建文件空间分类业务服务
 func NewType(
 	typeBase *gnservice.Base[entity.Type, uint64],
 	info *InfoService,
@@ -26,7 +26,7 @@ func NewType(
 	return &TypeService{Base: typeBase, info: info}, nil
 }
 
-// Delete 删除分类及该分类下的文件信息
+// 删除分类及该分类下的文件信息
 func (service *TypeService) Delete(ctx context.Context, input gnservice.DeleteInput[uint64]) error {
 	if err := service.Base.Delete(ctx, input); err != nil {
 		return err

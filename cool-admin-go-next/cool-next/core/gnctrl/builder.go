@@ -33,12 +33,12 @@ type MiddlewareRef = module.ComponentRef
 type BindSource = route.BindSource
 
 const (
-	BindAuto  = route.BindAuto
-	BindJSON  = route.BindJSON
-	BindQuery = route.BindQuery
-	BindForm  = route.BindForm
-	BindPath  = route.BindPath
-	BindFile  = route.BindFile
+	BindAuto  = route.BindAuto  // 自动绑定
+	BindJSON  = route.BindJSON  // JSON 请求体
+	BindQuery = route.BindQuery // 查询参数
+	BindForm  = route.BindForm  // 表单参数
+	BindPath  = route.BindPath  // 路径参数
+	BindFile  = route.BindFile  // 上传文件
 )
 
 // 路由事务策略
@@ -79,14 +79,14 @@ type Route struct {
 type APIType string
 
 const (
-	Add    APIType = "add"
-	Delete APIType = "delete"
-	Update APIType = "update"
-	Info   APIType = "info"
-	List   APIType = "list"
-	Page   APIType = "page"
+	Add    APIType = "add"    // 新增
+	Delete APIType = "delete" // 删除
+	Update APIType = "update" // 更新
+	Info   APIType = "info"   // 详情
+	List   APIType = "list"   // 列表
+	Page   APIType = "page"   // 分页
 
-	TagIgnoreToken = "ignoreToken"
+	TagIgnoreToken = "ignoreToken" // 忽略 Token 路由标签
 )
 
 // 默认 CRUD 路由标签
@@ -119,8 +119,8 @@ type CurdOption struct {
 type Area string
 
 const (
-	AreaAdmin Area = "admin"
-	AreaApp   Area = "app"
+	AreaAdmin Area = "admin" // 后台区域
+	AreaApp   Area = "app"   // 应用端区域
 )
 
 type builder struct {
@@ -143,14 +143,12 @@ type definition struct {
 
 func (*definition) definition() {}
 
-// Admin 创建后台 Controller Builder 省略 path 或传空字符串等价
-// 都表示不指定显式前缀由 cool generate 按源文件所在目录自动推导
+// 创建后台 Controller Builder
 func Admin(path ...string) Builder {
 	return newBuilder(AreaAdmin, pathArg(path))
 }
 
-// App 创建应用端 Controller Builder 省略 path 或传空字符串等价
-// 都表示不指定显式前缀由 cool generate 按源文件所在目录自动推导
+// 创建应用端 Controller Builder
 func App(path ...string) Builder {
 	return newBuilder(AreaApp, pathArg(path))
 }
@@ -166,14 +164,14 @@ func pathArg(path []string) string {
 	return path[0]
 }
 
-// Bool 创建可区分未配置状态的布尔值
+// 创建可区分未配置状态的布尔值
 func Bool(value bool) *bool {
 	result := value
 
 	return &result
 }
 
-// Handle 创建自定义路由处理器
+// 创建自定义路由处理器
 func Handle(handler any) Handler {
 	if isNilValue(handler) || reflect.TypeOf(handler).Kind() != reflect.Func {
 		panicCore("Route Handler 必须是非 nil 函数")
@@ -182,12 +180,12 @@ func Handle(handler any) Handler {
 	return Handler{value: handler}
 }
 
-// NonTransactional 创建非事务路由策略
+// 创建非事务路由策略
 func NonTransactional() TransactionPolicy {
 	return route.NonTransactional()
 }
 
-// API CRUD API 列表副本
+// CRUD API 列表副本
 func API(values ...APIType) []APIType {
 	result := append([]APIType(nil), values...)
 	checkAPIs(result)
@@ -195,7 +193,7 @@ func API(values ...APIType) []APIType {
 	return result
 }
 
-// AllAPI 全部默认 CRUD API
+// 全部默认 CRUD API
 func AllAPI() []APIType {
 	return API(Add, Delete, Update, Info, List, Page)
 }
@@ -215,7 +213,7 @@ func (current *builder) Options(options RouterOptions) Builder {
 	return current
 }
 
-// Curd 配置默认 CRUD
+// 配置默认 CRUD
 func (current *builder) Curd(option CurdOption) Builder {
 	if current == nil {
 		panicCore("Controller Builder 不能为空")
@@ -231,7 +229,7 @@ func (current *builder) Curd(option CurdOption) Builder {
 	return current
 }
 
-// Route 添加自定义路由
+// 添加自定义路由
 func (current *builder) Route(routes ...Route) Builder {
 	if current == nil {
 		panicCore("Controller Builder 不能为空")
@@ -244,7 +242,7 @@ func (current *builder) Route(routes ...Route) Builder {
 	return current
 }
 
-// Build 构建不可变 Controller 定义
+// 构建不可变 Controller 定义
 func (current *builder) Build() Definition {
 	if current == nil {
 		panicCore("Controller Builder 不能为空")

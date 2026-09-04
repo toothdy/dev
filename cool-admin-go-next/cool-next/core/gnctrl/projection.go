@@ -5,7 +5,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/crud"
 )
 
-// DefinitionSnapshot 是 Controller Definition 的独立只读快照
+// Controller Definition 的独立只读快照
 type DefinitionSnapshot struct {
 	Area    Area
 	Path    string
@@ -14,7 +14,7 @@ type DefinitionSnapshot struct {
 	Routes  []Route
 }
 
-// Snapshot 复制 Controller Definition 的静态声明
+// 复制 Controller Definition 的静态声明
 func Snapshot(value Definition) (DefinitionSnapshot, error) {
 	current, err := requireDefinition(value)
 	if err != nil {
@@ -34,7 +34,7 @@ func Snapshot(value Definition) (DefinitionSnapshot, error) {
 	return result, nil
 }
 
-// ProjectQuery 投影静态查询，第二个返回值表示查询是否可静态投影
+// 投影静态查询并报告是否支持静态投影
 func ProjectQuery(
 	provider QueryProvider,
 	resolver crud.DescriptorResolver,

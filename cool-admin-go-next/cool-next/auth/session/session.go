@@ -8,20 +8,27 @@ import (
 )
 
 const (
-	RedisType     = auth.RedisType
-	MemoryType    = auth.MemoryType
-	DefaultGroup  = auth.DefaultGroup
-	DefaultPrefix = auth.DefaultPrefix
+	RedisType     = auth.RedisType     // Redis 后端类型
+	MemoryType    = auth.MemoryType    // 进程内后端类型
+	DefaultGroup  = auth.DefaultGroup  // 默认 Redis 连接组
+	DefaultPrefix = auth.DefaultPrefix // 默认 Session 键前缀
 )
 
 var (
-	ErrNotFound      = auth.ErrSessionNotFound
-	ErrRefreshReplay = auth.ErrRefreshReplay
+	ErrNotFound      = auth.ErrSessionNotFound // Session 不存在
+	ErrRefreshReplay = auth.ErrRefreshReplay   // Refresh Token 重放
 )
 
+// Session 后端配置兼容别名
 type Config = auth.SessionConfig
+
+// Session 存储兼容别名
 type Store = auth.Store
+
+// 进程内 Session 存储兼容别名
 type MemoryStore = auth.MemoryStore
+
+// Redis Session 存储兼容别名
 type RedisStore = auth.RedisStore
 
 // 返回默认 Redis 配置

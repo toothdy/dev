@@ -81,7 +81,7 @@ func (service *DataService) Page(ctx context.Context, request *dto.DataPageReque
 	return dto.DataPageResult{List: items, Pagination: page.Pagination}, nil
 }
 
-// Info 返回单条 Node 兼容的回收记录
+// 返回单条 Node 兼容的回收记录
 func (service *DataService) Info(ctx context.Context, request *dto.DataInfoRequest) (*dto.DataItem, error) {
 	if err := service.validate(); err != nil {
 		return nil, err
@@ -309,7 +309,7 @@ func normalizeRestoreIDs(request *dto.DataRestoreRequest) ([]uint64, error) {
 	return result, nil
 }
 
-// paramsJSON 返回合法对象参数或空对象
+// 返回合法对象参数或空对象
 func paramsJSON(value *string) json.RawMessage {
 	if value == nil {
 		return json.RawMessage("{}")
@@ -322,7 +322,7 @@ func paramsJSON(value *string) json.RawMessage {
 	return append(json.RawMessage(nil), trimmed...)
 }
 
-// stringValue 解引用可空字符串
+// 解引用可空字符串
 func stringValue(value *string) string {
 	if value == nil {
 		return ""

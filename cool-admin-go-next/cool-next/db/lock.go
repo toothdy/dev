@@ -19,10 +19,7 @@ type writeLockData struct {
 	ID any `orm:"id"`
 }
 
-// LockRows 在当前框架事务内按主键升序锁定目标表记录，返回实际锁定的 ID。
-//
-// 调用方负责比对返回值与请求 ID 以判定记录是否存在；
-// ID 升序加锁是顺序约定，多事务并发调用必须遵循以避免死锁。
+// 按主键升序锁定当前事务中的记录以统一并发加锁顺序
 func (r *Runtime) LockRows(ctx context.Context, table string, ids []uint64) ([]uint64, error) {
 	if r == nil || r.database == nil {
 		return nil, exception.Core("框架数据库 Runtime 未初始化")

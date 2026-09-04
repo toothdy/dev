@@ -74,8 +74,7 @@ type MenuImportRequest struct {
 	Menus []dto.MenuTree `json:"menus" v:"required"`
 }
 
-// 菜单代码生成与树导入导出。
-// 访问控制由路由权限标识承担：超管全通，其他角色需在后台菜单中获得授权
+// 菜单代码生成与树导入导出工具
 type MenuToolHandler struct {
 	scaffold *codegen.Scaffold
 	menu     *service.MenuService

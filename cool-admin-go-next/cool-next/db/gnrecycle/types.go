@@ -8,8 +8,7 @@ import (
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnentity"
 )
 
-// 回收记录表名
-const TableName = "cool_recycle"
+const TableName = "cool_recycle" // 回收记录表名
 
 // 回收记录不存在
 var ErrRecordNotFound = gerror.New("回收记录不存在")

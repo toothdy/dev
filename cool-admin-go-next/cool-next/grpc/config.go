@@ -25,6 +25,7 @@ type Config struct {
 	Registry bool   `json:"registry"` // 是否注册服务发现
 }
 
+// gRPC 默认配置
 func DefaultConfig() Config {
 	return Config{
 		Address: DefaultAddress,

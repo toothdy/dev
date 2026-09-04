@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Provider 节点
+// 依赖图 Provider 节点
 type Provider struct {
 	kind        ProviderKind
 	name        string

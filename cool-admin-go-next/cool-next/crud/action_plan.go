@@ -14,12 +14,12 @@ import (
 type Action string
 
 const (
-	ActionAdd    Action = "add"
-	ActionDelete Action = "delete"
-	ActionUpdate Action = "update"
-	ActionInfo   Action = "info"
-	ActionList   Action = "list"
-	ActionPage   Action = "page"
+	ActionAdd    Action = "add"    // 新增
+	ActionDelete Action = "delete" // 删除
+	ActionUpdate Action = "update" // 更新
+	ActionInfo   Action = "info"   // 详情
+	ActionList   Action = "list"   // 列表
+	ActionPage   Action = "page"   // 分页
 )
 
 // 动作计划
@@ -95,6 +95,7 @@ func CompilePlan(
 	return plan, nil
 }
 
+// 字段策略
 func (plan *ActionPlan) Fields() *FieldPolicy {
 	if plan == nil {
 		return nil
@@ -103,6 +104,7 @@ func (plan *ActionPlan) Fields() *FieldPolicy {
 	return &plan.fields
 }
 
+// 字段是否隐藏
 func (policy *FieldPolicy) IsHidden(field string) bool {
 	if policy == nil {
 		return false
@@ -112,6 +114,7 @@ func (policy *FieldPolicy) IsHidden(field string) bool {
 	return exists
 }
 
+// 字段是否只读
 func (policy *FieldPolicy) IsReadonly(field string) bool {
 	if policy == nil {
 		return false
@@ -121,6 +124,7 @@ func (policy *FieldPolicy) IsReadonly(field string) bool {
 	return exists
 }
 
+// 详情是否忽略字段
 func (policy *FieldPolicy) IsInfoIgnored(field string) bool {
 	if policy == nil {
 		return false
@@ -130,6 +134,7 @@ func (policy *FieldPolicy) IsInfoIgnored(field string) bool {
 	return exists
 }
 
+// CRUD 动作
 func (plan *ActionPlan) Action() Action {
 	if plan == nil {
 		return ""
@@ -138,6 +143,7 @@ func (plan *ActionPlan) Action() Action {
 	return plan.action
 }
 
+// 查询计划
 func (plan *ActionPlan) Query() *QueryPlan {
 	if plan == nil {
 		return nil
@@ -167,6 +173,7 @@ func WithOperation(ctx context.Context, plan *ActionPlan) context.Context {
 	return context.WithValue(ctx, operationContextKey{}, &OperationScope{plan: plan})
 }
 
+// 返回当前操作上下文
 func CurrentOperation(ctx context.Context) (*OperationScope, bool) {
 	if ctx == nil {
 		return nil, false
@@ -179,6 +186,7 @@ func CurrentOperation(ctx context.Context) (*OperationScope, bool) {
 	return scope, true
 }
 
+// 当前动作计划
 func (scope *OperationScope) Plan() *ActionPlan {
 	if scope == nil {
 		return nil

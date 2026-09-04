@@ -50,7 +50,7 @@ func (input AssembleInput) ModuleDefaultsSource() config.Source {
 	return config.Source{LookupEnv: input.root.LookupEnv}
 }
 
-// AssembleFunc 负责按静态拓扑构造一次应用实例
+// 按静态拓扑构造应用实例的函数
 type AssembleFunc func(context.Context, AssembleInput) (*Assembly, error)
 
 // 保存静态 Graph 和唯一生成装配函数

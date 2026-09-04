@@ -8,18 +8,18 @@ import (
 
 const defaultCleanupTimeout = 30 * time.Minute
 
-// Config 回收站模块运行配置
+// 回收站模块运行配置
 type Config struct {
 	Cleanup CleanupConfig `json:"cleanup"`
 }
 
-// CleanupConfig 过期回收记录清理配置
+// 过期回收记录清理配置
 type CleanupConfig struct {
 	Pattern string        `json:"pattern"`
 	Timeout time.Duration `json:"timeout"`
 }
 
-// ModuleConfig 回收站模块及其默认配置
+// 回收站模块及其默认配置
 func ModuleConfig() module.Declaration[Config] {
 	return module.Declaration[Config]{
 		Name:        "数据回收",
