@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"math/big"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/os/gcache"
+	svgCaptcha "github.com/reu98/go-svg-captcha"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	"github.com/toothdy/cool-admin-go-next/modules/base/dto"
 )
@@ -30,7 +32,28 @@ const (
 	captchaMaxHeight     = 500                                                              // 最大高度
 	captchaCachePrefix   = "captcha:"                                                       // 缓存键缀
 	captchaCharacters    = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" // 验证码字符集
+	captchaCurveOpacity  = "0.35"                                                           // 干扰线透明度
+	captchaCurveWidth    = "1"                                                              // 干扰线宽度
 )
+
+type captchaSVG struct {
+	XMLName xml.Name         `xml:"svg"`
+	XMLNS   string           `xml:"xmlns,attr"`
+	Width   int              `xml:"width,attr"`
+	Height  int              `xml:"height,attr"`
+	ViewBox string           `xml:"viewBox,attr"`
+	Style   string           `xml:"style,attr,omitempty"`
+	Paths   []captchaSVGPath `xml:"path"`
+}
+
+type captchaSVGPath struct {
+	Fill          string `xml:"fill,attr,omitempty"`
+	Data          string `xml:"d,attr"`
+	Stroke        string `xml:"stroke,attr,omitempty"`
+	StrokeWidth   string `xml:"stroke-width,attr,omitempty"`
+	StrokeOpacity string `xml:"stroke-opacity,attr,omitempty"`
+	StrokeLinecap string `xml:"stroke-linecap,attr,omitempty"`
+}
 
 // Base 模块的进程内验证码
 type CaptchaService struct {
@@ -55,11 +78,8 @@ func NewCaptcha() (*CaptchaService, error) {
 	}, nil
 }
 
-// 生成图片验证码并缓存答案
+// 生成 SVG Path 验证码并缓存答案
 func (service *CaptchaService) Generate(ctx context.Context, query dto.CaptchaQuery) (dto.CaptchaResult, error) {
-	if service == nil || service.cache == nil || service.random == nil {
-		return dto.CaptchaResult{}, exception.Core("验证码服务未初始化")
-	}
 	width, height, color := service.normalizeOptions(query)
 	code, err := service.randomString(captchaCodeLength, captchaCharacters)
 	if err != nil {
@@ -69,16 +89,16 @@ func (service *CaptchaService) Generate(ctx context.Context, query dto.CaptchaQu
 	if err != nil {
 		return dto.CaptchaResult{}, exception.WrapCore(err, "生成验证码标识失败")
 	}
-	svg, err := service.buildCaptchaSVG(code, width, height, color)
+	image, err := buildCaptchaSVG(code, width, height, color)
 	if err != nil {
-		return dto.CaptchaResult{}, exception.WrapCore(err, "生成验证码图片失败")
+		return dto.CaptchaResult{}, exception.WrapCore(err, "生成验证码 SVG 失败")
 	}
 	if err = service.cache.Set(ctx, captchaCacheKey(captchaID), strings.ToLower(code), service.ttl); err != nil {
 		return dto.CaptchaResult{}, exception.WrapCore(err, "保存验证码失败")
 	}
 	return dto.CaptchaResult{
 		CaptchaID: captchaID,
-		Data:      "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(svg)),
+		Data:      "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString(image),
 	}, nil
 }
 
@@ -176,96 +196,57 @@ func isCaptchaColor(color string) bool {
 	return true
 }
 
-func (service *CaptchaService) buildCaptchaSVG(code string, width, height int, color string) (string, error) {
-	var builder strings.Builder
-	fmt.Fprintf(&builder, `<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">`, width, height, width, height)
-
-	for index := 0; index < 3; index++ {
-		x1, err := service.randomInt(width)
-		if err != nil {
-			return "", err
-		}
-		y1, err := service.randomInt(height)
-		if err != nil {
-			return "", err
-		}
-		x2, err := service.randomInt(width)
-		if err != nil {
-			return "", err
-		}
-		y2, err := service.randomInt(height)
-		if err != nil {
-			return "", err
-		}
-		controlX, err := service.randomInt(width)
-		if err != nil {
-			return "", err
-		}
-		controlY, err := service.randomInt(height)
-		if err != nil {
-			return "", err
-		}
-		grey, err := service.randomGreyColor()
-		if err != nil {
-			return "", err
-		}
-		fmt.Fprintf(&builder, `<path d="M %d %d Q %d %d %d %d" stroke="%s" fill="none" stroke-width="1"/>`, x1, y1, controlX, controlY, x2, y2, grey)
-	}
-
-	fontSize := height * 7 / 10
-	if fontSize < 1 {
-		fontSize = 1
-	}
-	for index, character := range code {
-		baseX := (index + 1) * width / (len(code) + 1)
-		xJitterLimit := width / 20
-		if xJitterLimit < 1 {
-			xJitterLimit = 1
-		}
-		xJitter, err := service.randomInt(xJitterLimit)
-		if err != nil {
-			return "", err
-		}
-		rotation, err := service.randomInt(21)
-		if err != nil {
-			return "", err
-		}
-		grey, err := service.randomGreyColor()
-		if err != nil {
-			return "", err
-		}
-		x := baseX + xJitter - xJitterLimit/2
-		y := height/2 + fontSize/2
-		fmt.Fprintf(&builder, `<text x="%d" y="%d" fill="%s" font-size="%d" text-anchor="middle" transform="rotate(%d %d %d)">%c</text>`, x, y, color, fontSize, rotation-10, x, y, character)
-		for noiseIndex := 0; noiseIndex < 2; noiseIndex++ {
-			noiseXLimit := width / 12
-			if noiseXLimit < 1 {
-				noiseXLimit = 1
-			}
-			noiseX, err := service.randomInt(noiseXLimit)
-			if err != nil {
-				return "", err
-			}
-			noiseY, err := service.randomInt(height)
-			if err != nil {
-				return "", err
-			}
-			fmt.Fprintf(&builder, `<path d="M %d %d h 1" stroke="%s"/>`, x+noiseX-noiseXLimit/2, noiseY, grey)
-		}
-	}
-	fmt.Fprintf(&builder, `<text visibility="hidden">%s</text>`, code)
-	builder.WriteString(`</svg>`)
-
-	return builder.String(), nil
-}
-
-func (service *CaptchaService) randomGreyColor() (string, error) {
-	value, err := service.randomInt(256)
+func buildCaptchaSVG(code string, width, height int, value string) ([]byte, error) {
+	result, err := svgCaptcha.CreateByText(svgCaptcha.OptionText{
+		Text:   code,
+		Width:  uint16(width),
+		Height: uint16(height),
+		Curve:  1,
+	})
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+	if result == nil {
+		return nil, fmt.Errorf("SVG 验证码结果为空")
 	}
 
-	return fmt.Sprintf("#%02x%02x%02x", value, value, value), nil
+	var source captchaSVG
+	if err = xml.Unmarshal([]byte(result.Data), &source); err != nil {
+		return nil, err
+	}
+
+	paths := make([]captchaSVGPath, 0, len(code)+1)
+	for _, path := range source.Paths {
+		if path.Data == "" {
+			continue
+		}
+		if path.Stroke != "" {
+			if len(paths) == 0 {
+				paths = append(paths, captchaSVGPath{
+					Fill:          "none",
+					Data:          path.Data,
+					Stroke:        value,
+					StrokeWidth:   captchaCurveWidth,
+					StrokeOpacity: captchaCurveOpacity,
+					StrokeLinecap: "round",
+				})
+			}
+			continue
+		}
+		paths = append(paths, captchaSVGPath{Fill: value, Data: path.Data})
+	}
+	if len(paths) != len(code)+1 || paths[0].Stroke == "" {
+		return nil, fmt.Errorf("SVG 验证码 Path 结构无效")
+	}
+
+	return xml.Marshal(captchaSVG{
+		XMLNS:   "http://www.w3.org/2000/svg",
+		Width:   width,
+		Height:  height,
+		ViewBox: fmt.Sprintf("0 0 %d %d", width, height),
+		Style:   "transform: rotateX(180deg)",
+		Paths:   paths,
+	})
 }
 
 func captchaCacheKey(captchaID string) string {

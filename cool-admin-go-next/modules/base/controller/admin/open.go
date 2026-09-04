@@ -36,13 +36,13 @@ func NewOpenHandler(
 	return &OpenHandler{login: login, captcha: captcha, param: param}, nil
 }
 
-// 按参数键返回原始 HTML
+// 按参数键返回公开白名单内的清洗 HTML
 func (handler *OpenHandler) HTML(ctx context.Context, request *HTMLQuery) (gnctrl.HTMLResponse, error) {
 	if handler == nil || handler.param == nil || request == nil {
 		return "", exception.Core("Base HTML 接口未初始化")
 	}
 
-	return handler.param.HTMLByKey(ctx, request.Key)
+	return handler.param.PublicHTMLByKey(ctx, request.Key)
 }
 
 // 后台登录

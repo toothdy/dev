@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"html"
 	"strings"
 	"sync"
 
 	"github.com/gogf/gf/v2/os/gcache"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/exception"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnctrl"
 	"github.com/toothdy/cool-admin-go-next/cool-next/core/gnservice"
@@ -20,6 +22,9 @@ const (
 	paramCachePrefix  = "param:"
 	paramHTMLTemplate = "<html><title>@title</title><body>@content</body></html>"
 )
+
+// 参数富文本输出的白名单清洗策略,包级创建一次,创建后并发安全
+var paramHTMLPolicy = bluemonday.UGCPolicy()
 
 type paramCacheEntry struct {
 	ID       uint64 `orm:"id"`
@@ -91,7 +96,7 @@ func (service *ParamService) AppDataByKey(ctx context.Context, key string) (any,
 	return service.DataByKey(ctx, key)
 }
 
-// 按键返回原始 HTML 响应
+// 按键返回清洗后的 HTML 响应
 func (service *ParamService) HTMLByKey(ctx context.Context, key string) (gnctrl.HTMLResponse, error) {
 	record, err := service.paramByKey(ctx, key)
 	if err != nil {
@@ -101,10 +106,23 @@ func (service *ParamService) HTMLByKey(ctx context.Context, key string) (gnctrl.
 		return gnctrl.HTMLResponse(strings.Replace(paramHTMLTemplate, "@content", "key notfound", 1)), nil
 	}
 
+	// 标题转义、正文白名单清洗,防止存储型 XSS
 	return gnctrl.HTMLResponse(strings.NewReplacer(
-		"@title", record.Name,
-		"@content", record.Data,
+		"@title", html.EscapeString(record.Name),
+		"@content", paramHTMLPolicy.Sanitize(record.Data),
 	).Replace(paramHTMLTemplate)), nil
+}
+
+// 校验公开键后返回清洗后的 HTML 页面
+func (service *ParamService) PublicHTMLByKey(ctx context.Context, key string) (gnctrl.HTMLResponse, error) {
+	if service == nil {
+		return "", exception.Core("参数服务未初始化")
+	}
+	if _, allowed := service.allowKeys[key]; !allowed {
+		return "", exception.Comm("非法操作")
+	}
+
+	return service.HTMLByKey(ctx, key)
 }
 
 // 新增参数并失效相关缓存

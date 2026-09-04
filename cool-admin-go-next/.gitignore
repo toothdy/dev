@@ -24,6 +24,7 @@ coverage.out
 !cool-next/codegen/route_render_test.go
 !modules/base/controller/contract_test.go
 !modules/base/controller/admin/contract_test.go
+!modules/base/service/captcha_test.go
 !modules/base/service/department_test.go
 !modules/base/service/user_integration_test.go
 /test/
