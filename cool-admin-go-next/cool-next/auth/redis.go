@@ -16,47 +16,68 @@ import (
 )
 
 const rotateRefreshScript = `
-local raw = redis.call('GET', KEYS[1])
+local locator = redis.call('GET', KEYS[1])
+if not locator or locator ~= ARGV[1] then return 0 end
+local raw = redis.call('HGET', KEYS[2], ARGV[2])
 if not raw then return 0 end
-if raw ~= ARGV[1] then return 2 end
-redis.call('SET', KEYS[1], ARGV[2], 'PXAT', ARGV[3])
+if raw ~= ARGV[3] then return 2 end
+redis.call('SET', KEYS[1], ARGV[1], 'PXAT', ARGV[5])
+redis.call('HSET', KEYS[2], ARGV[2], ARGV[4])
+local ttl = redis.call('PTTL', KEYS[2])
+if ttl < tonumber(ARGV[6]) then redis.call('PEXPIREAT', KEYS[2], ARGV[5]) end
 return 1
 `
 
-const revokeUsersScript = `
-local targets = {}
-for index = 2, #ARGV do targets[ARGV[index]] = true end
-local matches = {}
-for _, key in ipairs(KEYS) do
-    local raw = redis.call('GET', key)
-    if raw then
-        local valid, current = pcall(cjson.decode, raw)
-        if not valid then return -1 end
-        if current.schemaVersion ~= 1 or type(current.subject) ~= 'string' or type(current.userId) ~= 'string' then return -1 end
-        if current.subject == ARGV[1] and targets[current.userId] then
-            table.insert(matches, key)
-        end
-    end
-end
-for _, key in ipairs(matches) do redis.call('DEL', key) end
-return #matches
+const saveSessionScript = `
+local locator = redis.call('GET', KEYS[1])
+if locator and locator ~= ARGV[1] then return 0 end
+redis.call('SET', KEYS[1], ARGV[1], 'PXAT', ARGV[4])
+redis.call('HSET', KEYS[2], ARGV[2], ARGV[3])
+local ttl = redis.call('PTTL', KEYS[2])
+if ttl < tonumber(ARGV[5]) then redis.call('PEXPIREAT', KEYS[2], ARGV[4]) end
+return 1
 `
 
-const deleteIfUnchangedScript = `
-local raw = redis.call('GET', KEYS[1])
-if not raw then return 0 end
-if raw ~= ARGV[1] then return 0 end
+const revokeSessionScript = `
+local locator = redis.call('GET', KEYS[1])
+if not locator or locator ~= ARGV[1] then return 0 end
+redis.call('HDEL', KEYS[2], ARGV[2])
 redis.call('DEL', KEYS[1])
 return 1
 `
 
+const deleteSessionIfUnchangedScript = `
+local raw = redis.call('HGET', KEYS[2], ARGV[2])
+if not raw or raw ~= ARGV[3] then return 0 end
+local locator = redis.call('GET', KEYS[1])
+if locator and locator == ARGV[1] then redis.call('DEL', KEYS[1]) end
+redis.call('HDEL', KEYS[2], ARGV[2])
+return 1
+`
+
+const deleteLocatorIfUnchangedScript = `
+local locator = redis.call('GET', KEYS[1])
+if not locator or locator ~= ARGV[1] then return 0 end
+redis.call('DEL', KEYS[1])
+return 1
+`
+
+const redisSessionNamespace = "v2:"
+
 type redisBackend interface {
 	Do(context.Context, string, ...any) (*gvar.Var, error)
 	Get(context.Context, string) (*gvar.Var, error)
-	Set(context.Context, string, any, ...gredis.SetOption) (*gvar.Var, error)
+	HGet(context.Context, string, string) (*gvar.Var, error)
 	Eval(context.Context, string, int64, []string, []any) (*gvar.Var, error)
-	Del(context.Context, ...string) (int64, error)
-	Scan(context.Context, uint64, ...gredis.ScanOption) (uint64, []string, error)
+	Unlink(context.Context, ...string) (int64, error)
+}
+
+type redisSessionRecord struct {
+	locatorKey   string
+	userKey      string
+	locatorValue string
+	content      []byte
+	value        Snapshot
 }
 
 // Redis Session Store
@@ -101,7 +122,7 @@ func newRedisStore(ctx context.Context, client redisBackend, prefix string, now 
 		return nil, exception.Core("Redis Session PING 响应无效")
 	}
 
-	return &RedisStore{client: client, prefix: prefix, now: now}, nil
+	return &RedisStore{client: client, prefix: prefix + redisSessionNamespace, now: now}, nil
 }
 
 // 读取有效 Session
@@ -113,27 +134,12 @@ func (store *RedisStore) Get(ctx context.Context, sessionID string) (Snapshot, b
 		return Snapshot{}, false, exception.Core("Session ID 无效")
 	}
 
-	key := store.prefix + sessionID
-	result, err := store.client.Get(ctx, key)
-	if err != nil {
-		return Snapshot{}, false, exception.WrapCore(err, "读取 Redis Session 失败")
-	}
-	if result == nil || result.IsNil() {
-		return Snapshot{}, false, nil
-	}
-	content := result.Bytes()
-	value, err := decode(content, key, store.prefix, store.now())
-	if errors.Is(err, errExpired) {
-		if _, err = store.client.Eval(ctx, deleteIfUnchangedScript, 1, []string{key}, []any{content}); err != nil {
-			return Snapshot{}, false, exception.WrapCore(err, "清理过期 Redis Session 失败")
-		}
-		return Snapshot{}, false, nil
-	}
-	if err != nil {
+	record, exists, err := store.readSession(ctx, sessionID)
+	if err != nil || !exists {
 		return Snapshot{}, false, err
 	}
 
-	return value, true, nil
+	return record.value, true, nil
 }
 
 // 保存有效 Session
@@ -145,12 +151,19 @@ func (store *RedisStore) Save(ctx context.Context, value Snapshot) error {
 	if err != nil {
 		return err
 	}
-	expiresAt := value.ExpiresAt.UnixMilli()
-	_, err = store.client.Set(ctx, store.prefix+value.SessionID, content, gredis.SetOption{
-		TTLOption: gredis.TTLOption{PXAT: &expiresAt},
-	})
+	locatorValue := redisSessionLocator(value.Subject, value.UserID)
+	result, err := store.client.Eval(
+		ctx,
+		saveSessionScript,
+		2,
+		[]string{store.sessionKey(value.SessionID), store.userKey(value.Subject, value.UserID)},
+		[]any{locatorValue, value.SessionID, content, value.ExpiresAt.UnixMilli(), value.ExpiresAt.Sub(store.now()).Milliseconds()},
+	)
 	if err != nil {
 		return exception.WrapCore(err, "保存 Redis Session 失败")
+	}
+	if result == nil || result.Int() != 1 {
+		return exception.Core("Redis Session ID 已属于其他用户")
 	}
 
 	return nil
@@ -172,26 +185,17 @@ func (store *RedisStore) RotateRefresh(
 	if next.SessionID != sessionID {
 		return exception.Core("轮换后的 Session ID 不一致")
 	}
-	key := store.prefix + sessionID
-	currentResult, err := store.client.Get(ctx, key)
-	if err != nil {
-		return exception.WrapCore(err, "读取 Redis Session 失败")
-	}
-	if currentResult == nil || currentResult.IsNil() {
-		return ErrSessionNotFound
-	}
-	currentContent := currentResult.Bytes()
-	current, err := decode(currentContent, key, store.prefix, store.now())
-	if errors.Is(err, errExpired) {
-		return ErrSessionNotFound
-	}
+	record, exists, err := store.readSession(ctx, sessionID)
 	if err != nil {
 		return err
 	}
-	if current.RefreshJTI != expectedRefreshJTI {
+	if !exists {
+		return ErrSessionNotFound
+	}
+	if record.value.RefreshJTI != expectedRefreshJTI {
 		return ErrRefreshReplay
 	}
-	if current.Subject != next.Subject || current.UserID != next.UserID {
+	if record.value.Subject != next.Subject || record.value.UserID != next.UserID {
 		return exception.Core("轮换不能改变 Session 身份")
 	}
 	content, err := encode(next, store.now())
@@ -202,12 +206,22 @@ func (store *RedisStore) RotateRefresh(
 	result, err := store.client.Eval(
 		ctx,
 		rotateRefreshScript,
-		1,
-		[]string{key},
-		[]any{currentContent, content, next.ExpiresAt.UnixMilli()},
+		2,
+		[]string{record.locatorKey, record.userKey},
+		[]any{
+			record.locatorValue,
+			sessionID,
+			record.content,
+			content,
+			next.ExpiresAt.UnixMilli(),
+			next.ExpiresAt.Sub(store.now()).Milliseconds(),
+		},
 	)
 	if err != nil {
 		return exception.WrapCore(err, "轮换 Redis Session 失败")
+	}
+	if result == nil {
+		return exception.Core("Redis Session 轮换结果无效")
 	}
 	switch result.Int() {
 	case 0:
@@ -229,7 +243,21 @@ func (store *RedisStore) Revoke(ctx context.Context, sessionID string) error {
 	if !validIdentifier(sessionID) {
 		return exception.Core("Session ID 无效")
 	}
-	if _, err := store.client.Del(ctx, store.prefix+sessionID); err != nil {
+	record, exists, err := store.readSession(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
+	_, err = store.client.Eval(
+		ctx,
+		revokeSessionScript,
+		2,
+		[]string{record.locatorKey, record.userKey},
+		[]any{record.locatorValue, sessionID},
+	)
+	if err != nil {
 		return exception.WrapCore(err, "撤销 Redis Session 失败")
 	}
 
@@ -246,72 +274,104 @@ func (store *RedisStore) RevokeUsers(ctx context.Context, subject Kind, userIDs 
 		return err
 	}
 
-	keys, err := store.scanKeys(ctx)
-	if err != nil {
-		return exception.WrapCore(err, "扫描 Redis Session 失败")
-	}
 	targetIDs := make([]string, 0, len(targets))
 	for userID := range targets {
 		targetIDs = append(targetIDs, strconv.FormatUint(userID, 10))
 	}
 	sort.Strings(targetIDs)
-	for offset := 0; offset < len(keys); offset += 100 {
-		end := min(offset+100, len(keys))
-		if err := store.revokeBatch(ctx, keys[offset:end], subject, targetIDs); err != nil {
-			return err
-		}
+	keys := make([]string, len(targetIDs))
+	for index, userID := range targetIDs {
+		keys[index] = store.prefix + "user:" + string(subject) + ":" + userID
+	}
+	if _, err = store.client.Unlink(ctx, keys...); err != nil {
+		return exception.WrapCore(err, "撤销 Redis 用户 Session 失败")
 	}
 
 	return nil
 }
 
-// 扫描 Session Key
-func (store *RedisStore) scanKeys(ctx context.Context) ([]string, error) {
-	var (
-		cursor uint64
-		keys   []string
-	)
-	for {
-		nextCursor, page, err := store.client.Scan(ctx, cursor, gredis.ScanOption{
-			Match: store.prefix + "*",
-			Count: 100,
-			Type:  "string",
-		})
-		if err != nil {
-			return nil, exception.WrapCore(err, "扫描 Redis Session 失败")
-		}
-		keys = append(keys, page...)
-		cursor = nextCursor
-		if cursor == 0 {
-			return keys, nil
-		}
-	}
-}
-
-// 原子撤销一批匹配用户的 Redis Session
-func (store *RedisStore) revokeBatch(
-	ctx context.Context,
-	keys []string,
-	subject Kind,
-	targetIDs []string,
-) error {
-	if len(keys) == 0 {
-		return nil
-	}
-	args := make([]any, 1, len(targetIDs)+1)
-	args[0] = string(subject)
-	for _, targetID := range targetIDs {
-		args = append(args, targetID)
-	}
-	result, err := store.client.Eval(ctx, revokeUsersScript, int64(len(keys)), keys, args)
+func (store *RedisStore) readSession(ctx context.Context, sessionID string) (redisSessionRecord, bool, error) {
+	locatorKey := store.sessionKey(sessionID)
+	locatorResult, err := store.client.Get(ctx, locatorKey)
 	if err != nil {
-		return exception.WrapCore(err, "撤销 Redis Session 失败")
+		return redisSessionRecord{}, false, exception.WrapCore(err, "读取 Redis Session 定位失败")
 	}
-	if result.Int() < 0 {
-		return exception.Core("Redis Session 撤销结果无效")
+	if locatorResult == nil || locatorResult.IsNil() {
+		return redisSessionRecord{}, false, nil
+	}
+	locatorValue := locatorResult.String()
+	subject, userID, err := parseRedisSessionLocator(locatorValue)
+	if err != nil {
+		return redisSessionRecord{}, false, err
+	}
+	userKey := store.userKey(subject, userID)
+	contentResult, err := store.client.HGet(ctx, userKey, sessionID)
+	if err != nil {
+		return redisSessionRecord{}, false, exception.WrapCore(err, "读取 Redis Session 失败")
+	}
+	if contentResult == nil || contentResult.IsNil() {
+		if _, err = store.client.Eval(ctx, deleteLocatorIfUnchangedScript, 1, []string{locatorKey}, []any{locatorValue}); err != nil {
+			return redisSessionRecord{}, false, exception.WrapCore(err, "清理 Redis Session 定位失败")
+		}
+		return redisSessionRecord{}, false, nil
 	}
 
-	return nil
+	content := contentResult.Bytes()
+	value, err := decode(content, "", store.prefix, store.now())
+	if errors.Is(err, errExpired) {
+		_, cleanupErr := store.client.Eval(
+			ctx,
+			deleteSessionIfUnchangedScript,
+			2,
+			[]string{locatorKey, userKey},
+			[]any{locatorValue, sessionID, content},
+		)
+		if cleanupErr != nil {
+			return redisSessionRecord{}, false, exception.WrapCore(cleanupErr, "清理过期 Redis Session 失败")
+		}
+		return redisSessionRecord{}, false, nil
+	}
+	if err != nil {
+		return redisSessionRecord{}, false, err
+	}
+	if value.SessionID != sessionID || value.Subject != subject || value.UserID != userID {
+		return redisSessionRecord{}, false, exception.Core("Redis Session 定位与内容不一致")
+	}
+
+	return redisSessionRecord{
+		locatorKey:   locatorKey,
+		userKey:      userKey,
+		locatorValue: locatorValue,
+		content:      content,
+		value:        value,
+	}, true, nil
+}
+
+func (store *RedisStore) sessionKey(sessionID string) string {
+	return store.prefix + "session:" + sessionID
+}
+
+func (store *RedisStore) userKey(subject Kind, userID uint64) string {
+	return store.prefix + "user:" + redisSessionLocator(subject, userID)
+}
+
+func redisSessionLocator(subject Kind, userID uint64) string {
+	return string(subject) + ":" + strconv.FormatUint(userID, 10)
+}
+
+func parseRedisSessionLocator(value string) (Kind, uint64, error) {
+	subjectValue, userIDValue, found := strings.Cut(value, ":")
+	if !found {
+		return "", 0, exception.Core("Redis Session 定位无效")
+	}
+	subject := Kind(subjectValue)
+	userID, err := strconv.ParseUint(userIDValue, 10, 64)
+	if err != nil || userID == 0 || strconv.FormatUint(userID, 10) != userIDValue ||
+		(subject != AdminKind && subject != AppKind) {
+		return "", 0, exception.Core("Redis Session 定位无效")
+	}
+
+	return subject, userID, nil
 }
 
 var _ redisBackend = (*gredis.Redis)(nil)
